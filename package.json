@@ -1,21 +1,72 @@
 {
   "name": "oorep-mcp",
   "version": "0.1.0",
-  "description": "Model Context Protocol server that exposes OOREP repertory and materia medica data.",
-  "license": "MIT",
+  "description": "MCP server for OOREP homeopathic repertory and materia medica - enables AI assistants to search symptoms, remedies, and homeopathic reference materials",
+  "mcpName": "io.github.dhi13man/oorep-mcp",
   "type": "module",
-  "main": "dist/server.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "oorep-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
-    "dev": "tsx src/server.ts",
-    "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js"
+    "build": "tsc -p tsconfig.json && chmod +x dist/index.js",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "format": "prettier --write 'src/**/*.ts'",
+    "format:check": "prettier --check 'src/**/*.ts'",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run lint && npm run test && npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "modelcontextprotocol",
+    "server",
+    "oorep",
+    "homeopathy",
+    "repertory",
+    "materia-medica",
+    "remedies",
+    "symptoms"
+  ],
+  "author": "Dhiman Seal <dhiman.seal@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Dhi13man/oorep-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Dhi13man/oorep-mcp/issues"
+  },
+  "homepage": "https://github.com/Dhi13man/oorep-mcp#readme",
+  "engines": {
+    "node": ">=18.0.0"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.1.0"
+    "@modelcontextprotocol/sdk": "^1.19.1",
+    "zod": "^3.25.76",
+    "zod-to-json-schema": "^3.23.5"
   },
   "devDependencies": {
-    "@types/node": "^20.11.30",
+    "@types/node": "^22.0.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "@vitest/coverage-v8": "^2.0.0",
+    "eslint": "^8.57.0",
+    "prettier": "^3.0.0",
     "tsx": "^4.7.0",
-    "typescript": "^5.4.0"
+    "typescript": "^5.8.0",
+    "vitest": "^2.1.0"
   }
 }
