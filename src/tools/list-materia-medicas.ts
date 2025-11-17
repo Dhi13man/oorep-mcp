@@ -45,16 +45,19 @@ export class ListMateriaMedicasTool {
       const apiMateriaMedicas = await this.client.getAvailableMateriaMedicas();
 
       // Transform to metadata format
-      let materiaMedicas: MateriaMedicaMetadata[] = apiMateriaMedicas.map((mm) => ({
-        abbreviation: mm.abbreviation,
-        title: mm.title,
-        author: mm.author,
-        language: mm.language,
-        year: undefined,
-        edition: undefined,
-        publisher: undefined,
-        license: undefined,
-      }));
+      let materiaMedicas: MateriaMedicaMetadata[] = apiMateriaMedicas.map((mm) => {
+        const meta: MateriaMedicaMetadata = {
+          abbreviation: mm.abbreviation,
+          title: mm.title,
+          author: mm.author,
+          language: mm.language,
+        };
+        if (mm.year !== undefined) meta.year = mm.year;
+        if (mm.edition !== undefined) meta.edition = mm.edition;
+        if (mm.publisher !== undefined) meta.publisher = mm.publisher;
+        if (mm.license !== undefined) meta.license = mm.license;
+        return meta;
+      });
 
       // Filter by language if specified
       if (validatedArgs.language) {
