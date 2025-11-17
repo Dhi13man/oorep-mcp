@@ -6,7 +6,7 @@ import { OOREPConfig } from '../config.js';
 import { logger } from '../utils/logger.js';
 import { NetworkError, TimeoutError, RateLimitError } from '../utils/errors.js';
 import { RepertoryMetadata, MateriaMedicaMetadata } from '../utils/schemas.js';
-import pkg from '../../package.json';
+import pkg from '../../package.json' with { type: 'json' };
 const USER_AGENT = `oorep-mcp/${pkg.version}`;
 type RawWeightedRemedy = {
   remedy: {
