@@ -148,7 +148,33 @@ Guidelines:
       throw new Error('remedies argument is required for remedy-comparison prompt');
     }
 
-    const remedyList = remedies.split(',').map((r) => r.trim());
+    const remedyList = remedies.split(',').map((r) => r.trim()).filter((r) => r.length > 0);
+
+    // Validate: need at least 2 remedies to compare
+    if (remedyList.length < 2) {
+      throw new Error(
+        'At least 2 remedies are required for comparison. Please provide remedies as a comma-separated list.'
+      );
+    }
+
+    // Limit to max 6 remedies for table readability
+    const maxRemedies = 6;
+    if (remedyList.length > maxRemedies) {
+      logger.warn(`Limiting remedy comparison to ${maxRemedies} remedies (${remedyList.length} provided)`);
+      remedyList.splice(maxRemedies);
+    }
+
+    // Dynamically generate table header
+    const tableHeader = '| Aspect                | ' + remedyList.join(' | ') + ' |';
+    const tableSeparator = '|----------------------|' + remedyList.map(() => '----------|').join('');
+    const tableRows = [
+      '| Key Mental Symptoms  | ' + remedyList.map(() => '...').join('      | ') + '      |',
+      '| Key Physical Symptoms| ' + remedyList.map(() => '...').join('      | ') + '      |',
+      '| Better From          | ' + remedyList.map(() => '...').join('      | ') + '      |',
+      '| Worse From           | ' + remedyList.map(() => '...').join('      | ') + '      |',
+      '| Time Modality        | ' + remedyList.map(() => '...').join('      | ') + '      |',
+      '| Distinctive Features | ' + remedyList.map(() => '...').join('      | ') + '      |',
+    ].join('\n   ');
 
     return {
       messages: [
@@ -166,7 +192,6 @@ For each remedy, perform the following steps:
    Use get_remedy_info for each remedy to gather:
    - Full name and abbreviations
    - Alternative names
-   - Available sources (repertories and materia medicas)
 
 2. **Search Materia Medica**
    Use search_materia_medica to find key symptoms for each remedy.
@@ -179,14 +204,9 @@ For each remedy, perform the following steps:
 3. **Create Comparison Table**
    Present the comparison in a clear table format:
 
-   | Aspect                | ${remedyList[0] || 'Remedy 1'} | ${remedyList[1] || 'Remedy 2'} | ${remedyList[2] || 'Remedy 3'} |
-   |----------------------|----------|----------|----------|
-   | Key Mental Symptoms  | ...      | ...      | ...      |
-   | Key Physical Symptoms| ...      | ...      | ...      |
-   | Better From          | ...      | ...      | ...      |
-   | Worse From           | ...      | ...      | ...      |
-   | Time Modality        | ...      | ...      | ...      |
-   | Distinctive Features | ...      | ...      | ...      |
+   ${tableHeader}
+   ${tableSeparator}
+   ${tableRows}
 
 4. **Analysis**
    Provide:
