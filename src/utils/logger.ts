@@ -29,7 +29,8 @@ export class Logger {
   private formatMessage(level: LogLevel, message: string, ...args: unknown[]): string {
     const timestamp = new Date().toISOString();
     const prefix = `[${timestamp}] [${level.toUpperCase()}]`;
-    const formattedArgs = args.length > 0 ? ' ' + args.map((arg) => JSON.stringify(arg)).join(' ') : '';
+    const formattedArgs =
+      args.length > 0 ? ' ' + args.map((arg) => JSON.stringify(arg)).join(' ') : '';
     return `${prefix} ${message}${formattedArgs}`;
   }
 
@@ -53,15 +54,12 @@ export class Logger {
 
   error(message: string, error?: Error | unknown, ...args: unknown[]): void {
     if (this.shouldLog('error')) {
-      const errorInfo = error instanceof Error
-        ? { message: error.message, stack: error.stack }
-        : error;
+      const errorInfo =
+        error instanceof Error ? { message: error.message, stack: error.stack } : error;
       console.error(this.formatMessage('error', message, errorInfo, ...args));
     }
   }
 }
 
 // Global logger instance
-export const logger = new Logger(
-  (process.env.OOREP_MCP_LOG_LEVEL as LogLevel) || 'info'
-);
+export const logger = new Logger((process.env.OOREP_MCP_LOG_LEVEL as LogLevel) || 'info');

@@ -90,6 +90,22 @@ For full documentation, see the sections below or the [IMPLEMENTATION_PLAN.md](I
 - `remedy-comparison` - Compare multiple remedies
 - `repertorization-workflow` - Step-by-step case taking
 
+## Configuration
+
+The server is configured entirely through environment variables. The defaults work for the public <https://www.oorep.com> deployment, but you can override them as needed:
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `OOREP_MCP_BASE_URL` | `https://www.oorep.com` | Base URL for the upstream OOREP instance |
+| `OOREP_MCP_TIMEOUT_MS` | `30000` | HTTP timeout per request (milliseconds) |
+| `OOREP_MCP_CACHE_TTL_MS` | `300000` | In-memory cache TTL for search results (milliseconds) |
+| `OOREP_MCP_MAX_RESULTS` | `100` | Hard cap for search results returned to MCP clients |
+| `OOREP_MCP_LOG_LEVEL` | `info` | Log level (`debug`, `info`, `warn`, `error`) |
+| `OOREP_MCP_DEFAULT_REPERTORY` | `publicum` | Default repertory abbreviation when callers omit one |
+| `OOREP_MCP_DEFAULT_MATERIA_MEDICA` | `boericke` | Default materia medica abbreviation when omitted |
+
+> ℹ️ The MCP server now maintains an anonymous OOREP session automatically. It performs a lightweight bootstrap request to fetch the required cookies and reuses them for subsequent search calls, so no additional authentication setup is necessary for public data.
+
 ## Development
 
 ### Prerequisites

@@ -9,6 +9,15 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 
 let client;
 
+async function callToolOrThrow(params) {
+  const result = await client.callTool(params);
+  if (result.isError) {
+    const message = result.content?.[0]?.text || 'Tool returned an MCP error';
+    throw new Error(message);
+  }
+  return result;
+}
+
 const colors = {
   reset: '\x1b[0m',
   green: '\x1b[32m',
@@ -51,7 +60,7 @@ async function testGetRemedyInfo() {
   log('Testing: get_remedy_info with Aconite', colors.blue);
 
   try {
-    const result = await client.callTool({
+    const result = await callToolOrThrow({
       name: 'get_remedy_info',
       arguments: {
         remedy: 'Aconite',
@@ -73,7 +82,7 @@ async function testListRepertories() {
   log('\nTesting: list_available_repertories', colors.blue);
 
   try {
-    const result = await client.callTool({
+    const result = await callToolOrThrow({
       name: 'list_available_repertories',
       arguments: {},
     });
@@ -97,7 +106,7 @@ async function testListMateriaMedicas() {
   log('\nTesting: list_available_materia_medicas', colors.blue);
 
   try {
-    const result = await client.callTool({
+    const result = await callToolOrThrow({
       name: 'list_available_materia_medicas',
       arguments: {},
     });

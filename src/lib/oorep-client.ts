@@ -4,15 +4,109 @@
 
 import { OOREPConfig } from '../config.js';
 import { logger } from '../utils/logger.js';
-import {
-  NetworkError,
-  TimeoutError,
-  RateLimitError,
-} from '../utils/errors.js';
-import {
-  RepertoryMetadata,
-  MateriaMedicaMetadata,
-} from '../utils/schemas.js';
+import { NetworkError, TimeoutError, RateLimitError } from '../utils/errors.js';
+import { RepertoryMetadata, MateriaMedicaMetadata } from '../utils/schemas.js';
+
+const USER_AGENT = 'oorep-mcp/0.1.0';
+
+type RawWeightedRemedy = {
+  remedy: {
+    id: number;
+    nameAbbrev: string;
+    nameLong: string;
+    namealt?: string[] | null;
+  };
+  weight: number;
+};
+
+type RawRepertoryCase = {
+  rubric: {
+    abbrev: string;
+    id: number;
+    fullPath?: string;
+    textt?: string | null;
+    path?: string | null;
+  };
+  repertoryAbbrev: string;
+  rubricLabel?: string | null;
+  rubricWeight?: number | null;
+  weightedRemedies: RawWeightedRemedy[];
+};
+
+type RawRepertoryPayload = {
+  totalNumberOfRepertoryRubrics: number;
+  totalNumberOfResults: number;
+  totalNumberOfPages: number;
+  currPage: number;
+  results: RawRepertoryCase[];
+};
+
+type RawRepertoryResponse = [
+  RawRepertoryPayload,
+  Array<{ nameabbrev: string; count: number; cumulativeweight: number }>,
+];
+
+type RawMateriaMedicaResponse = {
+  results: Array<{
+    abbrev: string;
+    remedy_id: number;
+    remedy_fullname: string;
+    result_sections: Array<{
+      id: number;
+      depth?: number | null;
+      heading?: string | null;
+      content?: string | null;
+    }>;
+  }>;
+  numberOfMatchingSectionsPerChapter: Array<{
+    hits: number;
+    remedyId: number;
+  }>;
+};
+
+class CookieJar {
+  private readonly cookies = new Map<string, string>();
+
+  hasCookies(): boolean {
+    return this.cookies.size > 0;
+  }
+
+  clear(): void {
+    this.cookies.clear();
+  }
+
+  setFromSetCookieHeaders(headers: string[]): void {
+    headers.forEach((header) => {
+      const [cookiePair] = header.split(';');
+      const [name, ...valueParts] = cookiePair.split('=');
+      if (!name || valueParts.length === 0) {
+        return;
+      }
+      const value = valueParts.join('=').trim();
+      if (value) {
+        this.cookies.set(name.trim(), value);
+      }
+    });
+  }
+
+  getCookieHeader(): string | undefined {
+    if (!this.hasCookies()) {
+      return undefined;
+    }
+    return Array.from(this.cookies.entries())
+      .map(([key, value]) => `${key}=${value}`)
+      .join('; ');
+  }
+}
+
+function extractSetCookieHeaders(response: Response): string[] {
+  const headers = response.headers as Headers & { getSetCookie?: () => string[] };
+  if (typeof headers.getSetCookie === 'function') {
+    return headers.getSetCookie() ?? [];
+  }
+  const single = response.headers.get('set-cookie');
+  return single ? [single] : [];
+}
 
 /**
  * Fetch with timeout support
@@ -55,10 +149,76 @@ export class OOREPClient {
   private readonly baseUrl: string;
   private readonly timeoutMs: number;
   private readonly maxRetries = 3;
+  private readonly cookieJar = new CookieJar();
+  private sessionInitPromise: Promise<void> | null = null;
+  private readonly defaultRepertory: string;
+  private readonly defaultMateriaMedica: string;
 
   constructor(config: OOREPConfig) {
     this.baseUrl = config.baseUrl.replace(/\/$/, ''); // Remove trailing slash
     this.timeoutMs = config.timeoutMs;
+    this.defaultRepertory = config.defaultRepertory;
+    this.defaultMateriaMedica = config.defaultMateriaMedica;
+  }
+
+  private getDefaultHeaders(): Record<string, string> {
+    return {
+      Accept: 'application/json',
+      'User-Agent': USER_AGENT,
+      'X-Requested-With': 'XMLHttpRequest',
+    };
+  }
+
+  private async ensureSession(forceRefresh = false): Promise<void> {
+    if (forceRefresh) {
+      this.cookieJar.clear();
+    } else if (this.cookieJar.hasCookies()) {
+      return;
+    }
+
+    if (!this.sessionInitPromise) {
+      this.sessionInitPromise = this.bootstrapSession().finally(() => {
+        this.sessionInitPromise = null;
+      });
+    }
+
+    await this.sessionInitPromise;
+  }
+
+  private async bootstrapSession(): Promise<void> {
+    const url = new URL(`${this.baseUrl}/api/available_remedies`);
+    url.searchParams.set('limit', '1');
+
+    logger.debug('Initializing OOREP session', { url: url.toString() });
+
+    const response = await fetchWithTimeout(
+      url.toString(),
+      {
+        method: 'GET',
+        headers: this.getDefaultHeaders(),
+      },
+      this.timeoutMs
+    );
+
+    this.storeCookies(response);
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown session init error');
+      throw new NetworkError(
+        `Failed to initialize OOREP session (HTTP ${response.status})`,
+        response.status,
+        new Error(errorText)
+      );
+    }
+
+    logger.debug('OOREP session initialized');
+  }
+
+  private storeCookies(response: Response): void {
+    const cookies = extractSetCookieHeaders(response);
+    if (cookies.length > 0) {
+      this.cookieJar.setFromSetCookieHeaders(cookies);
+    }
   }
 
   /**
@@ -67,11 +227,12 @@ export class OOREPClient {
   private async request<T>(
     endpoint: string,
     params: Record<string, string | number | boolean> = {},
-    retryCount = 0
-  ): Promise<T> {
+    retryCount = 0,
+    sessionRetried = false
+  ): Promise<T | null> {
+    await this.ensureSession();
     const url = new URL(`${this.baseUrl}${endpoint}`);
 
-    // Add query parameters
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         url.searchParams.append(key, String(value));
@@ -80,29 +241,42 @@ export class OOREPClient {
 
     logger.debug(`Fetching ${url.toString()}`);
 
+    const headers: Record<string, string> = {
+      ...this.getDefaultHeaders(),
+    };
+    const cookieHeader = this.cookieJar.getCookieHeader();
+    if (cookieHeader) {
+      headers.Cookie = cookieHeader;
+    }
+
     try {
       const response = await fetchWithTimeout(
         url.toString(),
         {
           method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'User-Agent': 'oorep-mcp/0.1.0',
-          },
+          headers,
         },
         this.timeoutMs
       );
 
-      // Handle rate limiting
-      if (response.status === 429) {
-        const retryAfter = parseInt(response.headers.get('Retry-After') || '60', 10);
-        throw new RateLimitError(
-          'Rate limit exceeded. Please try again later.',
-          retryAfter
-        );
+      this.storeCookies(response);
+
+      if (response.status === 401 && !sessionRetried) {
+        logger.warn('OOREP session unauthorized, attempting refresh');
+        await this.ensureSession(true);
+        return this.request<T>(endpoint, params, retryCount, true);
       }
 
-      // Handle other HTTP errors
+      if (response.status === 429) {
+        const retryAfter = parseInt(response.headers.get('Retry-After') || '60', 10);
+        throw new RateLimitError('Rate limit exceeded. Please try again later.', retryAfter);
+      }
+
+      if (response.status === 204) {
+        logger.info('OOREP API returned no content', { endpoint });
+        return null;
+      }
+
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unknown error');
         throw new NetworkError(
@@ -112,32 +286,41 @@ export class OOREPClient {
         );
       }
 
-      // Parse JSON response
-      const data = await response.json();
-      return data as T;
+      const body = await response.text();
+      if (!body) {
+        return null;
+      }
+
+      try {
+        return JSON.parse(body) as T;
+      } catch (parseError) {
+        throw new NetworkError(
+          'Failed to parse JSON response from OOREP API',
+          undefined,
+          parseError instanceof Error ? parseError : new Error(String(parseError))
+        );
+      }
     } catch (error) {
-      // Retry on network errors and timeouts
       if (
         retryCount < this.maxRetries &&
         (error instanceof NetworkError || error instanceof TimeoutError)
       ) {
-        const backoffMs = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s
-        logger.warn(`Request failed, retrying in ${backoffMs}ms (attempt ${retryCount + 1}/${this.maxRetries})`);
+        const backoffMs = Math.pow(2, retryCount) * 1000;
+        logger.warn(
+          `Request failed, retrying in ${backoffMs}ms (attempt ${retryCount + 1}/${this.maxRetries})`
+        );
         await sleep(backoffMs);
-        return this.request<T>(endpoint, params, retryCount + 1);
+        return this.request<T>(endpoint, params, retryCount + 1, sessionRetried);
       }
 
-      // Don't retry on rate limit errors
       if (error instanceof RateLimitError) {
         throw error;
       }
 
-      // Re-throw or wrap error
       if (error instanceof NetworkError || error instanceof TimeoutError) {
         throw error;
       }
 
-      // Log the actual error for debugging
       logger.error('Unexpected error in API request', error);
 
       throw new NetworkError(
@@ -156,36 +339,34 @@ export class OOREPClient {
     symptom: string;
     repertory?: string;
     minWeight?: number;
-    maxResults?: number;
-  }): Promise<{
-    totalNumberOfResults: number;
-    results: Array<{
-      rubric: string;
-      repertory: string;
-      remedies: Array<{
-        name: string;
-        abbreviation: string;
-        weight: number;
-      }>;
-    }>;
-  }> {
-    logger.info('Looking up repertory', { symptom: params.symptom });
+    remedy?: string;
+    includeRemedyStats?: boolean;
+  }): Promise<RawRepertoryPayload | null> {
+    const repertory = (params.repertory || this.defaultRepertory).trim();
+    const minWeight = params.minWeight && params.minWeight > 0 ? params.minWeight : 1;
+
+    logger.info('Looking up repertory', {
+      symptom: params.symptom,
+      repertory,
+      minWeight,
+    });
 
     const apiParams: Record<string, string | number> = {
+      repertory,
       symptom: params.symptom,
+      page: 0,
+      remedyString: params.remedy?.trim() || '',
+      minWeight,
+      getRemedies: params.includeRemedyStats ? 1 : 0,
     };
 
-    if (params.repertory) {
-      apiParams.repertory = params.repertory;
-    }
-    if (params.minWeight) {
-      apiParams.minWeight = params.minWeight;
-    }
-    if (params.maxResults) {
-      apiParams.limit = params.maxResults;
+    const response = await this.request<RawRepertoryResponse>('/api/lookup_rep', apiParams);
+    if (!response) {
+      return null;
     }
 
-    return this.request('/api/lookup_rep', apiParams);
+    const [payload] = response;
+    return payload || null;
   }
 
   /**
@@ -196,37 +377,22 @@ export class OOREPClient {
     symptom: string;
     materiamedica?: string;
     remedy?: string;
-    maxResults?: number;
-  }): Promise<{
-    totalNumberOfResults: number;
-    results: Array<{
-      remedy: string;
-      remedyId: number;
-      materiamedica: string;
-      sections: Array<{
-        heading?: string;
-        content: string;
-        depth: number;
-      }>;
-    }>;
-  }> {
-    logger.info('Looking up materia medica', { symptom: params.symptom });
+  }): Promise<RawMateriaMedicaResponse | null> {
+    const materiamedica = (params.materiamedica || this.defaultMateriaMedica).trim();
+
+    logger.info('Looking up materia medica', {
+      symptom: params.symptom,
+      materiamedica,
+    });
 
     const apiParams: Record<string, string | number> = {
+      mmAbbrev: materiamedica,
       symptom: params.symptom,
+      page: 0,
+      remedyString: params.remedy?.trim() || '',
     };
 
-    if (params.materiamedica) {
-      apiParams.mm = params.materiamedica;
-    }
-    if (params.remedy) {
-      apiParams.remedy = params.remedy;
-    }
-    if (params.maxResults) {
-      apiParams.limit = params.maxResults;
-    }
-
-    return this.request('/api/lookup_mm', apiParams);
+    return this.request<RawMateriaMedicaResponse>('/api/lookup_mm', apiParams);
   }
 
   /**
@@ -238,17 +404,18 @@ export class OOREPClient {
       id: number;
       nameAbbrev: string;
       nameLong: string;
-      namealt?: string[]; // Note: lowercase 'alt' in actual API
+      namealt?: string[];
     }>
   > {
     logger.info('Fetching available remedies');
-    // API returns array directly, not wrapped in object
-    const result = await this.request<Array<{
-      id: number;
-      nameAbbrev: string;
-      nameLong: string;
-      namealt?: string[];
-    }>>('/api/available_remedies');
+    const result = await this.request<
+      Array<{
+        id: number;
+        nameAbbrev: string;
+        nameLong: string;
+        namealt?: string[];
+      }>
+    >('/api/available_remedies');
     return result || [];
   }
 
@@ -258,24 +425,25 @@ export class OOREPClient {
    */
   async getAvailableRepertories(): Promise<Array<RepertoryMetadata>> {
     logger.info('Fetching available repertories');
-    // API returns array of objects with 'info' field
-    const result = await this.request<Array<{
-      info: {
-        abbrev: string;
-        title: string;
-        authorLastName?: string;
-        authorFirstName?: string;
-        language?: string;
-      };
-    }>>('/api/available_rems_and_reps');
+    const result = await this.request<
+      Array<{
+        info: {
+          abbrev: string;
+          title: string;
+          authorLastName?: string;
+          authorFirstName?: string;
+          language?: string;
+        };
+      }>
+    >('/api/available_rems_and_reps');
 
-    // Transform the response to match our interface
     return (result || []).map((item) => ({
       abbreviation: item.info.abbrev,
       title: item.info.title,
-      author: item.info.authorLastName && item.info.authorFirstName
-        ? `${item.info.authorFirstName} ${item.info.authorLastName}`
-        : item.info.authorLastName || item.info.authorFirstName,
+      author:
+        item.info.authorLastName && item.info.authorFirstName
+          ? `${item.info.authorFirstName} ${item.info.authorLastName}`
+          : item.info.authorLastName || item.info.authorFirstName,
       language: item.info.language,
     }));
   }
@@ -286,26 +454,27 @@ export class OOREPClient {
    */
   async getAvailableMateriaMedicas(): Promise<Array<MateriaMedicaMetadata>> {
     logger.info('Fetching available materia medicas');
-    // API returns array of objects with 'mminfo' field
-    const result = await this.request<Array<{
-      mminfo: {
-        id: number;
-        abbrev: string;
-        displaytitle?: string;
-        fulltitle?: string;
-        authorlastname?: string;
-        authorfirstname?: string;
-        lang?: string;
-      };
-    }>>('/api/available_rems_and_mms');
+    const result = await this.request<
+      Array<{
+        mminfo: {
+          id: number;
+          abbrev: string;
+          displaytitle?: string;
+          fulltitle?: string;
+          authorlastname?: string;
+          authorfirstname?: string;
+          lang?: string;
+        };
+      }>
+    >('/api/available_rems_and_mms');
 
-    // Transform the response to match our interface
     return (result || []).map((item) => ({
       abbreviation: item.mminfo.abbrev,
       title: item.mminfo.displaytitle || item.mminfo.fulltitle || item.mminfo.abbrev,
-      author: item.mminfo.authorlastname && item.mminfo.authorfirstname
-        ? `${item.mminfo.authorfirstname} ${item.mminfo.authorlastname}`
-        : item.mminfo.authorlastname || item.mminfo.authorfirstname,
+      author:
+        item.mminfo.authorlastname && item.mminfo.authorfirstname
+          ? `${item.mminfo.authorfirstname} ${item.mminfo.authorlastname}`
+          : item.mminfo.authorlastname || item.mminfo.authorfirstname,
       language: item.mminfo.lang,
     }));
   }

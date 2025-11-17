@@ -6,7 +6,10 @@
  * Base error class for all OOREP MCP errors
  */
 export class OOREPError extends Error {
-  constructor(message: string, public readonly cause?: Error) {
+  constructor(
+    message: string,
+    public readonly cause?: Error
+  ) {
     super(message);
     this.name = 'OOREPError';
     Error.captureStackTrace(this, this.constructor);
@@ -28,7 +31,11 @@ export class ValidationError extends OOREPError {
  * Error for network/HTTP related issues
  */
 export class NetworkError extends OOREPError {
-  constructor(message: string, public readonly statusCode?: number, cause?: Error) {
+  constructor(
+    message: string,
+    public readonly statusCode?: number,
+    cause?: Error
+  ) {
     super(message, cause);
     this.name = 'NetworkError';
   }
@@ -48,7 +55,11 @@ export class TimeoutError extends OOREPError {
  * Error for rate limiting
  */
 export class RateLimitError extends OOREPError {
-  constructor(message: string, public readonly retryAfter?: number, cause?: Error) {
+  constructor(
+    message: string,
+    public readonly retryAfter?: number,
+    cause?: Error
+  ) {
     super(message, cause);
     this.name = 'RateLimitError';
   }
@@ -58,7 +69,11 @@ export class RateLimitError extends OOREPError {
  * Error for OOREP API specific issues
  */
 export class OOREPAPIError extends OOREPError {
-  constructor(message: string, public readonly apiMessage?: string, cause?: Error) {
+  constructor(
+    message: string,
+    public readonly apiMessage?: string,
+    cause?: Error
+  ) {
     super(message, cause);
     this.name = 'OOREPAPIError';
   }

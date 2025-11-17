@@ -10,62 +10,96 @@ import type {
   MateriaMedicaResult,
 } from '../utils/schemas.js';
 
+type RawRepertoryResult = {
+  totalNumberOfResults: number;
+  results: Array<{
+    rubric: {
+      fullPath?: string;
+      textt?: string | null;
+    };
+    repertoryAbbrev: string;
+    weightedRemedies: Array<{
+      remedy: {
+        nameAbbrev: string;
+        nameLong: string;
+      };
+      weight: number;
+    }>;
+  }>;
+};
+
+type RawMateriaMedicaResult = {
+  results: Array<{
+    abbrev: string;
+    remedy_id: number;
+    remedy_fullname: string;
+    result_sections: Array<{
+      heading?: string | null;
+      content?: string | null;
+      depth?: number | null;
+    }>;
+  }>;
+  numberOfMatchingSectionsPerChapter: Array<{
+    hits: number;
+    remedyId: number;
+  }>;
+};
+
 /**
  * Format repertory search results from OOREP API response
  */
 export function formatRepertoryResults(
-  apiResponse: {
-    totalNumberOfResults: number;
-    results: Array<{
-      rubric: string;
-      repertory: string;
-      remedies: Array<{
-        name: string;
-        abbreviation: string;
-        weight: number;
-      }>;
-    }>;
-  },
-  includeRemedyStats = true
+  apiResponse: RawRepertoryResult | null,
+  options: { includeRemedyStats?: boolean; maxResults?: number } = {}
 ): RepertorySearchResult {
-  const rubrics: Rubric[] = apiResponse.results.map((result) => ({
-    rubric: result.rubric,
-    repertory: result.repertory,
-    remedies: result.remedies.map((remedy) => ({
-      name: remedy.name,
-      abbreviation: remedy.abbreviation,
+  if (!apiResponse) {
+    return {
+      totalResults: 0,
+      rubrics: [],
+      remedyStats: options.includeRemedyStats === false ? undefined : [],
+    };
+  }
+
+  const limit =
+    options.maxResults && options.maxResults > 0 ? options.maxResults : apiResponse.results.length;
+
+  const rubrics: Rubric[] = apiResponse.results.slice(0, limit).map((result) => ({
+    rubric: result.rubric.fullPath || result.rubric.textt || 'Untitled rubric',
+    repertory: result.repertoryAbbrev,
+    remedies: result.weightedRemedies.map((remedy) => ({
+      name: remedy.remedy.nameLong || remedy.remedy.nameAbbrev,
+      abbreviation: remedy.remedy.nameAbbrev,
       weight: remedy.weight,
     })),
   }));
 
-  // Calculate remedy statistics if requested
   let remedyStats = undefined;
-  if (includeRemedyStats) {
-    const stats = new Map<
-      string,
-      { count: number; cumulativeWeight: number }
-    >();
+  if (options.includeRemedyStats !== false) {
+    const stats = new Map<string, { count: number; cumulativeWeight: number }>();
 
     rubrics.forEach((rubric) => {
       rubric.remedies.forEach((remedy) => {
-        const existing = stats.get(remedy.name) || {
+        const key = `${remedy.name}|${remedy.abbreviation}`;
+        const existing = stats.get(key) || {
           count: 0,
           cumulativeWeight: 0,
         };
-        stats.set(remedy.name, {
+        stats.set(key, {
           count: existing.count + 1,
           cumulativeWeight: existing.cumulativeWeight + remedy.weight,
         });
       });
     });
 
-    // Sort by cumulative weight (descending) then by count
     remedyStats = Array.from(stats.entries())
-      .map(([name, data]) => ({
-        name,
-        count: data.count,
-        cumulativeWeight: data.cumulativeWeight,
-      }))
+      .map(([key, data]) => {
+        const [name] = key.split('|');
+        return {
+          name,
+          count: data.count,
+          cumulativeWeight: data.cumulativeWeight,
+        };
+      })
       .sort((a, b) => {
         if (b.cumulativeWeight !== a.cumulativeWeight) {
           return b.cumulativeWeight - a.cumulativeWeight;
@@ -84,33 +118,37 @@ export function formatRepertoryResults(
 /**
  * Format materia medica search results from OOREP API response
  */
-export function formatMateriaMedicaResults(apiResponse: {
-  totalNumberOfResults: number;
-  results: Array<{
-    remedy: string;
-    remedyId: number;
-    materiamedica: string;
-    sections: Array<{
-      heading?: string;
-      content: string;
-      depth: number;
-    }>;
-  }>;
-}): MateriaMedicaSearchResult {
-  const results: MateriaMedicaResult[] = apiResponse.results.map((result) => ({
-    remedy: result.remedy,
-    remedyId: result.remedyId,
-    materiamedica: result.materiamedica,
-    sections: result.sections.map((section) => ({
-      heading: section.heading,
-      content: section.content,
-      depth: section.depth,
+export function formatMateriaMedicaResults(
+  apiResponse: RawMateriaMedicaResult | null,
+  maxResults?: number
+): MateriaMedicaSearchResult {
+  if (!apiResponse) {
+    return {
+      totalResults: 0,
+      results: [],
+    };
+  }
+
+  const limit = maxResults && maxResults > 0 ? maxResults : apiResponse.results.length;
+  const hitsMap = new Map<number, number>();
+  apiResponse.numberOfMatchingSectionsPerChapter.forEach((entry) => {
+    hitsMap.set(entry.remedyId, entry.hits);
+  });
+
+  const results: MateriaMedicaResult[] = apiResponse.results.slice(0, limit).map((result) => ({
+    remedy: result.remedy_fullname,
+    remedyId: result.remedy_id,
+    materiamedica: result.abbrev,
+    sections: result.result_sections.map((section) => ({
+      heading: section.heading ?? undefined,
+      content: section.content ?? '',
+      depth: section.depth ?? 0,
     })),
-    hitCount: result.sections.length,
+    hitCount: hitsMap.get(result.remedy_id) ?? result.result_sections.length,
   }));
 
   return {
-    totalResults: apiResponse.totalNumberOfResults,
+    totalResults: apiResponse.numberOfMatchingSectionsPerChapter.length,
     results,
   };
 }

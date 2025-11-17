@@ -15,14 +15,13 @@ export const SearchRepertoryArgsSchema = z.object({
     .max(200, 'Symptom must not exceed 200 characters')
     .regex(/^[a-zA-Z0-9\s\-*"]+$/, 'Symptom contains invalid characters')
     .transform((s) => s.trim()),
-  repertory: z.string().optional().describe('Repertory abbreviation (e.g., "kent")'),
-  minWeight: z
-    .number()
-    .int()
-    .min(1)
-    .max(4)
+  repertory: z
+    .string()
     .optional()
-    .describe('Minimum remedy weight (1-4)'),
+    .describe(
+      'Repertory abbreviation (e.g., "kent"). Defaults to OOREP_MCP_DEFAULT_REPERTORY when omitted.'
+    ),
+  minWeight: z.number().int().min(1).max(4).optional().describe('Minimum remedy weight (1-4)'),
   maxResults: z
     .number()
     .int()
@@ -44,7 +43,12 @@ export const SearchMateriaMedicaArgsSchema = z.object({
     .min(3, 'Symptom must be at least 3 characters')
     .max(200, 'Symptom must not exceed 200 characters')
     .transform((s) => s.trim()),
-  materiamedica: z.string().optional().describe('Materia medica abbreviation (e.g., "hering")'),
+  materiamedica: z
+    .string()
+    .optional()
+    .describe(
+      'Materia medica abbreviation (e.g., "boericke"). Defaults to OOREP_MCP_DEFAULT_MATERIA_MEDICA when omitted.'
+    ),
   remedy: z.string().optional().describe('Filter by specific remedy name'),
   maxResults: z
     .number()
@@ -63,11 +67,7 @@ export const GetRemedyInfoArgsSchema = z.object({
     .optional()
     .default(false)
     .describe('Include materia medica sections'),
-  includeRepertory: z
-    .boolean()
-    .optional()
-    .default(false)
-    .describe('Include repertory entries'),
+  includeRepertory: z.boolean().optional().default(false).describe('Include repertory entries'),
 });
 
 export const ListRepertoriesArgsSchema = z.object({

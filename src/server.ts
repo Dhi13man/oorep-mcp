@@ -58,10 +58,7 @@ export async function createServer() {
     logger.debug('Handling call_tool request', { tool: request.params.name });
 
     try {
-      const result = await toolRegistry.executeTool(
-        request.params.name,
-        request.params.arguments
-      );
+      const result = await toolRegistry.executeTool(request.params.name, request.params.arguments);
 
       return {
         content: [
@@ -126,10 +123,7 @@ export async function createServer() {
     logger.debug('Handling get_prompt request', { prompt: request.params.name });
 
     try {
-      const prompt = await promptRegistry.getPrompt(
-        request.params.name,
-        request.params.arguments
-      );
+      const prompt = await promptRegistry.getPrompt(request.params.name, request.params.arguments);
       return prompt;
     } catch (error) {
       logger.error('Prompt get failed', error);

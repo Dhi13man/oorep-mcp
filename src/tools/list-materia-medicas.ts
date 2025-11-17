@@ -62,9 +62,7 @@ export class ListMateriaMedicasTool {
       // Filter by language if specified
       if (validatedArgs.language) {
         const lang = validatedArgs.language.toLowerCase();
-        materiaMedicas = materiaMedicas.filter(
-          (mm) => mm.language?.toLowerCase() === lang
-        );
+        materiaMedicas = materiaMedicas.filter((mm) => mm.language?.toLowerCase() === lang);
       }
 
       // Cache the result

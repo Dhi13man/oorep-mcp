@@ -14,6 +14,15 @@ let testsFailed = 0;
 let client;
 let serverProcess;
 
+async function callToolOrThrow(params) {
+  const result = await client.callTool(params);
+  if (result.isError) {
+    const message = result.content?.[0]?.text || 'Tool returned an MCP error';
+    throw new Error(message);
+  }
+  return result;
+}
+
 // Color codes for output
 const colors = {
   reset: '\x1b[0m',
@@ -135,7 +144,7 @@ async function testSearchRepertory() {
   // Test 1: Basic search
   try {
     logInfo('Test 1: Basic symptom search (headache)');
-    const result = await client.callTool({
+    const result = await callToolOrThrow({
       name: 'search_repertory',
       arguments: {
         symptom: 'headache',
@@ -167,7 +176,7 @@ async function testSearchRepertory() {
   // Test 2: Search with specific repertory
   try {
     logInfo('Test 2: Search with specific repertory (kent)');
-    const result = await client.callTool({
+    const result = await callToolOrThrow({
       name: 'search_repertory',
       arguments: {
         symptom: 'fever',
@@ -185,7 +194,7 @@ async function testSearchRepertory() {
   // Test 3: Validation - symptom too short
   try {
     logInfo('Test 3: Validation test (symptom too short)');
-    const result = await client.callTool({
+    const result = await callToolOrThrow({
       name: 'search_repertory',
       arguments: {
         symptom: 'ab', // Too short
@@ -203,7 +212,7 @@ async function testSearchMateriaMedica() {
 
   try {
     logInfo('Test: Search materia medica (anxiety)');
-    const result = await client.callTool({
+    const result = await callToolOrThrow({
       name: 'search_materia_medica',
       arguments: {
         symptom: 'anxiety',
@@ -232,7 +241,7 @@ async function testGetRemedyInfo() {
 
   try {
     logInfo('Test: Get info for Aconite');
-    const result = await client.callTool({
+    const result = await callToolOrThrow({
       name: 'get_remedy_info',
       arguments: {
         remedy: 'Aconite',
@@ -257,7 +266,7 @@ async function testListRepertories() {
 
   try {
     logInfo('Test: List all repertories');
-    const result = await client.callTool({
+    const result = await callToolOrThrow({
       name: 'list_available_repertories',
       arguments: {},
     });
@@ -281,7 +290,7 @@ async function testListMateriaMedicas() {
 
   try {
     logInfo('Test: List all materia medicas');
-    const result = await client.callTool({
+    const result = await callToolOrThrow({
       name: 'list_available_materia_medicas',
       arguments: {},
     });
@@ -491,7 +500,7 @@ async function testErrorHandling() {
   // Test 1: Invalid tool name
   try {
     logInfo('Test 1: Invalid tool name');
-    await client.callTool({
+    await callToolOrThrow({
       name: 'nonexistent_tool',
       arguments: {},
     });

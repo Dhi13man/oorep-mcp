@@ -10,6 +10,8 @@ export interface OOREPConfig {
   cacheTtlMs: number;
   maxResults: number;
   logLevel: string;
+  defaultRepertory: string;
+  defaultMateriaMedica: string;
 }
 
 /**
@@ -22,6 +24,8 @@ export function getConfig(): OOREPConfig {
     cacheTtlMs: parseInt(process.env.OOREP_MCP_CACHE_TTL_MS || '300000', 10),
     maxResults: parseInt(process.env.OOREP_MCP_MAX_RESULTS || '100', 10),
     logLevel: process.env.OOREP_MCP_LOG_LEVEL || 'info',
+    defaultRepertory: process.env.OOREP_MCP_DEFAULT_REPERTORY || 'publicum',
+    defaultMateriaMedica: process.env.OOREP_MCP_DEFAULT_MATERIA_MEDICA || 'boericke',
   };
 
   // Parse CLI arguments (override env vars)
@@ -71,12 +75,20 @@ export function getConfig(): OOREPConfig {
   if (config.cacheTtlMs < 0 || config.cacheTtlMs > 3600000) {
     throw new Error('OOREP_MCP_CACHE_TTL_MS must be between 0 and 3600000');
   }
+  if (!config.defaultRepertory.trim()) {
+    throw new Error('OOREP_MCP_DEFAULT_REPERTORY cannot be empty');
+  }
+  if (!config.defaultMateriaMedica.trim()) {
+    throw new Error('OOREP_MCP_DEFAULT_MATERIA_MEDICA cannot be empty');
+  }
   logger.info('Configuration loaded', {
     baseUrl: config.baseUrl,
     timeoutMs: config.timeoutMs,
     cacheTtlMs: config.cacheTtlMs,
     maxResults: config.maxResults,
     logLevel: config.logLevel,
+    defaultRepertory: config.defaultRepertory,
+    defaultMateriaMedica: config.defaultMateriaMedica,
   });
 
   return config;

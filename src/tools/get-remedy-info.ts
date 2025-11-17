@@ -12,6 +12,28 @@ import { sanitizeError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import type { OOREPConfig } from '../config.js';
 
+function matchesPartially(
+  remedy: { nameAbbrev: string; nameLong: string; namealt?: string[] },
+  normalizedQuery: string
+): boolean {
+  const normalize = (value: string) => value.replace(/[^a-z0-9]/g, '').toLowerCase();
+  const abbrev = normalize(remedy.nameAbbrev);
+  const longName = normalize(remedy.nameLong);
+  const altNames = (remedy.namealt || []).map((alt) => normalize(alt));
+
+  const queryContainsName = (name: string) => normalizedQuery.includes(name);
+  const nameContainsQuery = (name: string) => name.includes(normalizedQuery);
+
+  return (
+    nameContainsQuery(longName) ||
+    nameContainsQuery(abbrev) ||
+    altNames.some((alt) => nameContainsQuery(alt)) ||
+    queryContainsName(longName) ||
+    queryContainsName(abbrev) ||
+    altNames.some((alt) => queryContainsName(alt))
+  );
+}
+
 export class GetRemedyInfoTool {
   private client: OOREPClient;
   private cache: Cache<RemedyInfo>;
@@ -51,17 +73,21 @@ export class GetRemedyInfoTool {
         // Get all available remedies to find the matching one
         const remedies = await this.client.getAvailableRemedies();
 
-        // Find remedy (case-insensitive, match abbreviation or long name)
+        const query = validatedArgs.remedy.trim().toLowerCase();
+        const normalizedQuery = query.replace(/[^a-z0-9]/g, '');
+        const allowPartialMatch = normalizedQuery.length >= 3;
+
         const remedy = remedies.find(
           (r) =>
-            r.nameAbbrev.toLowerCase() === validatedArgs.remedy.toLowerCase() ||
-            r.nameLong.toLowerCase() === validatedArgs.remedy.toLowerCase() ||
-            r.namealt?.some((alt) => alt.toLowerCase() === validatedArgs.remedy.toLowerCase())
+            r.nameAbbrev.toLowerCase() === query ||
+            r.nameLong.toLowerCase() === query ||
+            r.namealt?.some((alt) => alt.toLowerCase() === query) ||
+            (allowPartialMatch && matchesPartially(r, normalizedQuery))
         );
 
         if (!remedy) {
           throw new Error(
-            `Remedy "${validatedArgs.remedy}" not found. Please check the spelling or use list_available_repertories to see available remedies.`
+            `Remedy "${validatedArgs.remedy}" not found. Check the spelling or read the oorep://remedies/list resource to see available remedies.`
           );
         }
 

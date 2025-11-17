@@ -35,7 +35,8 @@ export class ResourceRegistry {
       {
         uri: 'oorep://remedies/list',
         name: 'Available Remedies List',
-        description: 'Complete list of all available homeopathic remedies with names and abbreviations',
+        description:
+          'Complete list of all available homeopathic remedies with names and abbreviations',
         mimeType: 'application/json',
       },
       {
@@ -47,19 +48,23 @@ export class ResourceRegistry {
       {
         uri: 'oorep://materia-medicas/list',
         name: 'Available Materia Medicas List',
-        description: 'List of all accessible materia medicas with metadata (title, author, language)',
+        description:
+          'List of all accessible materia medicas with metadata (title, author, language)',
         mimeType: 'application/json',
       },
       {
         uri: 'oorep://help/search-syntax',
         name: 'OOREP Search Syntax Help',
-        description: 'Guide to OOREP search syntax including wildcards, exclusions, and exact phrases',
+        description:
+          'Guide to OOREP search syntax including wildcards, exclusions, and exact phrases',
         mimeType: 'text/markdown',
       },
     ];
   }
 
-  async getResource(uri: string): Promise<{ contents: Array<{ uri: string; mimeType?: string; text: string }> }> {
+  async getResource(
+    uri: string
+  ): Promise<{ contents: Array<{ uri: string; mimeType?: string; text: string }> }> {
     try {
       logger.info('Getting resource', { uri });
 
@@ -85,18 +90,22 @@ export class ResourceRegistry {
     }
   }
 
-  private async getRemediesList(): Promise<{ contents: Array<{ uri: string; mimeType?: string; text: string }> }> {
+  private async getRemediesList(): Promise<{
+    contents: Array<{ uri: string; mimeType?: string; text: string }>;
+  }> {
     const cacheKey = 'remedies-list';
     const cached = this.remediesCache.get(cacheKey);
 
     if (cached) {
       logger.info('Returning cached remedies list');
       return {
-        contents: [{
-          uri: 'oorep://remedies/list',
-          mimeType: 'application/json',
-          text: JSON.stringify(cached, null, 2),
-        }],
+        contents: [
+          {
+            uri: 'oorep://remedies/list',
+            mimeType: 'application/json',
+            text: JSON.stringify(cached, null, 2),
+          },
+        ],
       };
     }
 
@@ -104,26 +113,32 @@ export class ResourceRegistry {
     this.remediesCache.set(cacheKey, remedies);
 
     return {
-      contents: [{
-        uri: 'oorep://remedies/list',
-        mimeType: 'application/json',
-        text: JSON.stringify(remedies, null, 2),
-      }],
+      contents: [
+        {
+          uri: 'oorep://remedies/list',
+          mimeType: 'application/json',
+          text: JSON.stringify(remedies, null, 2),
+        },
+      ],
     };
   }
 
-  private async getRepertoriesList(): Promise<{ contents: Array<{ uri: string; mimeType?: string; text: string }> }> {
+  private async getRepertoriesList(): Promise<{
+    contents: Array<{ uri: string; mimeType?: string; text: string }>;
+  }> {
     const cacheKey = 'repertories-list';
     const cached = this.repertoriesCache.get(cacheKey);
 
     if (cached) {
       logger.info('Returning cached repertories list');
       return {
-        contents: [{
-          uri: 'oorep://repertories/list',
-          mimeType: 'application/json',
-          text: JSON.stringify(cached, null, 2),
-        }],
+        contents: [
+          {
+            uri: 'oorep://repertories/list',
+            mimeType: 'application/json',
+            text: JSON.stringify(cached, null, 2),
+          },
+        ],
       };
     }
 
@@ -131,26 +146,32 @@ export class ResourceRegistry {
     this.repertoriesCache.set(cacheKey, repertories);
 
     return {
-      contents: [{
-        uri: 'oorep://repertories/list',
-        mimeType: 'application/json',
-        text: JSON.stringify(repertories, null, 2),
-      }],
+      contents: [
+        {
+          uri: 'oorep://repertories/list',
+          mimeType: 'application/json',
+          text: JSON.stringify(repertories, null, 2),
+        },
+      ],
     };
   }
 
-  private async getMateriaMedicasList(): Promise<{ contents: Array<{ uri: string; mimeType?: string; text: string }> }> {
+  private async getMateriaMedicasList(): Promise<{
+    contents: Array<{ uri: string; mimeType?: string; text: string }>;
+  }> {
     const cacheKey = 'materia-medicas-list';
     const cached = this.materiaMedicasCache.get(cacheKey);
 
     if (cached) {
       logger.info('Returning cached materia medicas list');
       return {
-        contents: [{
-          uri: 'oorep://materia-medicas/list',
-          mimeType: 'application/json',
-          text: JSON.stringify(cached, null, 2),
-        }],
+        contents: [
+          {
+            uri: 'oorep://materia-medicas/list',
+            mimeType: 'application/json',
+            text: JSON.stringify(cached, null, 2),
+          },
+        ],
       };
     }
 
@@ -158,15 +179,19 @@ export class ResourceRegistry {
     this.materiaMedicasCache.set(cacheKey, materiaMedicas);
 
     return {
-      contents: [{
-        uri: 'oorep://materia-medicas/list',
-        mimeType: 'application/json',
-        text: JSON.stringify(materiaMedicas, null, 2),
-      }],
+      contents: [
+        {
+          uri: 'oorep://materia-medicas/list',
+          mimeType: 'application/json',
+          text: JSON.stringify(materiaMedicas, null, 2),
+        },
+      ],
     };
   }
 
-  private getSearchSyntaxHelp(): { contents: Array<{ uri: string; mimeType?: string; text: string }> } {
+  private getSearchSyntaxHelp(): {
+    contents: Array<{ uri: string; mimeType?: string; text: string }>;
+  } {
     const helpText = `# OOREP Search Syntax Guide
 
 ## Basic Search
@@ -230,11 +255,13 @@ This is a search tool only. Always consult with a qualified homeopathic practiti
 `;
 
     return {
-      contents: [{
-        uri: 'oorep://help/search-syntax',
-        mimeType: 'text/markdown',
-        text: helpText,
-      }],
+      contents: [
+        {
+          uri: 'oorep://help/search-syntax',
+          mimeType: 'text/markdown',
+          text: helpText,
+        },
+      ],
     };
   }
 }

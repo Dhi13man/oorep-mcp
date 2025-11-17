@@ -65,9 +65,7 @@ export class ListRepertoriesTool {
       // Filter by language if specified
       if (validatedArgs.language) {
         const lang = validatedArgs.language.toLowerCase();
-        repertories = repertories.filter(
-          (rep) => rep.language?.toLowerCase() === lang
-        );
+        repertories = repertories.filter((rep) => rep.language?.toLowerCase() === lang);
       }
 
       // Cache the result

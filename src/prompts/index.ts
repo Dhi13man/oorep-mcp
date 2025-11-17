@@ -46,7 +46,8 @@ export class PromptRegistry {
         arguments: [
           {
             name: 'remedies',
-            description: 'Comma-separated list of remedy names to compare (e.g., "Aconite,Belladonna,Gelsemium")',
+            description:
+              'Comma-separated list of remedy names to compare (e.g., "Aconite,Belladonna,Gelsemium")',
             required: true,
           },
         ],

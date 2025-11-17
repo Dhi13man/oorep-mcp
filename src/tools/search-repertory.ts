@@ -16,11 +16,13 @@ export class SearchRepertoryTool {
   private client: OOREPClient;
   private cache: Cache<RepertorySearchResult>;
   private deduplicator: RequestDeduplicator;
+  private readonly defaultRepertory: string;
 
   constructor(config: OOREPConfig) {
     this.client = new OOREPClient(config);
     this.cache = new Cache<RepertorySearchResult>(config.cacheTtlMs);
     this.deduplicator = new RequestDeduplicator();
+    this.defaultRepertory = config.defaultRepertory;
   }
 
   async execute(args: unknown): Promise<RepertorySearchResult> {
@@ -32,10 +34,12 @@ export class SearchRepertoryTool {
       // Additional validation
       validateSymptom(validatedArgs.symptom);
 
+      const resolvedRepertory = validatedArgs.repertory?.trim() || this.defaultRepertory;
+
       // Generate cache key
       const cacheKey = generateCacheKey('repertory', {
         symptom: validatedArgs.symptom,
-        repertory: validatedArgs.repertory,
+        repertory: resolvedRepertory,
         minWeight: validatedArgs.minWeight,
         maxResults: validatedArgs.maxResults,
       });
@@ -52,16 +56,16 @@ export class SearchRepertoryTool {
         // Fetch from OOREP API
         const apiResponse = await this.client.lookupRepertory({
           symptom: validatedArgs.symptom,
-          repertory: validatedArgs.repertory,
+          repertory: resolvedRepertory,
           minWeight: validatedArgs.minWeight,
-          maxResults: validatedArgs.maxResults,
+          includeRemedyStats: validatedArgs.includeRemedyStats,
         });
 
         // Format results
-        const formatted = formatRepertoryResults(
-          apiResponse,
-          validatedArgs.includeRemedyStats
-        );
+        const formatted = formatRepertoryResults(apiResponse, {
+          includeRemedyStats: validatedArgs.includeRemedyStats,
+          maxResults: validatedArgs.maxResults,
+        });
 
         // Cache the result
         this.cache.set(cacheKey, formatted);
@@ -104,7 +108,7 @@ export const searchRepertoryToolDefinition = {
         type: 'string',
         description:
           'Optional: Filter by specific repertory abbreviation (e.g., "kent", "boger"). ' +
-          'If not specified, searches all available repertories.',
+          'If not specified, uses the configured default repertory (OOREP_MCP_DEFAULT_REPERTORY, default "publicum").',
       },
       minWeight: {
         type: 'number',
@@ -117,8 +121,7 @@ export const searchRepertoryToolDefinition = {
       },
       maxResults: {
         type: 'number',
-        description:
-          'Optional: Maximum number of results to return (1-100). Default: 20',
+        description: 'Optional: Maximum number of results to return (1-100). Default: 20',
         minimum: 1,
         maximum: 100,
         default: 20,

@@ -3,22 +3,13 @@
  */
 
 import type { OOREPConfig } from '../config.js';
-import {
-  SearchRepertoryTool,
-  searchRepertoryToolDefinition,
-} from './search-repertory.js';
+import { SearchRepertoryTool, searchRepertoryToolDefinition } from './search-repertory.js';
 import {
   SearchMateriaMedicaTool,
   searchMateriaMedicaToolDefinition,
 } from './search-materia-medica.js';
-import {
-  GetRemedyInfoTool,
-  getRemedyInfoToolDefinition,
-} from './get-remedy-info.js';
-import {
-  ListRepertoriesTool,
-  listRepertoriesToolDefinition,
-} from './list-repertories.js';
+import { GetRemedyInfoTool, getRemedyInfoToolDefinition } from './get-remedy-info.js';
+import { ListRepertoriesTool, listRepertoriesToolDefinition } from './list-repertories.js';
 import {
   ListMateriaMedicasTool,
   listMateriaMedicasToolDefinition,
@@ -48,34 +39,19 @@ export class ToolRegistry {
 
   private registerAllTools(): void {
     // Register search_repertory
-    this.registerTool(
-      searchRepertoryToolDefinition,
-      new SearchRepertoryTool(this.config)
-    );
+    this.registerTool(searchRepertoryToolDefinition, new SearchRepertoryTool(this.config));
 
     // Register search_materia_medica
-    this.registerTool(
-      searchMateriaMedicaToolDefinition,
-      new SearchMateriaMedicaTool(this.config)
-    );
+    this.registerTool(searchMateriaMedicaToolDefinition, new SearchMateriaMedicaTool(this.config));
 
     // Register get_remedy_info
-    this.registerTool(
-      getRemedyInfoToolDefinition,
-      new GetRemedyInfoTool(this.config)
-    );
+    this.registerTool(getRemedyInfoToolDefinition, new GetRemedyInfoTool(this.config));
 
     // Register list_available_repertories
-    this.registerTool(
-      listRepertoriesToolDefinition,
-      new ListRepertoriesTool(this.config)
-    );
+    this.registerTool(listRepertoriesToolDefinition, new ListRepertoriesTool(this.config));
 
     // Register list_available_materia_medicas
-    this.registerTool(
-      listMateriaMedicasToolDefinition,
-      new ListMateriaMedicasTool(this.config)
-    );
+    this.registerTool(listMateriaMedicasToolDefinition, new ListMateriaMedicasTool(this.config));
   }
 
   private registerTool(definition: ToolDefinition, handler: ToolHandler): void {
