@@ -56,7 +56,7 @@ export class GetRemedyInfoTool {
           (r) =>
             r.nameAbbrev.toLowerCase() === validatedArgs.remedy.toLowerCase() ||
             r.nameLong.toLowerCase() === validatedArgs.remedy.toLowerCase() ||
-            r.nameAlt?.some((alt) => alt.toLowerCase() === validatedArgs.remedy.toLowerCase())
+            r.namealt?.some((alt) => alt.toLowerCase() === validatedArgs.remedy.toLowerCase())
         );
 
         if (!remedy) {
@@ -70,7 +70,7 @@ export class GetRemedyInfoTool {
           id: remedy.id,
           nameAbbrev: remedy.nameAbbrev,
           nameLong: remedy.nameLong,
-          nameAlt: remedy.nameAlt,
+          nameAlt: remedy.namealt, // API uses lowercase 'alt'
         };
 
         // Optionally fetch repertory entries and materia medica sections

@@ -88,6 +88,19 @@ export function sanitizeError(error: unknown): Error {
     return new Error(`An error occurred: ${error.message}`);
   }
 
+  // Handle Zod validation errors
+  if (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError') {
+    const zodError = error as { issues?: Array<{ message: string; path: string[] }> };
+    if (zodError.issues && zodError.issues.length > 0) {
+      const firstIssue = zodError.issues[0];
+      const field = firstIssue.path.join('.');
+      return new ValidationError(
+        `Validation error${field ? ` in ${field}` : ''}: ${firstIssue.message}`
+      );
+    }
+    return new ValidationError('Validation error: Invalid input');
+  }
+
   // Generic unknown error
   return new Error('An unexpected error occurred while processing your request');
 }

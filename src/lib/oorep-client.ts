@@ -133,6 +133,9 @@ export class OOREPClient {
         throw error;
       }
 
+      // Log the actual error for debugging
+      logger.error('Unexpected error in API request', error);
+
       throw new NetworkError(
         'Failed to fetch data from OOREP API',
         undefined,
@@ -231,17 +234,18 @@ export class OOREPClient {
       id: number;
       nameAbbrev: string;
       nameLong: string;
-      nameAlt?: string[];
+      namealt?: string[]; // Note: lowercase 'alt' in actual API
     }>
   > {
     logger.info('Fetching available remedies');
-    const result = await this.request<{ remedies: Array<{
+    // API returns array directly, not wrapped in object
+    const result = await this.request<Array<{
       id: number;
       nameAbbrev: string;
       nameLong: string;
-      nameAlt?: string[];
-    }> }>('/api/available_remedies');
-    return result.remedies || [];
+      namealt?: string[];
+    }>>('/api/available_remedies');
+    return result || [];
   }
 
   /**
@@ -257,13 +261,26 @@ export class OOREPClient {
     }>
   > {
     logger.info('Fetching available repertories');
-    const result = await this.request<{ repertories: Array<{
-      abbreviation: string;
-      title: string;
-      author?: string;
-      language?: string;
-    }> }>('/api/available_rems_and_reps');
-    return result.repertories || [];
+    // API returns array of objects with 'info' field
+    const result = await this.request<Array<{
+      info: {
+        abbrev: string;
+        title: string;
+        authorLastName?: string;
+        authorFirstName?: string;
+        language?: string;
+      };
+    }>>('/api/available_rems_and_reps');
+
+    // Transform the response to match our interface
+    return (result || []).map((item) => ({
+      abbreviation: item.info.abbrev,
+      title: item.info.title,
+      author: item.info.authorLastName && item.info.authorFirstName
+        ? `${item.info.authorFirstName} ${item.info.authorLastName}`
+        : item.info.authorLastName || item.info.authorFirstName,
+      language: item.info.language,
+    }));
   }
 
   /**
@@ -279,12 +296,27 @@ export class OOREPClient {
     }>
   > {
     logger.info('Fetching available materia medicas');
-    const result = await this.request<{ materiaMedicas: Array<{
-      abbreviation: string;
-      title: string;
-      author?: string;
-      language?: string;
-    }> }>('/api/available_rems_and_mms');
-    return result.materiaMedicas || [];
+    // API returns array of objects with 'mminfo' field
+    const result = await this.request<Array<{
+      mminfo: {
+        id: number;
+        abbrev: string;
+        displaytitle?: string;
+        fulltitle?: string;
+        authorlastname?: string;
+        authorfirstname?: string;
+        lang?: string;
+      };
+    }>>('/api/available_rems_and_mms');
+
+    // Transform the response to match our interface
+    return (result || []).map((item) => ({
+      abbreviation: item.mminfo.abbrev,
+      title: item.mminfo.displaytitle || item.mminfo.fulltitle || item.mminfo.abbrev,
+      author: item.mminfo.authorlastname && item.mminfo.authorfirstname
+        ? `${item.mminfo.authorfirstname} ${item.mminfo.authorlastname}`
+        : item.mminfo.authorlastname || item.mminfo.authorfirstname,
+      language: item.mminfo.lang,
+    }));
   }
 }
