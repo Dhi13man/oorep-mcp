@@ -30,18 +30,23 @@ export function getConfig(): OOREPConfig {
     const arg = args[i];
     switch (arg) {
       case '--base-url':
+        if (i + 1 >= args.length) throw new Error(`Missing value for ${arg}`);
         config.baseUrl = args[++i];
         break;
       case '--timeout':
+        if (i + 1 >= args.length) throw new Error(`Missing value for ${arg}`);
         config.timeoutMs = parseInt(args[++i], 10);
         break;
       case '--cache-ttl':
+        if (i + 1 >= args.length) throw new Error(`Missing value for ${arg}`);
         config.cacheTtlMs = parseInt(args[++i], 10);
         break;
       case '--max-results':
+        if (i + 1 >= args.length) throw new Error(`Missing value for ${arg}`);
         config.maxResults = parseInt(args[++i], 10);
         break;
       case '--log-level':
+        if (i + 1 >= args.length) throw new Error(`Missing value for ${arg}`);
         config.logLevel = args[++i];
         break;
     }
