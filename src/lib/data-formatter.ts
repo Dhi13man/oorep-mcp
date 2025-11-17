@@ -76,8 +76,6 @@ export function formatRepertoryResults(
 
   return {
     totalResults: apiResponse.totalNumberOfResults,
-    totalPages: undefined,
-    currentPage: undefined,
     rubrics,
     remedyStats,
   };
