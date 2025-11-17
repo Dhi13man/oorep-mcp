@@ -153,7 +153,10 @@ export function formatMateriaMedicaResults(
   }));
 
   return {
-    totalResults: apiResponse.numberOfMatchingSectionsPerChapter.reduce((sum, entry) => sum + (entry.hits ?? 0), 0),
+    totalResults: apiResponse.numberOfMatchingSectionsPerChapter.reduce(
+      (sum, entry) => sum + (entry.hits ?? 0),
+      0
+    ),
     results,
   };
 }

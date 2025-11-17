@@ -148,7 +148,10 @@ Guidelines:
       throw new Error('remedies argument is required for remedy-comparison prompt');
     }
 
-    const remedyList = remedies.split(',').map((r) => r.trim()).filter((r) => r.length > 0);
+    const remedyList = remedies
+      .split(',')
+      .map((r) => r.trim())
+      .filter((r) => r.length > 0);
 
     // Validate: need at least 2 remedies to compare
     if (remedyList.length < 2) {
@@ -160,13 +163,16 @@ Guidelines:
     // Limit to max 6 remedies for table readability
     const maxRemedies = 6;
     if (remedyList.length > maxRemedies) {
-      logger.warn(`Limiting remedy comparison to ${maxRemedies} remedies (${remedyList.length} provided)`);
+      logger.warn(
+        `Limiting remedy comparison to ${maxRemedies} remedies (${remedyList.length} provided)`
+      );
       remedyList.splice(maxRemedies);
     }
 
     // Dynamically generate table header
     const tableHeader = '| Aspect                | ' + remedyList.join(' | ') + ' |';
-    const tableSeparator = '|----------------------|' + remedyList.map(() => '----------|').join('');
+    const tableSeparator =
+      '|----------------------|' + remedyList.map(() => '----------|').join('');
     const tableRows = [
       '| Key Mental Symptoms  | ' + remedyList.map(() => '...').join('      | ') + '      |',
       '| Key Physical Symptoms| ' + remedyList.map(() => '...').join('      | ') + '      |',

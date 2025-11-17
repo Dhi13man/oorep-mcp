@@ -63,7 +63,7 @@ export function validateRemedyName(remedy: string): void {
   }
 
   // Allow alphanumeric, spaces, hyphens, dots, and parentheses
-  const invalidChars = /[^a-zA-Z0-9\s\-\.\(\)]/;
+  const invalidChars = /[^a-zA-Z0-9\s\-.()]/;
   if (invalidChars.test(remedy)) {
     throw new ValidationError(
       'Remedy name contains invalid characters. Only letters, numbers, spaces, hyphens, dots, and parentheses are allowed.'
