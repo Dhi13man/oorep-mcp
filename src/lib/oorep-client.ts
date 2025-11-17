@@ -9,6 +9,10 @@ import {
   TimeoutError,
   RateLimitError,
 } from '../utils/errors.js';
+import {
+  RepertoryMetadata,
+  MateriaMedicaMetadata,
+} from '../utils/schemas.js';
 
 /**
  * Fetch with timeout support
@@ -252,14 +256,7 @@ export class OOREPClient {
    * Get available repertories
    * GET /api/available_rems_and_reps
    */
-  async getAvailableRepertories(): Promise<
-    Array<{
-      abbreviation: string;
-      title: string;
-      author?: string;
-      language?: string;
-    }>
-  > {
+  async getAvailableRepertories(): Promise<Array<RepertoryMetadata>> {
     logger.info('Fetching available repertories');
     // API returns array of objects with 'info' field
     const result = await this.request<Array<{
@@ -287,14 +284,7 @@ export class OOREPClient {
    * Get available materia medicas
    * GET /api/available_rems_and_mms
    */
-  async getAvailableMateriaMedicas(): Promise<
-    Array<{
-      abbreviation: string;
-      title: string;
-      author?: string;
-      language?: string;
-    }>
-  > {
+  async getAvailableMateriaMedicas(): Promise<Array<MateriaMedicaMetadata>> {
     logger.info('Fetching available materia medicas');
     // API returns array of objects with 'mminfo' field
     const result = await this.request<Array<{
