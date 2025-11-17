@@ -57,8 +57,6 @@ export class GetRemedyInfoTool {
       // Generate cache key
       const cacheKey = generateCacheKey('remedy', {
         remedy: validatedArgs.remedy,
-        includeMateriaMedica: validatedArgs.includeMateriaMedica,
-        includeRepertory: validatedArgs.includeRepertory,
       });
 
       // Check cache
@@ -99,23 +97,6 @@ export class GetRemedyInfoTool {
           nameAlt: remedy.namealt, // API uses lowercase 'alt'
         };
 
-        // Optionally fetch repertory entries and materia medica sections
-        // Note: This would require additional API calls
-        // For now, we'll return basic info
-        // TODO: Implement fetching repertory entries and MM sections if API supports it
-
-        if (validatedArgs.includeRepertory) {
-          // Placeholder for repertory entries
-          remedyInfo.repertoryEntries = [];
-          logger.warn('Including repertory entries is not yet implemented');
-        }
-
-        if (validatedArgs.includeMateriaMedica) {
-          // Placeholder for materia medica sections
-          remedyInfo.materiaMedicaSections = [];
-          logger.warn('Including materia medica sections is not yet implemented');
-        }
-
         // Cache the result
         this.cache.set(cacheKey, remedyInfo);
 
@@ -139,8 +120,7 @@ export const getRemedyInfoToolDefinition = {
   name: 'get_remedy_info',
   description:
     'Retrieve comprehensive information about a specific homeopathic remedy including ' +
-    'its full name, abbreviations, alternative names, and optionally its repertory entries ' +
-    'and materia medica sections. Useful for learning about individual remedies.',
+    'its full name, abbreviations, and alternative names. Useful for learning about individual remedies.',
   inputSchema: {
     type: 'object' as const,
     properties: {
@@ -150,20 +130,6 @@ export const getRemedyInfoToolDefinition = {
           'Remedy name or abbreviation (e.g., "Aconite", "Acon.", "Aconitum napellus"). ' +
           'Case-insensitive.',
         minLength: 1,
-      },
-      includeMateriaMedica: {
-        type: 'boolean',
-        description:
-          'Optional: Include materia medica sections for this remedy. Default: false. ' +
-          'Note: This may return large amounts of text.',
-        default: false,
-      },
-      includeRepertory: {
-        type: 'boolean',
-        description:
-          'Optional: Include repertory entries for this remedy. Default: false. ' +
-          'Note: This may return large amounts of data.',
-        default: false,
       },
     },
     required: ['remedy'],

@@ -51,16 +51,6 @@ export function validateSymptom(symptom: string): void {
 }
 
 /**
- * Sanitize string input to prevent injection attacks
- */
-export function sanitizeInput(input: string): string {
-  return input
-    .trim()
-    .replace(/[<>]/g, '') // Remove potential HTML tags
-    .substring(0, 1000); // Limit maximum length
-}
-
-/**
  * Validate remedy name
  */
 export function validateRemedyName(remedy: string): void {

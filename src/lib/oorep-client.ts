@@ -6,9 +6,8 @@ import { OOREPConfig } from '../config.js';
 import { logger } from '../utils/logger.js';
 import { NetworkError, TimeoutError, RateLimitError } from '../utils/errors.js';
 import { RepertoryMetadata, MateriaMedicaMetadata } from '../utils/schemas.js';
-
-const USER_AGENT = 'oorep-mcp/0.1.0';
-
+import pkg from '../../package.json';
+const USER_AGENT = `oorep-mcp/${pkg.version}`;
 type RawWeightedRemedy = {
   remedy: {
     id: number;
@@ -170,12 +169,26 @@ export class OOREPClient {
   }
 
   private async ensureSession(forceRefresh = false): Promise<void> {
-    if (forceRefresh) {
-      this.cookieJar.clear();
-    } else if (this.cookieJar.hasCookies()) {
+    // If there's already a session init in progress, wait for it
+    if (this.sessionInitPromise) {
+      await this.sessionInitPromise;
+      // After waiting, if forceRefresh is requested but we just got a fresh session, use it
+      if (forceRefresh && this.cookieJar.hasCookies()) {
+        return;
+      }
+    }
+
+    // If we have cookies and not forcing refresh, we're done
+    if (!forceRefresh && this.cookieJar.hasCookies()) {
       return;
     }
 
+    // Only clear cookies if we're actually going to refresh AND no init is in progress
+    if (forceRefresh && !this.sessionInitPromise) {
+      this.cookieJar.clear();
+    }
+
+    // Start new session init if none in progress
     if (!this.sessionInitPromise) {
       this.sessionInitPromise = this.bootstrapSession().finally(() => {
         this.sessionInitPromise = null;

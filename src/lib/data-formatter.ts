@@ -75,37 +75,42 @@ export function formatRepertoryResults(
 
   let remedyStats = undefined;
   if (options.includeRemedyStats !== false) {
-    const stats = new Map<string, { count: number; cumulativeWeight: number }>();
+    const stats = new Map<
+      string,
+      { name: string; abbreviation: string; count: number; cumulativeWeight: number }
+    >();
 
     rubrics.forEach((rubric) => {
       rubric.remedies.forEach((remedy) => {
-        const key = `${remedy.name}|${remedy.abbreviation}`;
-        const existing = stats.get(key) || {
-          count: 0,
-          cumulativeWeight: 0,
-        };
-        stats.set(key, {
-          count: existing.count + 1,
-          cumulativeWeight: existing.cumulativeWeight + remedy.weight,
-        });
+        // Use null byte as delimiter - guaranteed not to appear in remedy names
+        const key = `${remedy.name}\x00${remedy.abbreviation}`;
+        const existing = stats.get(key);
+        if (existing) {
+          existing.count += 1;
+          existing.cumulativeWeight += remedy.weight;
+        } else {
+          stats.set(key, {
+            name: remedy.name,
+            abbreviation: remedy.abbreviation,
+            count: 1,
+            cumulativeWeight: remedy.weight,
+          });
+        }
       });
     });
 
-    remedyStats = Array.from(stats.entries())
-      .map(([key, data]) => {
-        const [name] = key.split('|');
-        return {
-          name,
-          count: data.count,
-          cumulativeWeight: data.cumulativeWeight,
-        };
-      })
+    remedyStats = Array.from(stats.values())
       .sort((a, b) => {
         if (b.cumulativeWeight !== a.cumulativeWeight) {
           return b.cumulativeWeight - a.cumulativeWeight;
         }
         return b.count - a.count;
-      });
+      })
+      .map(({ name, count, cumulativeWeight }) => ({
+        name,
+        count,
+        cumulativeWeight,
+      }));
   }
 
   return {
@@ -148,7 +153,7 @@ export function formatMateriaMedicaResults(
   }));
 
   return {
-    totalResults: apiResponse.numberOfMatchingSectionsPerChapter.length,
+    totalResults: apiResponse.numberOfMatchingSectionsPerChapter.reduce((sum, entry) => sum + (entry.hits ?? 0), 0),
     results,
   };
 }

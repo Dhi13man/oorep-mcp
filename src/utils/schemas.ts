@@ -13,7 +13,11 @@ export const SearchRepertoryArgsSchema = z.object({
     .string()
     .min(3, 'Symptom must be at least 3 characters')
     .max(200, 'Symptom must not exceed 200 characters')
-    .regex(/^[a-zA-Z0-9\s\-*"]+$/, 'Symptom contains invalid characters')
+    .regex(/^[a-zA-Z0-9\s\-*"]+$/, 'Symptom contains invalid characters')  
+    .refine(  
+      (s) => !/\w\*\w/.test(s),
+      'Wildcards (*) cannot appear in the middle of words'
+    )
     .transform((s) => s.trim()),
   repertory: z
     .string()
@@ -62,12 +66,6 @@ export const SearchMateriaMedicaArgsSchema = z.object({
 
 export const GetRemedyInfoArgsSchema = z.object({
   remedy: z.string().min(1, 'Remedy name is required').describe('Remedy name or abbreviation'),
-  includeMateriaMedica: z
-    .boolean()
-    .optional()
-    .default(false)
-    .describe('Include materia medica sections'),
-  includeRepertory: z.boolean().optional().default(false).describe('Include repertory entries'),
 });
 
 export const ListRepertoriesArgsSchema = z.object({
@@ -159,14 +157,6 @@ export const RemedyInfoSchema = z.object({
   nameAbbrev: z.string(),
   nameLong: z.string(),
   nameAlt: z.array(z.string()).optional(),
-  availableIn: z
-    .object({
-      repertories: z.array(z.string()),
-      materiaMedicas: z.array(z.string()),
-    })
-    .optional(),
-  repertoryEntries: z.array(RubricSchema).optional(),
-  materiaMedicaSections: z.array(MateriaMedicaResultSchema).optional(),
 });
 
 // ====================

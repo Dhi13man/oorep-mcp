@@ -71,22 +71,7 @@ export async function createServer() {
     } catch (error) {
       logger.error('Tool execution failed', error);
       const sanitized = sanitizeError(error);
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(
-              {
-                error: sanitized.message,
-                tool: request.params.name,
-              },
-              null,
-              2
-            ),
-          },
-        ],
-        isError: true,
-      };
+      throw new Error(sanitized.message);
     }
   });
 
