@@ -18,12 +18,13 @@ import { getConfig } from './config.js';
 import { ToolRegistry } from './tools/index.js';
 import { ResourceRegistry } from './resources/index.js';
 import { PromptRegistry } from './prompts/index.js';
-import { logger } from './utils/logger.js';
+import { logger, LogLevel } from './utils/logger.js';
 import { sanitizeError } from './utils/errors.js';
 
 export async function createServer() {
   // Load configuration
   const config = getConfig();
+  logger.setLevel(config.logLevel as LogLevel);
 
   // Initialize registries
   const toolRegistry = new ToolRegistry(config);

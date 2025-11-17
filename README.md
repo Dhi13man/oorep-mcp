@@ -140,7 +140,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Links
 
-- **OOREP Website**: https://www.oorep.com
-- **OOREP GitHub**: https://github.com/nondeterministic/oorep
-- **MCP Documentation**: https://modelcontextprotocol.io
-- **Issue Tracker**: https://github.com/Dhi13man/oorep-mcp/issues
+- **OOREP Website**: <https://www.oorep.com>
+- **OOREP GitHub**: <https://github.com/nondeterministic/oorep>
+- **MCP Documentation**: <https://modelcontextprotocol.io>
+- **Issue Tracker**: <https://github.com/Dhi13man/oorep-mcp/issues>
