@@ -87,7 +87,7 @@ export class GetRemedyInfoTool {
 
         if (!remedy) {
           throw new Error(
-            `Remedy "${validatedArgs.remedy}" not found. Check the spelling or read the oorep://remedies/list resource to see available remedies.`
+            `Remedy "${validatedArgs.remedy}" not found. Check the spelling or use the list_available_remedies tool to see available remedies.`
           );
         }
 

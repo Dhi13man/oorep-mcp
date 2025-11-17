@@ -4,35 +4,14 @@
 **Date:** 2025-11-16
 **Status:** Ready for Implementation
 
----
-
-## Table of Contents
-
-1. [Executive Summary](#executive-summary)
-2. [Project Overview](#project-overview)
-3. [Architecture Design](#architecture-design)
-4. [Implementation Phases](#implementation-phases)
-5. [Technical Specifications](#technical-specifications)
-6. [API Mapping Strategy](#api-mapping-strategy)
-7. [Tools Design](#tools-design)
-8. [Resources Design](#resources-design)
-9. [Prompts Design](#prompts-design)
-10. [Code Structure](#code-structure)
-11. [Dependencies & Configuration](#dependencies--configuration)
-12. [Testing Strategy](#testing-strategy)
-13. [Security & Performance](#security--performance)
-14. [Publishing & Distribution](#publishing--distribution)
-15. [Documentation Requirements](#documentation-requirements)
-16. [Success Metrics](#success-metrics)
-
----
-
 ## 1. Executive Summary
 
 ### Project Goal
+
 Build a production-ready Model Context Protocol (MCP) server that exposes OOREP's homeopathic repertory and materia medica data to AI assistants, enabling intelligent symptom analysis and remedy suggestions.
 
 ### Key Objectives
+
 - ✅ Provide seamless access to OOREP's comprehensive homeopathic database
 - ✅ Follow industry best practices for MCP server development
 - ✅ Ensure security, performance, and reliability
@@ -40,42 +19,45 @@ Build a production-ready Model Context Protocol (MCP) server that exposes OOREP'
 - ✅ Publish to official registries for maximum discoverability
 
 ### Target Audiences
+
 1. **Homeopathic practitioners** using AI assistants for case analysis
 2. **Students** learning homeopathy with AI tutoring
 3. **Researchers** exploring remedies and symptom correlations
 4. **AI developers** building homeopathy-focused applications
 
----
-
 ## 2. Project Overview
 
 ### What is OOREP?
+
 OOREP (Open Online Repertory) is a comprehensive web-based homeopathic repertorisation system providing:
+
 - 12+ repertories (Kent, Boger, Boericke, etc.)
 - Multiple materia medicas
 - Advanced search capabilities (wildcards, exclusions, exact phrases)
 - 600+ remedies with detailed symptom mappings
 
 ### What is MCP?
+
 Model Context Protocol is a standardized protocol enabling AI assistants to:
+
 - **Tools**: Execute functions with structured inputs/outputs
 - **Resources**: Access static/dynamic data sources
 - **Prompts**: Use pre-configured prompt templates
 
 ### Why OOREP + MCP?
+
 Combining OOREP's extensive database with MCP enables:
+
 - Natural language symptom queries ("headache worse at night")
 - AI-assisted remedy selection based on multiple symptoms
 - Contextual materia medica exploration
 - Intelligent case repertorization workflows
 
----
-
 ## 3. Architecture Design
 
 ### High-Level Architecture
 
-```
+```plain
 ┌─────────────────────────────────────────────────────────────┐
 │                    AI Client Layer                           │
 │  (Claude Desktop, VS Code, Cursor, Custom Apps)              │
@@ -120,11 +102,10 @@ Combining OOREP's extensive database with MCP enables:
 6. **Security**: Input validation, path sanitization, no credential storage
 7. **Testability**: Modular design with dependency injection
 
----
-
 ## 4. Implementation Phases
 
 ### Phase 1: Foundation (Week 1)
+
 **Goal**: Setup infrastructure and core architecture
 
 - [ ] Update dependencies (Zod, testing libraries, latest MCP SDK)
@@ -137,6 +118,7 @@ Combining OOREP's extensive database with MCP enables:
 - [ ] Setup Vitest testing framework
 
 **Deliverables**:
+
 - Updated package.json with all dependencies
 - Complete project structure
 - HTTP client with timeout/retry
@@ -146,6 +128,7 @@ Combining OOREP's extensive database with MCP enables:
 - Testing infrastructure
 
 ### Phase 2: Core Tools (Week 2)
+
 **Goal**: Implement essential search tools
 
 - [ ] Tool: `search_repertory` (symptom → rubrics with remedies)
@@ -159,12 +142,14 @@ Combining OOREP's extensive database with MCP enables:
 - [ ] Unit tests for each tool
 
 **Deliverables**:
+
 - 5 working tools with full validation
 - Comprehensive unit test coverage
 - Integration tests with mock OOREP API
 - Tool documentation
 
 ### Phase 3: Resources (Week 2-3)
+
 **Goal**: Expose static and dynamic data resources
 
 - [ ] Resource: `oorep://remedies/list` (all remedies)
@@ -177,12 +162,14 @@ Combining OOREP's extensive database with MCP enables:
 - [ ] Tests for all resources
 
 **Deliverables**:
+
 - 5 resources (3 static, 2 dynamic)
 - Resource caching implementation
 - Resource tests
 - Resource documentation
 
 ### Phase 4: Prompts & Advanced Features (Week 3)
+
 **Goal**: Add prompt templates and optimization
 
 - [ ] Prompt: `analyze-symptoms` (guided symptom analysis)
@@ -194,12 +181,14 @@ Combining OOREP's extensive database with MCP enables:
 - [ ] Load testing
 
 **Deliverables**:
+
 - 3 prompt templates
 - Caching system with TTL
 - Performance optimization
 - Load test results
 
 ### Phase 5: Testing & Quality Assurance (Week 4)
+
 **Goal**: Comprehensive testing and validation
 
 - [ ] Integration tests with real OOREP API
@@ -211,12 +200,14 @@ Combining OOREP's extensive database with MCP enables:
 - [ ] Code coverage > 85%
 
 **Deliverables**:
+
 - Full test suite
 - Test coverage report
 - Performance benchmarks
 - Security audit report
 
 ### Phase 6: Documentation & Publishing (Week 4-5)
+
 **Goal**: Prepare for public release
 
 - [ ] Complete README.md with all client configs
@@ -234,16 +225,16 @@ Combining OOREP's extensive database with MCP enables:
 - [ ] Publish to Docker Hub (optional)
 
 **Deliverables**:
+
 - Complete documentation
 - Published npm package
 - MCP registry submission
 - Docker image (optional)
 
----
-
 ## 5. Technical Specifications
 
 ### Runtime Requirements
+
 - **Node.js**: ≥ 18.0.0 (LTS recommended)
 - **TypeScript**: ≥ 5.4.0
 - **OS**: Linux, macOS, Windows (cross-platform)
@@ -251,6 +242,7 @@ Combining OOREP's extensive database with MCP enables:
 ### Dependencies
 
 **Production**:
+
 ```json
 {
   "@modelcontextprotocol/sdk": "^1.19.1",
@@ -260,6 +252,7 @@ Combining OOREP's extensive database with MCP enables:
 ```
 
 **Development**:
+
 ```json
 {
   "@types/node": "^22.0.0",
@@ -277,6 +270,7 @@ Combining OOREP's extensive database with MCP enables:
 ### Configuration
 
 **Environment Variables**:
+
 ```bash
 # Required
 OOREP_MCP_BASE_URL=https://www.oorep.com
@@ -289,11 +283,10 @@ OOREP_MCP_LOG_LEVEL=info            # Logging level (debug|info|warn|error)
 ```
 
 **CLI Arguments** (optional):
+
 ```bash
 oorep-mcp --base-url https://localhost:9000 --timeout 60000
 ```
-
----
 
 ## 6. API Mapping Strategy
 
@@ -312,20 +305,20 @@ oorep-mcp --base-url https://localhost:9000 --timeout 60000
 ### Design Decisions
 
 **What to Include**:
+
 - ✅ Public read-only endpoints
 - ✅ Search and lookup operations
 - ✅ Metadata retrieval (remedies, repertories, MMs)
 - ✅ Static reference data
 
 **What to Exclude**:
+
 - ❌ Authentication endpoints (no user login)
 - ❌ Secured `/api/sec/*` endpoints (require auth)
 - ❌ Case management (POST/PUT/DELETE operations)
 - ❌ Cookie/session management
 
 **Rationale**: Focus on read-only, stateless operations that provide value to AI assistants without requiring user authentication or state management.
-
----
 
 ## 7. Tools Design
 
@@ -334,6 +327,7 @@ oorep-mcp --base-url https://localhost:9000 --timeout 60000
 **Purpose**: Search for symptoms in homeopathic repertories and return matching rubrics with remedies.
 
 **Input Schema**:
+
 ```typescript
 {
   symptom: string,              // Search term (required, 3-200 chars)
@@ -345,6 +339,7 @@ oorep-mcp --base-url https://localhost:9000 --timeout 60000
 ```
 
 **Output Format**:
+
 ```typescript
 {
   totalResults: number,
@@ -376,24 +371,25 @@ oorep-mcp --base-url https://localhost:9000 --timeout 60000
 ```
 
 **Example**:
-```
+
+```plain
 Input: { symptom: "headache worse night", repertory: "kent", maxResults: 5 }
 Output: [List of 5 matching rubrics with remedies]
 ```
 
 **Error Handling**:
+
 - Invalid symptom (empty, too short, too long) → UserError
 - Invalid repertory → UserError
 - Network timeout → Retry 3x with exponential backoff
 - OOREP API error → Forward error message
-
----
 
 ### Tool 2: `search_materia_medica`
 
 **Purpose**: Search materia medica texts for symptoms and return matching remedy sections.
 
 **Input Schema**:
+
 ```typescript
 {
   symptom: string,              // Search term (required, 3-200 chars)
@@ -404,6 +400,7 @@ Output: [List of 5 matching rubrics with remedies]
 ```
 
 **Output Format**:
+
 ```typescript
 {
   totalResults: number,
@@ -426,18 +423,18 @@ Output: [List of 5 matching rubrics with remedies]
 ```
 
 **Example**:
-```
+
+```plain
 Input: { symptom: "fever", materiamedica: "hering", maxResults: 3 }
 Output: [3 remedies with matching sections]
 ```
-
----
 
 ### Tool 3: `get_remedy_info`
 
 **Purpose**: Retrieve comprehensive information about a specific remedy.
 
 **Input Schema**:
+
 ```typescript
 {
   remedy: string,               // Remedy name or abbreviation (required)
@@ -447,6 +444,7 @@ Output: [3 remedies with matching sections]
 ```
 
 **Output Format**:
+
 ```typescript
 {
   id: number,
@@ -466,13 +464,12 @@ Output: [3 remedies with matching sections]
 
 **Implementation Note**: This requires multiple API calls (remedy lookup + optional MM/repertory data). Use Promise.all for parallel fetching.
 
----
-
 ### Tool 4: `list_available_repertories`
 
 **Purpose**: Get list of all accessible repertories with metadata.
 
 **Input Schema**:
+
 ```typescript
 {
   language?: string             // Filter by language (optional, e.g., "en", "de")
@@ -480,6 +477,7 @@ Output: [3 remedies with matching sections]
 ```
 
 **Output Format**:
+
 ```typescript
 {
   repertories: [
@@ -500,13 +498,12 @@ Output: [3 remedies with matching sections]
 
 **Caching**: Cache for 5 minutes (metadata rarely changes).
 
----
-
 ### Tool 5: `list_available_materia_medicas`
 
 **Purpose**: Get list of all accessible materia medicas with metadata.
 
 **Input Schema**:
+
 ```typescript
 {
   language?: string             // Filter by language (optional)
@@ -517,8 +514,6 @@ Output: [3 remedies with matching sections]
 
 **Caching**: Cache for 5 minutes.
 
----
-
 ## 8. Resources Design
 
 ### Resource 1: `oorep://remedies/list`
@@ -528,6 +523,7 @@ Output: [3 remedies with matching sections]
 **Description**: Complete list of all available remedies
 
 **Data Structure**:
+
 ```json
 [
   {
@@ -541,8 +537,6 @@ Output: [3 remedies with matching sections]
 
 **Update Frequency**: Cache for 1 hour (600+ remedies, stable data)
 
----
-
 ### Resource 2: `oorep://repertories/list`
 
 **Type**: Static (cached)
@@ -553,8 +547,6 @@ Output: [3 remedies with matching sections]
 
 **Update Frequency**: Cache for 5 minutes
 
----
-
 ### Resource 3: `oorep://materia-medicas/list`
 
 **Type**: Static (cached)
@@ -564,8 +556,6 @@ Output: [3 remedies with matching sections]
 **Data Structure**: Array of MM objects
 
 **Update Frequency**: Cache for 5 minutes
-
----
 
 ### Resource 4: `oorep://remedies/{remedyId}/info`
 
@@ -579,8 +569,6 @@ Output: [3 remedies with matching sections]
 
 **Data Structure**: Comprehensive remedy data (see Tool 3 output)
 
----
-
 ### Resource 5: `oorep://help/search-syntax`
 
 **Type**: Static
@@ -588,6 +576,7 @@ Output: [3 remedies with matching sections]
 **Description**: Guide to OOREP search syntax (wildcards, exclusions, etc.)
 
 **Content**:
+
 ```markdown
 # OOREP Search Syntax Guide
 
@@ -611,8 +600,6 @@ Output: [3 remedies with matching sections]
 - Example: `head* -nausea "worse night"`
 ```
 
----
-
 ## 9. Prompts Design
 
 ### Prompt 1: `analyze-symptoms`
@@ -620,7 +607,8 @@ Output: [3 remedies with matching sections]
 **Purpose**: Guide AI through structured symptom analysis workflow
 
 **Template**:
-```
+
+```plain
 You are helping a user analyze homeopathic symptoms and find relevant remedies.
 
 Follow this workflow:
@@ -642,20 +630,20 @@ Always:
 ```
 
 **Arguments**:
+
 ```typescript
 {
   symptom_description?: string  // Optional initial symptom
 }
 ```
 
----
-
 ### Prompt 2: `remedy-comparison`
 
 **Purpose**: Compare multiple remedies side-by-side
 
 **Template**:
-```
+
+```plain
 You are comparing homeopathic remedies to help identify the best match.
 
 Remedies to compare: {{remedies}}
@@ -682,20 +670,20 @@ Conclude with:
 ```
 
 **Arguments**:
+
 ```typescript
 {
   remedies: string[]            // List of remedy names to compare
 }
 ```
 
----
-
 ### Prompt 3: `repertorization-workflow`
 
 **Purpose**: Step-by-step case taking and repertorization
 
 **Template**:
-```
+
+```plain
 You are guiding a user through homeopathic case repertorization.
 
 **Step 1: Chief Complaint**
@@ -731,13 +719,11 @@ Provide the top 1-2 remedies with:
 
 **Arguments**: None (interactive workflow)
 
----
-
 ## 10. Code Structure
 
 ### Directory Layout
 
-```
+```plain
 oorep-mcp/
 ├── src/
 │   ├── index.ts                    # Entry point (#!/usr/bin/env node)
@@ -810,8 +796,6 @@ oorep-mcp/
 │
 └── server.json                     # MCP registry metadata
 ```
-
----
 
 ## 11. Dependencies & Configuration
 
@@ -1009,13 +993,11 @@ export default defineConfig({
 }
 ```
 
----
-
 ## 12. Testing Strategy
 
 ### Test Pyramid
 
-```
+```plain
         ╱╲
        ╱E2E╲           5% - End-to-end tests (MCP Inspector, client integration)
       ╱────╲
@@ -1028,6 +1010,7 @@ export default defineConfig({
 ### Unit Tests (80%)
 
 **Coverage**:
+
 - Utils: validation, schemas, errors, logger
 - Lib: data formatter, cache, search engine
 - Individual tool logic (without HTTP calls)
@@ -1035,6 +1018,7 @@ export default defineConfig({
 - Prompt templates
 
 **Example**:
+
 ```typescript
 // src/__tests__/utils/validation.test.ts
 import { describe, it, expect } from 'vitest';
@@ -1064,12 +1048,14 @@ describe('validateSymptom', () => {
 ### Integration Tests (15%)
 
 **Coverage**:
+
 - HTTP client with mock server
 - Tool execution with mocked OOREP API
 - Cache behavior
 - Error handling with network failures
 
 **Example**:
+
 ```typescript
 // src/__tests__/integration/search-repertory.test.ts
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -1112,12 +1098,14 @@ describe('searchRepertory integration', () => {
 ### End-to-End Tests (5%)
 
 **Coverage**:
+
 - MCP protocol communication
 - Client compatibility (Claude Desktop, VS Code)
 - Real OOREP API (with rate limiting)
 - Full workflow tests
 
 **Example**:
+
 ```typescript
 // src/__tests__/e2e/mcp-protocol.test.ts
 import { describe, it, expect } from 'vitest';
@@ -1179,13 +1167,12 @@ describe('MCP Protocol E2E', () => {
 - [ ] Performance benchmarks established
 - [ ] Security tests (injection, traversal) passed
 
----
-
 ## 13. Security & Performance
 
 ### Security Best Practices
 
 #### 1. Input Validation
+
 ```typescript
 // Never trust user input
 const SymptomSchema = z.string()
@@ -1204,6 +1191,7 @@ function validateWildcard(symptom: string): void {
 ```
 
 #### 2. No Credential Storage
+
 ```typescript
 // ✅ GOOD: Read-only public API, no credentials needed
 const client = new OOREPClient(config.baseUrl);
@@ -1213,6 +1201,7 @@ const client = new OOREPClient(config.baseUrl);
 ```
 
 #### 3. Rate Limiting
+
 ```typescript
 class RateLimiter {
   private requests: number[] = [];
@@ -1235,6 +1224,7 @@ class RateLimiter {
 ```
 
 #### 4. Timeout Protection
+
 ```typescript
 async function fetchWithTimeout<T>(
   promise: Promise<T>,
@@ -1249,6 +1239,7 @@ async function fetchWithTimeout<T>(
 ```
 
 #### 5. Error Sanitization
+
 ```typescript
 // Don't expose internal errors to users
 try {
@@ -1268,6 +1259,7 @@ try {
 ### Performance Optimizations
 
 #### 1. Caching Strategy
+
 ```typescript
 class Cache<T> {
   private store = new Map<string, { data: T; timestamp: number }>();
@@ -1304,6 +1296,7 @@ const repertoriesCache = new Cache<Repertory[]>(300000); // 5 minutes
 ```
 
 #### 2. Lazy Loading
+
 ```typescript
 class DataLoader {
   private remedies: Remedy[] | null = null;
@@ -1319,6 +1312,7 @@ class DataLoader {
 ```
 
 #### 3. Request Deduplication
+
 ```typescript
 class RequestDeduplicator {
   private pending = new Map<string, Promise<any>>();
@@ -1359,6 +1353,7 @@ async function searchRepertory(args: SearchArgs) {
 ```
 
 #### 4. Parallel Fetching
+
 ```typescript
 // ✅ GOOD: Parallel requests
 const [remedies, repertories, mms] = await Promise.all([
@@ -1374,6 +1369,7 @@ const mms = await fetchMateriaMedicas();
 ```
 
 #### 5. Response Size Optimization
+
 ```typescript
 // Return resource links instead of embedding large data
 {
@@ -1398,19 +1394,19 @@ const mms = await fetchMateriaMedicas();
 - **Startup time**: < 500ms
 - **Concurrent requests**: Support 10+ simultaneous
 
----
-
 ## 14. Publishing & Distribution
 
 ### Phase 1: NPM Registry
 
 **Prerequisites**:
+
 - [ ] npm account created
 - [ ] Email verified
 - [ ] Two-factor authentication enabled
 - [ ] Access token generated (granular, not classic)
 
 **Steps**:
+
 ```bash
 # 1. Build and test
 npm run build
@@ -1430,6 +1426,7 @@ npx oorep-mcp --help
 ```
 
 **Checklist**:
+
 - [ ] package.json has correct `mcpName`, `bin`, `files`
 - [ ] README.md is comprehensive
 - [ ] LICENSE file exists
@@ -1438,16 +1435,16 @@ npx oorep-mcp --help
 - [ ] Executable has shebang (`#!/usr/bin/env node`)
 - [ ] Executable has execute permissions (`chmod +x`)
 
----
-
 ### Phase 2: Official MCP Registry
 
 **Prerequisites**:
+
 - [ ] Published to npm (required)
 - [ ] GitHub account
 - [ ] server.json created and validated
 
 **Steps**:
+
 ```bash
 # 1. Install publisher CLI
 git clone https://github.com/modelcontextprotocol/registry.git
@@ -1470,6 +1467,7 @@ cd /path/to/oorep-mcp
 ```
 
 **GitHub Actions (Automated)**:
+
 ```yaml
 # .github/workflows/publish-mcp.yml
 name: Publish to MCP Registry
@@ -1511,11 +1509,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
----
-
 ### Phase 3: Docker Distribution (Optional)
 
 **Dockerfile**:
+
 ```dockerfile
 FROM node:20-alpine AS builder
 
@@ -1543,6 +1540,7 @@ ENTRYPOINT ["node", "dist/index.js"]
 ```
 
 **Build & Publish**:
+
 ```bash
 # Build
 docker build -t yourusername/oorep-mcp:0.1.0 .
@@ -1558,21 +1556,22 @@ docker push yourusername/oorep-mcp:latest
 ```
 
 **Submit to Docker MCP Catalog**:
+
 - Follow Docker's submission process
 - Include SBOM (software bill of materials)
 - Add cryptographic signature
 - Provide catalog metadata
 
----
-
 ### Phase 4: Smithery (Automatic)
 
 No action required! Smithery automatically indexes servers published to:
+
 - npm registry
 - PyPI registry
 - Docker Hub
 
 **Verify listing**:
+
 ```bash
 smithery search oorep
 
@@ -1582,28 +1581,27 @@ smithery search oorep
 # - Installation command
 ```
 
----
-
 ### Phase 5: Claude Desktop Extension (Future)
 
 **Prerequisites**:
+
 - [ ] .mcpb specification reviewed
 - [ ] Bundle created with all dependencies
 - [ ] Tested on Windows and macOS
 
 **Steps**:
+
 1. Follow .mcpb specification (open-sourced by Anthropic)
 2. Create bundle with bundler tool
 3. Submit to Claude Desktop directory
 4. Users install with double-click
-
----
 
 ## 15. Documentation Requirements
 
 ### README.md (Essential)
 
 **Sections**:
+
 1. **Title & Badges**: Name, npm version, license, build status
 2. **Description**: What it does in 2-3 sentences
 3. **Features**: Bulleted list of capabilities
@@ -1622,6 +1620,7 @@ smithery search oorep
 16. **Support**: Where to get help
 
 **Example Section**:
+
 ```markdown
 ## Configuration
 
@@ -1633,78 +1632,34 @@ smithery search oorep
 
 2. Add the OOREP MCP server:
 
-```json
-{
-  "mcpServers": {
-    "oorep-mcp": {
-      "command": "npx",
-      "args": ["-y", "oorep-mcp"],
-      "env": {
-        "OOREP_MCP_BASE_URL": "https://www.oorep.com"
+    ```json
+    {
+      "mcpServers": {
+        "oorep-mcp": {
+          "command": "npx",
+          "args": ["-y", "oorep-mcp"],
+          "env": {
+            "OOREP_MCP_BASE_URL": "https://www.oorep.com"
+          }
+        }
       }
     }
-  }
-}
-```
+    ```
 
 3. Completely quit and restart Claude Desktop
+
 4. Look for the MCP indicator (🔌) in the bottom-right corner
 
 ### VS Code
 
 [Similar detailed instructions]
+
 ```
-
----
-
-### CHANGELOG.md
-
-**Format** (Keep a Changelog):
-```markdown
-# Changelog
-
-All notable changes to this project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [Unreleased]
-
-### Added
-- Feature X
-- Feature Y
-
-### Changed
-- Improvement Z
-
-### Fixed
-- Bug A
-
-## [0.1.0] - 2025-11-20
-
-### Added
-- Initial release
-- Tool: search_repertory
-- Tool: search_materia_medica
-- Tool: get_remedy_info
-- Tool: list_available_repertories
-- Tool: list_available_materia_medicas
-- Resource: oorep://remedies/list
-- Resource: oorep://repertories/list
-- Resource: oorep://materia-medicas/list
-- Prompt: analyze-symptoms
-- Prompt: remedy-comparison
-- Prompt: repertorization-workflow
-
-[Unreleased]: https://github.com/yourusername/oorep-mcp/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/yourusername/oorep-mcp/releases/tag/v0.1.0
-```
-
----
 
 ### CONTRIBUTING.md
 
 **Sections**:
+
 1. Code of Conduct
 2. How to Report Bugs
 3. How to Suggest Features
@@ -1714,11 +1669,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 7. Pull Request Process
 8. Commit Message Format
 
----
-
 ### API Documentation
 
 **Auto-generated** from Zod schemas:
+
 ```typescript
 // Generate JSON Schema from Zod
 import { zodToJsonSchema } from 'zod-to-json-schema';
@@ -1736,12 +1690,11 @@ fs.writeFileSync(
 ```
 
 **Human-written guide**:
+
 - API reference with examples
 - Use case tutorials
 - Integration guides
 - Troubleshooting
-
----
 
 ## 16. Success Metrics
 
@@ -1768,8 +1721,6 @@ fs.writeFileSync(
 - [ ] **Dependency Updates**: Review dependencies monthly
 - [ ] **Breaking Changes**: Announce 1 month in advance
 
----
-
 ## Appendix A: Risk Assessment
 
 ### Technical Risks
@@ -1791,51 +1742,51 @@ fs.writeFileSync(
 | License compatibility | Low | High | Review OOREP license (GPL-3.0), clarify usage |
 | Security incident | Low | High | Input validation, security audits, disclosure policy |
 
----
-
 ## Appendix B: Future Enhancements
 
 ### Version 0.2.0
+
 - [ ] Support for local OOREP instances
 - [ ] Advanced filtering (by author, language, year)
 - [ ] Batch operations (multiple symptoms at once)
 - [ ] Remedy comparison matrices
 
 ### Version 0.3.0
+
 - [ ] OAuth 2.1 support for authenticated endpoints
 - [ ] Case management tools (if OOREP provides public API)
 - [ ] Export functionality (PDF, CSV)
 - [ ] GraphQL support
 
 ### Version 1.0.0
+
 - [ ] HTTP/SSE transport (in addition to stdio)
 - [ ] Hosted server option (cloud deployment)
 - [ ] Premium features (analytics, usage tracking)
 - [ ] Desktop GUI (Electron app)
 
----
-
 ## Appendix C: Resources
 
 ### Official Documentation
-- MCP Specification: https://modelcontextprotocol.io/docs
-- MCP TypeScript SDK: https://github.com/modelcontextprotocol/typescript-sdk
-- MCP Registry: https://registry.modelcontextprotocol.io
-- OOREP GitHub: https://github.com/nondeterministic/oorep
-- OOREP Website: https://www.oorep.com
+
+- MCP Specification: <https://modelcontextprotocol.io/docs>
+- MCP TypeScript SDK: <https://github.com/modelcontextprotocol/typescript-sdk>
+- MCP Registry: <https://registry.modelcontextprotocol.io>
+- OOREP GitHub: <https://github.com/nondeterministic/oorep>
+- OOREP Website: <https://www.oorep.com>
 
 ### Community
+
 - MCP Discord: [Link if available]
-- MCP GitHub Discussions: https://github.com/modelcontextprotocol/typescript-sdk/discussions
-- Smithery Platform: https://smithery.ai
+- MCP GitHub Discussions: <https://github.com/modelcontextprotocol/typescript-sdk/discussions>
+- Smithery Platform: <https://smithery.ai>
 
 ### Tools
+
 - MCP Inspector: Test and debug MCP servers
 - Smithery CLI: Manage MCP servers
-- Zod Documentation: https://zod.dev
-- Vitest Documentation: https://vitest.dev
-
----
+- Zod Documentation: <https://zod.dev>
+- Vitest Documentation: <https://vitest.dev>
 
 ## Conclusion
 
@@ -1851,6 +1802,7 @@ This implementation plan provides a comprehensive roadmap for building a product
 **Estimated Timeline**: 4-5 weeks for full implementation and publishing
 
 **Next Steps**:
+
 1. Review and approve this plan
 2. Set up development environment
 3. Begin Phase 1: Foundation
@@ -1858,8 +1810,6 @@ This implementation plan provides a comprehensive roadmap for building a product
 5. Publish and promote
 
 **Questions or feedback?** Open an issue or discussion on GitHub!
-
----
 
 **Document Version**: 1.0
 **Last Updated**: 2025-11-16
