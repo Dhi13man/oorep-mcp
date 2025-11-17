@@ -31,8 +31,6 @@ export function formatRepertoryResults(
   const rubrics: Rubric[] = apiResponse.results.map((result) => ({
     rubric: result.rubric,
     repertory: result.repertory,
-    weight: undefined,
-    label: undefined,
     remedies: result.remedies.map((remedy) => ({
       name: remedy.name,
       abbreviation: remedy.abbreviation,
