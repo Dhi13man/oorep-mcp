@@ -45,17 +45,22 @@ export class ListRepertoriesTool {
       const apiRepertories = await this.client.getAvailableRepertories();
 
       // Transform to metadata format
-      let repertories: RepertoryMetadata[] = apiRepertories.map((rep) => ({
-        abbreviation: rep.abbreviation,
-        title: rep.title,
-        author: rep.author,
-        language: rep.language,
-        year: undefined,
-        edition: undefined,
-        publisher: undefined,
-        license: undefined,
-        remedyCount: undefined,
-      }));
+      let repertories: RepertoryMetadata[] = apiRepertories.map((rep) => {
+        const base = {
+          abbreviation: rep.abbreviation,
+          title: rep.title,
+          author: rep.author,
+          language: rep.language,
+        };
+        return {
+          ...base,
+          ...(rep.year !== undefined ? { year: rep.year } : {}),
+          ...(rep.edition !== undefined ? { edition: rep.edition } : {}),
+          ...(rep.publisher !== undefined ? { publisher: rep.publisher } : {}),
+          ...(rep.license !== undefined ? { license: rep.license } : {}),
+          ...(rep.remedyCount !== undefined ? { remedyCount: rep.remedyCount } : {}),
+        };
+      });
 
       // Filter by language if specified
       if (validatedArgs.language) {
