@@ -48,22 +48,23 @@ npm install oorep-mcp
 
 2. Add the OOREP MCP server:
 
-```json
-{
-  "mcpServers": {
-    "oorep": {
-      "command": "npx",
-      "args": ["-y", "oorep-mcp"],
-      "env": {
-        "OOREP_MCP_BASE_URL": "https://www.oorep.com",
-        "OOREP_MCP_LOG_LEVEL": "info"
+   ```json
+   {
+   "mcpServers": {
+      "oorep": {
+         "command": "npx",
+         "args": ["-y", "oorep-mcp"],
+         "env": {
+         "OOREP_MCP_BASE_URL": "https://www.oorep.com",
+         "OOREP_MCP_LOG_LEVEL": "info"
+         }
       }
-    }
-  }
-}
-```
+   }
+   }
+   ```
 
 3. Restart Claude Desktop completely (Quit, not just close window)
+
 4. Look for the 🔌 MCP indicator in the bottom-right corner
 
 For full documentation, see the sections below or the [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
