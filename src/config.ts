@@ -65,6 +65,9 @@ export function getConfig(): OOREPConfig {
     throw new Error('OOREP_MCP_MAX_RESULTS must be between 1 and 500');
   }
 
+  if (!['debug', 'info', 'warn', 'error'].includes(config.logLevel)) {
+    throw new Error('OOREP_MCP_LOG_LEVEL must be one of: debug, info, warn, error');
+  }
   if (config.cacheTtlMs < 0 || config.cacheTtlMs > 3600000) {
     throw new Error('OOREP_MCP_CACHE_TTL_MS must be between 0 and 3600000');
   }
