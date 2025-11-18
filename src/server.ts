@@ -20,14 +20,8 @@ import { ResourceRegistry } from './resources/index.js';
 import { PromptRegistry } from './prompts/index.js';
 import { logger, LogLevel } from './utils/logger.js';
 import { sanitizeError } from './utils/errors.js';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-// Read version from package.json
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const packageJson = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf-8'));
+// Import package.json for version info - TypeScript will handle this correctly during compilation
+import packageJson from '../package.json' with { type: 'json' };
 
 export async function createServer() {
   // Load configuration

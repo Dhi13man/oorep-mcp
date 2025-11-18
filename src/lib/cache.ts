@@ -156,6 +156,11 @@ export class RequestDeduplicator {
         this.pending.delete(key);
         reject(new Error(`Request timeout after ${timeoutMs}ms`));
       }, timeoutMs);
+
+      // Allow garbage collection if request completes before timeout
+      if (timeoutTimer.unref) {
+        timeoutTimer.unref();
+      }
     });
 
     // Start new request with automatic cleanup
