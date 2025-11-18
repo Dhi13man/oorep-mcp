@@ -6,7 +6,7 @@ import { OOREPClient } from '../lib/oorep-client.js';
 import { Cache } from '../lib/cache.js';
 import type { OOREPConfig } from '../config.js';
 import { logger } from '../utils/logger.js';
-import { sanitizeError } from '../utils/errors.js';
+import { sanitizeError, ValidationError } from '../utils/errors.js';
 
 export interface ResourceDefinition {
   uri: string;
@@ -82,7 +82,7 @@ export class ResourceRegistry {
           return this.getSearchSyntaxHelp();
 
         default:
-          throw new Error(`Resource not found: ${uri}`);
+          throw new ValidationError(`Resource not found: ${uri}`);
       }
     } catch (error) {
       logger.error('Error getting resource', error);

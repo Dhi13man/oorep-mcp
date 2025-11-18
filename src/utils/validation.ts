@@ -27,27 +27,29 @@ export function validateWildcard(symptom: string): void {
  * Validate search symptom input
  */
 export function validateSymptom(symptom: string): void {
-  if (!symptom || symptom.trim().length === 0) {
+  const trimmed = symptom.trim();
+
+  if (!trimmed || trimmed.length === 0) {
     throw new ValidationError('Symptom cannot be empty');
   }
 
-  if (symptom.length < 3) {
+  if (trimmed.length < 3) {
     throw new ValidationError('Symptom must be at least 3 characters long');
   }
 
-  if (symptom.length > 200) {
+  if (trimmed.length > 200) {
     throw new ValidationError('Symptom must not exceed 200 characters');
   }
 
   // Check for invalid characters (allow alphanumeric, spaces, hyphens, wildcards, quotes)
   const invalidChars = /[^a-zA-Z0-9\s\-*"]/;
-  if (invalidChars.test(symptom)) {
+  if (invalidChars.test(trimmed)) {
     throw new ValidationError(
       'Symptom contains invalid characters. Only letters, numbers, spaces, hyphens, wildcards (*), and quotes (") are allowed.'
     );
   }
 
-  validateWildcard(symptom);
+  validateWildcard(trimmed);
 }
 
 /**
