@@ -24,7 +24,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: false
-        with:
           ref: ${{ github.event.release.tag_name || inputs.tag }}
 
       - name: Setup Node.js
