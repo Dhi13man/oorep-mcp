@@ -368,12 +368,13 @@ describe('OOREPClient', () => {
           .mockResolvedValueOnce(mockSessionResponse)
           .mockResolvedValue(mockResponse); // Use mockResolvedValue for all subsequent calls (retries)
 
-        const promise = freshClient.lookupRepertory({ symptom: 'test' });
+        // Start tracking the promise rejection before advancing timers
+        const promise = expect(freshClient.lookupRepertory({ symptom: 'test' })).rejects.toThrow(NetworkError);
 
         // Advance timers to allow all retries to complete
         await vi.runAllTimersAsync();
 
-        await expect(promise).rejects.toThrow(NetworkError);
+        await promise;
       } finally {
         vi.useRealTimers();
       }
@@ -428,14 +429,14 @@ describe('OOREPClient', () => {
       const error = new NetworkError('Connection failed');
       mockFetch.mockRejectedValue(error);
 
-      // Start the promise
-      const promise = mockClient.lookupRepertory({ symptom: 'test' });
+      // Start tracking the promise rejection before advancing timers
+      const promise = expect(mockClient.lookupRepertory({ symptom: 'test' })).rejects.toThrow(NetworkError);
 
       // Run all timers to trigger retries
       await vi.runAllTimersAsync();
 
-      // Now await the promise and expect it to reject
-      await expect(promise).rejects.toThrow(NetworkError);
+      // Now await the promise
+      await promise;
 
       // Should have tried 4 times (initial + 3 retries)
       expect(mockFetch).toHaveBeenCalledTimes(4);
