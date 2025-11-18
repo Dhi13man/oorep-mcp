@@ -29,7 +29,7 @@ export class Cache<T> {
     }
 
     const age = Date.now() - entry.timestamp;
-    if (age > this.ttl) {
+    if (age >= this.ttl) {
       logger.debug(`Cache expired: ${key} (age: ${age}ms, ttl: ${this.ttl}ms)`);
       this.store.delete(key);
       return null;

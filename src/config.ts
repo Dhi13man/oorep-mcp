@@ -19,13 +19,13 @@ export interface OOREPConfig {
  */
 export function getConfig(): OOREPConfig {
   const config: OOREPConfig = {
-    baseUrl: process.env.OOREP_MCP_BASE_URL || 'https://www.oorep.com',
-    timeoutMs: parseInt(process.env.OOREP_MCP_TIMEOUT_MS || '30000', 10),
-    cacheTtlMs: parseInt(process.env.OOREP_MCP_CACHE_TTL_MS || '300000', 10),
-    maxResults: parseInt(process.env.OOREP_MCP_MAX_RESULTS || '100', 10),
-    logLevel: process.env.OOREP_MCP_LOG_LEVEL || 'info',
-    defaultRepertory: process.env.OOREP_MCP_DEFAULT_REPERTORY || 'publicum',
-    defaultMateriaMedica: process.env.OOREP_MCP_DEFAULT_MATERIA_MEDICA || 'boericke',
+    baseUrl: process.env.OOREP_MCP_BASE_URL ?? 'https://www.oorep.com',
+    timeoutMs: parseInt(process.env.OOREP_MCP_TIMEOUT_MS ?? '30000', 10),
+    cacheTtlMs: parseInt(process.env.OOREP_MCP_CACHE_TTL_MS ?? '300000', 10),
+    maxResults: parseInt(process.env.OOREP_MCP_MAX_RESULTS ?? '100', 10),
+    logLevel: process.env.OOREP_MCP_LOG_LEVEL ?? 'info',
+    defaultRepertory: process.env.OOREP_MCP_DEFAULT_REPERTORY ?? 'publicum',
+    defaultMateriaMedica: process.env.OOREP_MCP_DEFAULT_MATERIA_MEDICA ?? 'boericke',
   };
 
   // Parse CLI arguments (override env vars)

@@ -227,14 +227,20 @@ describe('SearchMateriaMedicaTool', () => {
       );
     });
 
-    it('execute when remedy filter is empty string then passes empty string', async () => {
+    it('execute when remedy filter is empty string then allows it', async () => {
       const mockApiResponse = {
         results: [],
         numberOfMatchingSectionsPerChapter: [],
       };
       mockClientLookupMM.mockResolvedValue(mockApiResponse);
 
-      await expect(mockTool.execute({ symptom: 'test', remedy: '' })).rejects.toThrow();
+      await mockTool.execute({ symptom: 'test', remedy: '' });
+
+      expect(mockClientLookupMM).toHaveBeenCalledWith(
+        expect.objectContaining({
+          remedy: '',
+        })
+      );
     });
 
     it('execute when different cache keys then separate cache entries', async () => {

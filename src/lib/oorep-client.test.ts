@@ -55,7 +55,9 @@ describe('OOREPClient', () => {
         text: () => Promise.resolve(JSON.stringify([{ totalNumberOfResults: 0, results: [] }])),
       };
 
-      mockFetch.mockResolvedValueOnce(mockSessionResponse).mockResolvedValueOnce(mockLookupResponse);
+      mockFetch
+        .mockResolvedValueOnce(mockSessionResponse)
+        .mockResolvedValueOnce(mockLookupResponse);
 
       await mockClient.lookupRepertory({ symptom: 'test' });
 
@@ -76,10 +78,13 @@ describe('OOREPClient', () => {
     });
 
     it('lookupRepertory when concurrent calls then initializes session once', async () => {
+      // Create session response with Set-Cookie header to ensure session is properly stored
+      const mockHeaders = new Headers();
+      mockHeaders.set('set-cookie', 'session_id=test123; Path=/');
       const mockSessionResponse = {
         ok: true,
         status: 200,
-        headers: new Headers(),
+        headers: mockHeaders,
         text: () => Promise.resolve('[]'),
       };
       const mockLookupResponse = {
@@ -89,14 +94,17 @@ describe('OOREPClient', () => {
         text: () => Promise.resolve(JSON.stringify([{ totalNumberOfResults: 0, results: [] }])),
       };
 
+      // Setup: one session init, then unlimited lookup responses
       mockFetch.mockResolvedValueOnce(mockSessionResponse).mockResolvedValue(mockLookupResponse);
 
+      // Execute concurrent lookups
       await Promise.all([
         mockClient.lookupRepertory({ symptom: 'test1' }),
         mockClient.lookupRepertory({ symptom: 'test2' }),
         mockClient.lookupRepertory({ symptom: 'test3' }),
       ]);
 
+      // Verify only one session initialization occurred
       const sessionInitCalls = mockFetch.mock.calls.filter((call) =>
         call[0].includes('/api/available_remedies?limit=1')
       );
@@ -106,14 +114,25 @@ describe('OOREPClient', () => {
 
   describe('lookupRepertory', () => {
     beforeEach(async () => {
+      // Properly initialize session with both session init and lookup responses
+      const sessionHeaders = new Headers();
+      sessionHeaders.set('set-cookie', 'session_id=test; Path=/');
       const mockSessionResponse = {
         ok: true,
         status: 200,
-        headers: new Headers(),
+        headers: sessionHeaders,
         text: () => Promise.resolve('[]'),
       };
-      mockFetch.mockResolvedValueOnce(mockSessionResponse);
-      await mockClient.lookupRepertory({ symptom: 'init' }).catch(() => {});
+      const mockInitLookupResponse = {
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        text: () => Promise.resolve(JSON.stringify([{ totalNumberOfResults: 0, results: [] }, []])),
+      };
+      mockFetch
+        .mockResolvedValueOnce(mockSessionResponse)
+        .mockResolvedValueOnce(mockInitLookupResponse);
+      await mockClient.lookupRepertory({ symptom: 'init' });
       mockFetch.mockClear();
     });
 
@@ -216,10 +235,16 @@ describe('OOREPClient', () => {
     });
 
     it('lookupRepertory when 401 response then refreshes session and retries', async () => {
-      const mockSessionResponse = {
+      // Create fresh client without session to test 401 handling
+      const freshClient = new OOREPClient(mockConfig);
+
+      const mockSessionHeaders = new Headers();
+      mockSessionHeaders.set('set-cookie', 'session=abc123');
+
+      const mockInitSessionResponse = {
         ok: true,
         status: 200,
-        headers: new Headers(),
+        headers: mockSessionHeaders,
         text: () => Promise.resolve('[]'),
       };
       const mock401Response = {
@@ -229,6 +254,12 @@ describe('OOREPClient', () => {
         statusText: 'Unauthorized',
         text: () => Promise.resolve('Unauthorized'),
       };
+      const mockRefreshSessionResponse = {
+        ok: true,
+        status: 200,
+        headers: mockSessionHeaders,
+        text: () => Promise.resolve('[]'),
+      };
       const mockSuccessResponse = {
         ok: true,
         status: 200,
@@ -236,14 +267,18 @@ describe('OOREPClient', () => {
         text: () => Promise.resolve(JSON.stringify([{ totalNumberOfResults: 0, results: [] }, []])),
       };
 
+      // Reset mock and set up fresh responses
+      // Flow: init session -> lookup (401) -> refresh session -> retry lookup (success)
       mockFetch
+        .mockClear()
+        .mockResolvedValueOnce(mockInitSessionResponse)
         .mockResolvedValueOnce(mock401Response)
-        .mockResolvedValueOnce(mockSessionResponse)
+        .mockResolvedValueOnce(mockRefreshSessionResponse)
         .mockResolvedValueOnce(mockSuccessResponse);
 
-      await mockClient.lookupRepertory({ symptom: 'test' });
+      await freshClient.lookupRepertory({ symptom: 'test' });
 
-      expect(mockFetch).toHaveBeenCalledTimes(3);
+      expect(mockFetch).toHaveBeenCalledTimes(4);
     });
 
     it('lookupRepertory when 429 response then throws RateLimitError', async () => {
@@ -273,6 +308,7 @@ describe('OOREPClient', () => {
 
       try {
         await mockClient.lookupRepertory({ symptom: 'test' });
+        expect.fail('Should have thrown RateLimitError');
       } catch (error) {
         expect(error).toBeInstanceOf(RateLimitError);
         expect((error as RateLimitError).retryAfter).toBe(60);
@@ -280,28 +316,68 @@ describe('OOREPClient', () => {
     });
 
     it('lookupRepertory when 500 response then throws NetworkError', async () => {
-      const mockResponse = {
+      // Create fresh client to test error handling
+      const freshClient = new OOREPClient(mockConfig);
+
+      const mockSessionResponse = {
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        text: () => Promise.resolve('[]'),
+      };
+      const mockErrorResponse = {
         ok: false,
         status: 500,
         headers: new Headers(),
         statusText: 'Internal Server Error',
         text: () => Promise.resolve('Server error'),
       };
-      mockFetch.mockResolvedValue(mockResponse);
 
-      await expect(mockClient.lookupRepertory({ symptom: 'test' })).rejects.toThrow(NetworkError);
+      mockFetch
+        .mockClear()
+        .mockResolvedValueOnce(mockSessionResponse)
+        .mockResolvedValue(mockErrorResponse);
+
+      await expect(freshClient.lookupRepertory({ symptom: 'test' })).rejects.toThrow(NetworkError);
     });
 
     it('lookupRepertory when invalid JSON then throws NetworkError', async () => {
-      const mockResponse = {
-        ok: true,
-        status: 200,
-        headers: new Headers(),
-        text: () => Promise.resolve('invalid json'),
-      };
-      mockFetch.mockResolvedValue(mockResponse);
+      vi.useFakeTimers();
+      try {
+        // Create fresh client to test error handling
+        const freshClient = new OOREPClient(mockConfig);
 
-      await expect(mockClient.lookupRepertory({ symptom: 'test' })).rejects.toThrow(NetworkError);
+        const mockSessionHeaders = new Headers();
+        mockSessionHeaders.set('set-cookie', 'session=abc123');
+
+        const mockSessionResponse = {
+          ok: true,
+          status: 200,
+          headers: mockSessionHeaders,
+          text: () => Promise.resolve('[]'),
+        };
+        const mockResponse = {
+          ok: true,
+          status: 200,
+          headers: new Headers(),
+          text: () => Promise.resolve('invalid json'),
+        };
+
+        mockFetch
+          .mockClear()
+          .mockResolvedValueOnce(mockSessionResponse)
+          .mockResolvedValue(mockResponse); // Use mockResolvedValue for all subsequent calls (retries)
+
+        // Start tracking the promise rejection before advancing timers
+        const promise = expect(freshClient.lookupRepertory({ symptom: 'test' })).rejects.toThrow(NetworkError);
+
+        // Advance timers to allow all retries to complete
+        await vi.runAllTimersAsync();
+
+        await promise;
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 
@@ -322,9 +398,25 @@ describe('OOREPClient', () => {
 
   describe('retry logic', () => {
     beforeEach(async () => {
-      const mockSessionResponse = { ok: true, status: 200, headers: new Headers() };
-      mockFetch.mockResolvedValueOnce(mockSessionResponse);
-      await mockClient.lookupRepertory({ symptom: 'init' }).catch(() => {});
+      // Properly initialize session
+      const sessionHeaders = new Headers();
+      sessionHeaders.set('set-cookie', 'session_id=test; Path=/');
+      const mockSessionResponse = {
+        ok: true,
+        status: 200,
+        headers: sessionHeaders,
+        text: () => Promise.resolve('[]'),
+      };
+      const mockInitLookupResponse = {
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        text: () => Promise.resolve(JSON.stringify([{ totalNumberOfResults: 0, results: [] }, []])),
+      };
+      mockFetch
+        .mockResolvedValueOnce(mockSessionResponse)
+        .mockResolvedValueOnce(mockInitLookupResponse);
+      await mockClient.lookupRepertory({ symptom: 'init' });
       mockFetch.mockClear();
       vi.useFakeTimers();
     });
@@ -334,13 +426,19 @@ describe('OOREPClient', () => {
     });
 
     it('lookupRepertory when network error then retries up to 3 times', async () => {
-      mockFetch.mockRejectedValue(new NetworkError('Connection failed'));
+      const error = new NetworkError('Connection failed');
+      mockFetch.mockRejectedValue(error);
 
-      const promise = mockClient.lookupRepertory({ symptom: 'test' });
+      // Start tracking the promise rejection before advancing timers
+      const promise = expect(mockClient.lookupRepertory({ symptom: 'test' })).rejects.toThrow(NetworkError);
 
+      // Run all timers to trigger retries
       await vi.runAllTimersAsync();
-      await expect(promise).rejects.toThrow();
 
+      // Now await the promise
+      await promise;
+
+      // Should have tried 4 times (initial + 3 retries)
       expect(mockFetch).toHaveBeenCalledTimes(4);
     });
 
@@ -352,20 +450,25 @@ describe('OOREPClient', () => {
         text: () => Promise.resolve(JSON.stringify([{ totalNumberOfResults: 1, results: [] }, []])),
       };
 
-      mockFetch
-        .mockRejectedValueOnce(new NetworkError('Fail'))
-        .mockResolvedValueOnce(mockSuccessResponse);
+      const error = new NetworkError('Fail');
+      mockFetch.mockRejectedValueOnce(error).mockResolvedValueOnce(mockSuccessResponse);
 
+      // Start the promise
       const promise = mockClient.lookupRepertory({ symptom: 'test' });
 
+      // Run all timers to trigger retry
       await vi.runAllTimersAsync();
+
+      // Now await the result
       const result = await promise;
 
       expect(result?.totalNumberOfResults).toBe(1);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
     });
 
     it('lookupRepertory when rate limit error then does not retry', async () => {
-      mockFetch.mockRejectedValue(new RateLimitError('Rate limited', 60));
+      const error = new RateLimitError('Rate limited', 60);
+      mockFetch.mockRejectedValue(error);
 
       await expect(mockClient.lookupRepertory({ symptom: 'test' })).rejects.toThrow(RateLimitError);
 
@@ -375,14 +478,26 @@ describe('OOREPClient', () => {
 
   describe('lookupMateriaMedica', () => {
     beforeEach(async () => {
+      // Properly initialize session
+      const sessionHeaders = new Headers();
+      sessionHeaders.set('set-cookie', 'session_id=test; Path=/');
       const mockSessionResponse = {
         ok: true,
         status: 200,
-        headers: new Headers(),
+        headers: sessionHeaders,
         text: () => Promise.resolve('[]'),
       };
-      mockFetch.mockResolvedValueOnce(mockSessionResponse);
-      await mockClient.lookupMateriaMedica({ symptom: 'init' }).catch(() => {});
+      const mockInitLookupResponse = {
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        text: () =>
+          Promise.resolve(JSON.stringify({ results: [], numberOfMatchingSectionsPerChapter: [] })),
+      };
+      mockFetch
+        .mockResolvedValueOnce(mockSessionResponse)
+        .mockResolvedValueOnce(mockInitLookupResponse);
+      await mockClient.lookupMateriaMedica({ symptom: 'init' });
       mockFetch.mockClear();
     });
 
@@ -406,7 +521,8 @@ describe('OOREPClient', () => {
         ok: true,
         status: 200,
         headers: new Headers(),
-        text: () => Promise.resolve(JSON.stringify({ results: [], numberOfMatchingSectionsPerChapter: [] })),
+        text: () =>
+          Promise.resolve(JSON.stringify({ results: [], numberOfMatchingSectionsPerChapter: [] })),
       };
       mockFetch.mockResolvedValue(mockResponse);
 
@@ -421,7 +537,8 @@ describe('OOREPClient', () => {
         ok: true,
         status: 200,
         headers: new Headers(),
-        text: () => Promise.resolve(JSON.stringify({ results: [], numberOfMatchingSectionsPerChapter: [] })),
+        text: () =>
+          Promise.resolve(JSON.stringify({ results: [], numberOfMatchingSectionsPerChapter: [] })),
       };
       mockFetch.mockResolvedValue(mockResponse);
 
@@ -436,7 +553,8 @@ describe('OOREPClient', () => {
         ok: true,
         status: 200,
         headers: new Headers(),
-        text: () => Promise.resolve(JSON.stringify({ results: [], numberOfMatchingSectionsPerChapter: [] })),
+        text: () =>
+          Promise.resolve(JSON.stringify({ results: [], numberOfMatchingSectionsPerChapter: [] })),
       };
       mockFetch.mockResolvedValue(mockResponse);
 
@@ -448,45 +566,50 @@ describe('OOREPClient', () => {
   });
 
   describe('getAvailableRemedies', () => {
-    beforeEach(async () => {
-      const mockSessionResponse = {
-        ok: true,
-        status: 200,
-        headers: new Headers(),
-        text: () => Promise.resolve('[]'),
-      };
-      mockFetch.mockResolvedValueOnce(mockSessionResponse);
-      await mockClient.getAvailableRemedies().catch(() => {});
-      mockFetch.mockClear();
-    });
-
     it('getAvailableRemedies when successful then returns remedies array', async () => {
+      // Create fresh client
+      const freshClient = new OOREPClient(mockConfig);
+
+      const mockSessionHeaders = new Headers();
+      mockSessionHeaders.set('set-cookie', 'session=abc123');
+
       const mockRemedies = [
         { id: 1, nameAbbrev: 'Acon.', nameLong: 'Aconitum napellus', namealt: [] },
       ];
+      // Note: getAvailableRemedies uses the same endpoint as session init
+      // So one response serves both purposes
       const mockResponse = {
         ok: true,
         status: 200,
-        headers: new Headers(),
+        headers: mockSessionHeaders,
         text: () => Promise.resolve(JSON.stringify(mockRemedies)),
       };
-      mockFetch.mockResolvedValue(mockResponse);
 
-      const result = await mockClient.getAvailableRemedies();
+      mockFetch.mockClear().mockResolvedValue(mockResponse);
+
+      const result = await freshClient.getAvailableRemedies();
 
       expect(result).toEqual(mockRemedies);
     });
 
     it('getAvailableRemedies when null response then returns empty array', async () => {
+      // Create fresh client
+      const freshClient = new OOREPClient(mockConfig);
+
+      const mockSessionHeaders = new Headers();
+      mockSessionHeaders.set('set-cookie', 'session=abc123');
+
+      // Note: getAvailableRemedies uses the same endpoint as session init
       const mockResponse = {
         ok: true,
         status: 204,
-        headers: new Headers(),
+        headers: mockSessionHeaders,
         text: () => Promise.resolve(''),
       };
-      mockFetch.mockResolvedValue(mockResponse);
 
-      const result = await mockClient.getAvailableRemedies();
+      mockFetch.mockClear().mockResolvedValue(mockResponse);
+
+      const result = await freshClient.getAvailableRemedies();
 
       expect(result).toEqual([]);
     });
@@ -494,14 +617,23 @@ describe('OOREPClient', () => {
 
   describe('getAvailableRepertories', () => {
     beforeEach(async () => {
+      // Properly initialize session
+      const sessionHeaders = new Headers();
+      sessionHeaders.set('set-cookie', 'session_id=test; Path=/');
       const mockSessionResponse = {
         ok: true,
         status: 200,
-        headers: new Headers(),
+        headers: sessionHeaders,
         text: () => Promise.resolve('[]'),
       };
-      mockFetch.mockResolvedValueOnce(mockSessionResponse);
-      await mockClient.getAvailableRepertories().catch(() => {});
+      const mockInitResponse = {
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        text: () => Promise.resolve(JSON.stringify([])),
+      };
+      mockFetch.mockResolvedValueOnce(mockSessionResponse).mockResolvedValueOnce(mockInitResponse);
+      await mockClient.getAvailableRepertories();
       mockFetch.mockClear();
     });
 
@@ -598,14 +730,23 @@ describe('OOREPClient', () => {
 
   describe('getAvailableMateriaMedicas', () => {
     beforeEach(async () => {
+      // Properly initialize session
+      const sessionHeaders = new Headers();
+      sessionHeaders.set('set-cookie', 'session_id=test; Path=/');
       const mockSessionResponse = {
         ok: true,
         status: 200,
-        headers: new Headers(),
+        headers: sessionHeaders,
         text: () => Promise.resolve('[]'),
       };
-      mockFetch.mockResolvedValueOnce(mockSessionResponse);
-      await mockClient.getAvailableMateriaMedicas().catch(() => {});
+      const mockInitResponse = {
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        text: () => Promise.resolve(JSON.stringify([])),
+      };
+      mockFetch.mockResolvedValueOnce(mockSessionResponse).mockResolvedValueOnce(mockInitResponse);
+      await mockClient.getAvailableMateriaMedicas();
       mockFetch.mockClear();
     });
 

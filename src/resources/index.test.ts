@@ -107,9 +107,7 @@ describe('ResourceRegistry', () => {
 
   describe('getResource - repertories list', () => {
     it('getResource when oorep://repertories/list then returns repertories', async () => {
-      const mockRepertories = [
-        { abbreviation: 'kent', title: 'Kent Repertory' },
-      ];
+      const mockRepertories = [{ abbreviation: 'kent', title: 'Kent Repertory' }];
       mockClientGetRepertories.mockResolvedValue(mockRepertories);
 
       const result = await mockRegistry.getResource('oorep://repertories/list');
@@ -134,9 +132,7 @@ describe('ResourceRegistry', () => {
 
   describe('getResource - materia medicas list', () => {
     it('getResource when oorep://materia-medicas/list then returns materia medicas', async () => {
-      const mockMMs = [
-        { abbreviation: 'boericke', title: 'Boericke MM' },
-      ];
+      const mockMMs = [{ abbreviation: 'boericke', title: 'Boericke MM' }];
       mockClientGetMMs.mockResolvedValue(mockMMs);
 
       const result = await mockRegistry.getResource('oorep://materia-medicas/list');

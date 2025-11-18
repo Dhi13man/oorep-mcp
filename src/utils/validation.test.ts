@@ -3,7 +3,12 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { validateWildcard, validateSymptom, validateRemedyName, validateLanguage } from './validation.js';
+import {
+  validateWildcard,
+  validateSymptom,
+  validateRemedyName,
+  validateLanguage,
+} from './validation.js';
 import { ValidationError } from './errors.js';
 
 describe('validateWildcard', () => {

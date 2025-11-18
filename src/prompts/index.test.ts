@@ -147,10 +147,12 @@ describe('PromptRegistry', () => {
       const result = await mockRegistry.getPrompt('remedy-comparison', { remedies });
 
       const text = result.messages[0].content.text;
-      expect(text).toContain('A');
-      expect(text).toContain('F');
-      expect(text).not.toContain('G');
-      expect(text).not.toContain('H');
+      // Extract the remedy list from the prompt
+      const remedyListMatch = text.match(/Remedies to compare: ([^\n]+)/);
+      expect(remedyListMatch).toBeDefined();
+      const remedyList = remedyListMatch![1].split(',').map((r) => r.trim());
+      expect(remedyList).toHaveLength(6);
+      expect(remedyList).toEqual(['A', 'B', 'C', 'D', 'E', 'F']);
     });
 
     it('getPrompt when remedy-comparison then includes get remedy info step', async () => {
