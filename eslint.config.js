@@ -39,8 +39,6 @@ export default tseslint.config(
       'node_modules/**',
       '*.js',
       '!eslint.config.js',
-      '**/*.test.ts',
-      '**/*.spec.ts',
     ],
   }
 );
