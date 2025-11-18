@@ -162,9 +162,7 @@ Once installed, you can interact with OOREP through Claude naturally. Here are s
 2. **Remove filters** like `minWeight` or specific repertory restrictions
 3. **Check if OOREP website is accessible** at https://www.oorep.com
 4. **Try a different repertory:**
-   ```json
-   Ask Claude: "Search in the Kent repertory instead"
-   ```
+   **Ask Claude:** "Search in the Kent repertory instead"
 
 ### High Memory Usage
 
