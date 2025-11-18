@@ -55,7 +55,9 @@ describe('OOREPClient', () => {
         text: () => Promise.resolve(JSON.stringify([{ totalNumberOfResults: 0, results: [] }])),
       };
 
-      mockFetch.mockResolvedValueOnce(mockSessionResponse).mockResolvedValueOnce(mockLookupResponse);
+      mockFetch
+        .mockResolvedValueOnce(mockSessionResponse)
+        .mockResolvedValueOnce(mockLookupResponse);
 
       await mockClient.lookupRepertory({ symptom: 'test' });
 
@@ -406,7 +408,8 @@ describe('OOREPClient', () => {
         ok: true,
         status: 200,
         headers: new Headers(),
-        text: () => Promise.resolve(JSON.stringify({ results: [], numberOfMatchingSectionsPerChapter: [] })),
+        text: () =>
+          Promise.resolve(JSON.stringify({ results: [], numberOfMatchingSectionsPerChapter: [] })),
       };
       mockFetch.mockResolvedValue(mockResponse);
 
@@ -421,7 +424,8 @@ describe('OOREPClient', () => {
         ok: true,
         status: 200,
         headers: new Headers(),
-        text: () => Promise.resolve(JSON.stringify({ results: [], numberOfMatchingSectionsPerChapter: [] })),
+        text: () =>
+          Promise.resolve(JSON.stringify({ results: [], numberOfMatchingSectionsPerChapter: [] })),
       };
       mockFetch.mockResolvedValue(mockResponse);
 
@@ -436,7 +440,8 @@ describe('OOREPClient', () => {
         ok: true,
         status: 200,
         headers: new Headers(),
-        text: () => Promise.resolve(JSON.stringify({ results: [], numberOfMatchingSectionsPerChapter: [] })),
+        text: () =>
+          Promise.resolve(JSON.stringify({ results: [], numberOfMatchingSectionsPerChapter: [] })),
       };
       mockFetch.mockResolvedValue(mockResponse);
 

@@ -260,9 +260,7 @@ describe('formatRepertoryResults', () => {
         {
           rubric: { fullPath: 'R2' },
           repertoryAbbrev: 'kent',
-          weightedRemedies: [
-            { remedy: { nameAbbrev: 'B', nameLong: 'RemedyB' }, weight: 2 },
-          ],
+          weightedRemedies: [{ remedy: { nameAbbrev: 'B', nameLong: 'RemedyB' }, weight: 2 }],
         },
       ],
     };

@@ -202,9 +202,7 @@ describe('RubricSchema', () => {
     const input = {
       rubric: 'Head, pain, general',
       repertory: 'kent',
-      remedies: [
-        { name: 'Aconite', abbreviation: 'Acon.', weight: 3 },
-      ],
+      remedies: [{ name: 'Aconite', abbreviation: 'Acon.', weight: 3 }],
     };
     const result = RubricSchema.parse(input);
 
@@ -246,9 +244,7 @@ describe('RepertorySearchResultSchema', () => {
       totalPages: 10,
       currentPage: 1,
       rubrics: [],
-      remedyStats: [
-        { name: 'Aconite', count: 5, cumulativeWeight: 15 },
-      ],
+      remedyStats: [{ name: 'Aconite', count: 5, cumulativeWeight: 15 }],
     };
     const result = RepertorySearchResultSchema.parse(input);
 

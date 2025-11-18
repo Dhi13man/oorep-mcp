@@ -149,9 +149,9 @@ describe('ToolRegistry', () => {
       const mockError = new Error('Tool execution failed');
       vi.spyOn(mockTool, 'execute').mockRejectedValue(mockError);
 
-      await expect(mockRegistry.executeTool('search_repertory', { symptom: 'test' })).rejects.toThrow(
-        mockError
-      );
+      await expect(
+        mockRegistry.executeTool('search_repertory', { symptom: 'test' })
+      ).rejects.toThrow(mockError);
     });
   });
 

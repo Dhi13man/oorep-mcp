@@ -34,6 +34,13 @@ export default tseslint.config(
 
   // Ignore patterns
   {
-    ignores: ['dist/**', 'node_modules/**', '*.js', '!eslint.config.js'],
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      '*.js',
+      '!eslint.config.js',
+      '**/*.test.ts',
+      '**/*.spec.ts',
+    ],
   }
 );
