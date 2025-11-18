@@ -37,18 +37,27 @@ export function getConfig(): OOREPConfig {
         if (i + 1 >= args.length) throw new Error(`Missing value for ${arg}`);
         config.baseUrl = args[++i];
         break;
-      case '--timeout':
+      case '--timeout': {
         if (i + 1 >= args.length) throw new Error(`Missing value for ${arg}`);
-        config.timeoutMs = parseInt(args[++i], 10);
+        const parsed = parseInt(args[++i], 10);
+        if (isNaN(parsed)) throw new Error(`Invalid numeric value for ${arg}`);
+        config.timeoutMs = parsed;
         break;
-      case '--cache-ttl':
+      }
+      case '--cache-ttl': {
         if (i + 1 >= args.length) throw new Error(`Missing value for ${arg}`);
-        config.cacheTtlMs = parseInt(args[++i], 10);
+        const parsed = parseInt(args[++i], 10);
+        if (isNaN(parsed)) throw new Error(`Invalid numeric value for ${arg}`);
+        config.cacheTtlMs = parsed;
         break;
-      case '--max-results':
+      }
+      case '--max-results': {
         if (i + 1 >= args.length) throw new Error(`Missing value for ${arg}`);
-        config.maxResults = parseInt(args[++i], 10);
+        const parsed = parseInt(args[++i], 10);
+        if (isNaN(parsed)) throw new Error(`Invalid numeric value for ${arg}`);
+        config.maxResults = parsed;
         break;
+      }
       case '--log-level':
         if (i + 1 >= args.length) throw new Error(`Missing value for ${arg}`);
         config.logLevel = args[++i];
