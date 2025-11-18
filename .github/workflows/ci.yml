@@ -21,6 +21,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          submodules: false
 
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
@@ -43,7 +45,12 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Run tests
+      - name: Run tests (without coverage)
+        if: matrix.node-version != '22.x'
+        run: npm test
+
+      - name: Run tests (with coverage)
+        if: matrix.node-version == '22.x'
         run: npm run test:coverage
 
       - name: Upload coverage to Codecov
@@ -61,6 +68,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          submodules: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
