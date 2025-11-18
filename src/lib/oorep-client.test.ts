@@ -369,7 +369,9 @@ describe('OOREPClient', () => {
           .mockResolvedValue(mockResponse); // Use mockResolvedValue for all subsequent calls (retries)
 
         // Start tracking the promise rejection before advancing timers
-        const promise = expect(freshClient.lookupRepertory({ symptom: 'test' })).rejects.toThrow(NetworkError);
+        const promise = expect(freshClient.lookupRepertory({ symptom: 'test' })).rejects.toThrow(
+          NetworkError
+        );
 
         // Advance timers to allow all retries to complete
         await vi.runAllTimersAsync();
@@ -430,7 +432,9 @@ describe('OOREPClient', () => {
       mockFetch.mockRejectedValue(error);
 
       // Start tracking the promise rejection before advancing timers
-      const promise = expect(mockClient.lookupRepertory({ symptom: 'test' })).rejects.toThrow(NetworkError);
+      const promise = expect(mockClient.lookupRepertory({ symptom: 'test' })).rejects.toThrow(
+        NetworkError
+      );
 
       // Run all timers to trigger retries
       await vi.runAllTimersAsync();
