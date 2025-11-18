@@ -139,17 +139,14 @@ describe('getConfig', () => {
   });
 
   describe('when CLI argument is missing value', () => {
-    it.each([
-      ['--base-url'],
-      ['--timeout'],
-      ['--cache-ttl'],
-      ['--max-results'],
-      ['--log-level'],
-    ])('getConfig when %s has no value then throws error', (arg: string) => {
-      process.argv = ['node', 'script.js', arg];
+    it.each([['--base-url'], ['--timeout'], ['--cache-ttl'], ['--max-results'], ['--log-level']])(
+      'getConfig when %s has no value then throws error',
+      (arg: string) => {
+        process.argv = ['node', 'script.js', arg];
 
-      expect(() => getConfig()).toThrow();
-    });
+        expect(() => getConfig()).toThrow();
+      }
+    );
   });
 
   describe('when CLI argument has invalid numeric value', () => {
