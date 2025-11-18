@@ -5,7 +5,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { GetRemedyInfoTool } from './get-remedy-info.js';
 import type { OOREPConfig } from '../config.js';
-import { ValidationError } from '../utils/errors.js';
 
 describe('GetRemedyInfoTool', () => {
   let mockTool: GetRemedyInfoTool;
