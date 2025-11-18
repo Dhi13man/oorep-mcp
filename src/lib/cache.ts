@@ -173,9 +173,9 @@ export class RequestDeduplicator {
     });
 
     // Race between request and timeout
-    const promise = Promise.race([requestPromise, timeoutPromise]);
-    this.pending.set(key, promise);
-    return promise;
+    // Store promise immediately to prevent race condition with cleanup
+    this.pending.set(key, Promise.race([requestPromise, timeoutPromise]));
+    return this.pending.get(key) as Promise<T>;
   }
 
   /**
