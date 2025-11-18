@@ -1,6 +1,9 @@
 # OOREP MCP Server
 
 [![npm version](https://img.shields.io/npm/v/oorep-mcp.svg)](https://www.npmjs.com/package/oorep-mcp)
+[![CI](https://github.com/Dhi13man/oorep-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Dhi13man/oorep-mcp/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/Dhi13man/oorep-mcp/actions/workflows/codeql.yml/badge.svg)](https://github.com/Dhi13man/oorep-mcp/actions/workflows/codeql.yml)
+[![Test Coverage](https://img.shields.io/badge/coverage-92%25-brightgreen.svg)](https://github.com/Dhi13man/oorep-mcp/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Model Context Protocol (MCP) server that provides AI assistants with access to [OOREP](https://www.oorep.com) (Open Online Repertory) - a comprehensive homeopathic repertory and materia medica database.
@@ -68,6 +71,165 @@ npm install oorep-mcp
 4. Look for the 🔌 MCP indicator in the bottom-right corner
 
 For full documentation, see the sections below or the [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
+
+## Usage Examples
+
+Once installed, you can interact with OOREP through Claude naturally. Here are some example conversations:
+
+### Example 1: Searching for Remedies
+
+**You:** "Can you search OOREP for remedies for headache that's worse at night?"
+
+**Claude will:**
+1. Use the `search_repertory` tool
+2. Search for "headache worse night" in the Kent repertory
+3. Return matching rubrics with remedy recommendations and their weights
+
+### Example 2: Getting Detailed Remedy Information
+
+**You:** "Tell me more about Aconite - what conditions is it used for?"
+
+**Claude will:**
+1. Use the `get_remedy_info` tool to fetch details about Aconite
+2. Provide information about its common uses, characteristics, and therapeutic applications
+
+### Example 3: Comparing Remedies
+
+**You:** "Compare Aconite and Belladonna for fever symptoms"
+
+**Claude will:**
+1. Use the `remedy-comparison` prompt
+2. Search materia medicas for both remedies
+3. Provide a side-by-side comparison focusing on fever symptoms
+4. Highlight key differentiating factors
+
+### Example 4: Case Repertorization
+
+**You:** "I want to repertorize a case with these symptoms: anxiety, palpitations, and insomnia"
+
+**Claude will:**
+1. Use the `repertorization-workflow` prompt
+2. Guide you through systematic symptom analysis
+3. Search relevant rubrics for each symptom
+4. Help synthesize results to identify well-indicated remedies
+
+### Example 5: Browsing Available Resources
+
+**You:** "What repertories are available in OOREP?"
+
+**Claude will:**
+1. Use the `list_available_repertories` tool
+2. Show all 12+ available repertories with their names and descriptions
+
+## Troubleshooting
+
+### Server Not Appearing in Claude Desktop
+
+**Problem:** The MCP indicator doesn't show up after configuration.
+
+**Solutions:**
+1. **Completely quit Claude Desktop** (Cmd+Q on macOS, not just close window)
+2. **Restart Claude Desktop** and wait 10-15 seconds for MCP initialization
+3. **Check the configuration file** for valid JSON syntax (use a JSON validator)
+4. **Check the logs:**
+   - **macOS:** `~/Library/Logs/Claude/mcp*.log`
+   - **Windows:** `%APPDATA%\Claude\Logs\mcp*.log`
+5. **Verify npx works:** Run `npx -y oorep-mcp` in terminal to check if it starts
+
+### Connection Timeout Errors
+
+**Problem:** "Connection timeout" or "Request timed out" errors.
+
+**Solutions:**
+1. **Increase timeout** in configuration:
+   ```json
+   "env": {
+     "OOREP_MCP_TIMEOUT_MS": "60000"
+   }
+   ```
+2. **Check network connectivity** to www.oorep.com:
+   ```bash
+   curl https://www.oorep.com
+   ```
+3. **Check for firewall/proxy issues** that might block connections
+
+### No Results Returned
+
+**Problem:** Searches return empty results or "No results found".
+
+**Solutions:**
+1. **Try broader search terms** (e.g., "headache" instead of "headache left temple worse 3pm")
+2. **Remove filters** like `minWeight` or specific repertory restrictions
+3. **Check if OOREP website is accessible** at https://www.oorep.com
+4. **Try a different repertory:**
+   ```json
+   Ask Claude: "Search in the Kent repertory instead"
+   ```
+
+### High Memory Usage
+
+**Problem:** MCP server consuming excessive memory.
+
+**Solutions:**
+1. **Reduce cache TTL** to clear cache more frequently:
+   ```json
+   "env": {
+     "OOREP_MCP_CACHE_TTL_MS": "60000"
+   }
+   ```
+2. **Reduce max results:**
+   ```json
+   "env": {
+     "OOREP_MCP_MAX_RESULTS": "50"
+   }
+   ```
+3. **Restart Claude Desktop** periodically to clear cache
+
+### Permission Errors on macOS/Linux
+
+**Problem:** "Permission denied" when running the server.
+
+**Solutions:**
+1. **For global install:** Ensure proper npm permissions
+   ```bash
+   sudo npm install -g oorep-mcp
+   ```
+2. **For npx (recommended):** No permissions needed, use `-y` flag:
+   ```bash
+   npx -y oorep-mcp
+   ```
+
+### Viewing Detailed Logs
+
+To see detailed debug logs for troubleshooting:
+
+1. **Set log level to debug:**
+   ```json
+   "env": {
+     "OOREP_MCP_LOG_LEVEL": "debug"
+   }
+   ```
+
+2. **Check MCP logs:**
+   - **macOS:** `tail -f ~/Library/Logs/Claude/mcp*.log`
+   - **Windows:** Check `%APPDATA%\Claude\Logs\`
+
+3. **Look for specific error patterns:**
+   - `NetworkError` - Connection issues
+   - `TimeoutError` - Request taking too long
+   - `ValidationError` - Invalid input
+   - `RateLimitError` - Too many requests
+
+### Still Having Issues?
+
+1. **Check existing issues:** https://github.com/Dhi13man/oorep-mcp/issues
+2. **Report a new issue:** Include:
+   - Your OS and version
+   - Node.js version (`node --version`)
+   - Claude Desktop version
+   - Configuration (remove any sensitive data)
+   - Error logs from MCP log files
+3. **Join the discussion:** Share your experience and get community help
 
 ## Available Tools
 

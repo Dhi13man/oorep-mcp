@@ -20,6 +20,16 @@ import { ResourceRegistry } from './resources/index.js';
 import { PromptRegistry } from './prompts/index.js';
 import { logger, LogLevel } from './utils/logger.js';
 import { sanitizeError } from './utils/errors.js';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+// Read version from package.json
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const packageJson = JSON.parse(
+  readFileSync(join(__dirname, '../package.json'), 'utf-8')
+);
 
 export async function createServer() {
   // Load configuration
@@ -35,7 +45,7 @@ export async function createServer() {
   const server = new Server(
     {
       name: 'oorep-mcp',
-      version: '0.1.0',
+      version: packageJson.version,
     },
     {
       capabilities: {

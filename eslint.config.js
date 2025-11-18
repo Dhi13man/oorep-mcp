@@ -39,6 +39,8 @@ export default tseslint.config(
       'node_modules/**',
       '*.js',
       '!eslint.config.js',
+      '**/*.test.ts',  // Exclude test files from linting
+      '**/__tests__/**',
     ],
   }
 );

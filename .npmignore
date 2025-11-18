@@ -1,0 +1,49 @@
+# Source files (compiled versions are in dist/)
+src/
+
+# Test files
+*.test.ts
+*.test.js
+**/*.test.*
+**/__tests__/
+coverage/
+.tmp/
+
+# Development configs
+tsconfig.json
+vitest.config.ts
+eslint.config.js
+.prettierrc*
+.editorconfig
+
+# Documentation for development
+IMPLEMENTATION_PLAN.md
+AGENTS.md
+
+# CI/CD
+.github/
+
+# Environment files
+.env*
+!.env.example
+
+# Editor directories
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+.gitattributes
