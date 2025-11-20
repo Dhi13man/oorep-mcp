@@ -20,6 +20,8 @@ import { ResourceRegistry } from './resources/index.js';
 import { PromptRegistry } from './prompts/index.js';
 import { logger, LogLevel } from './utils/logger.js';
 import { sanitizeError } from './utils/errors.js';
+// Import package.json for version info - TypeScript will handle this correctly during compilation
+import packageJson from '../package.json' with { type: 'json' };
 
 export async function createServer() {
   // Load configuration
@@ -35,7 +37,7 @@ export async function createServer() {
   const server = new Server(
     {
       name: 'oorep-mcp',
-      version: '0.1.0',
+      version: packageJson.version,
     },
     {
       capabilities: {

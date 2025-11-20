@@ -1,0 +1,69 @@
+name: Publish to npm
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to publish (e.g., v1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write  # Required for npm provenance
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+          ref: ${{ github.event.release.tag_name || inputs.tag }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Verify version matches tag
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          TAG_VERSION=${{ github.event.release.tag_name || inputs.tag }}
+          TAG_VERSION=${TAG_VERSION#v}  # Remove 'v' prefix if present
+
+          if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
+            echo "❌ Version mismatch: package.json=$PACKAGE_VERSION, tag=$TAG_VERSION"
+            exit 1
+          fi
+          echo "✓ Version matches: $PACKAGE_VERSION"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish to npm with provenance
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create publication summary
+        run: |
+          echo "### 📦 Published to npm" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Package**: oorep-mcp" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: $(node -p 'require(\"./package.json\").version')" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag**: ${{ github.event.release.tag_name || inputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Provenance**: ✓ Enabled" >> $GITHUB_STEP_SUMMARY

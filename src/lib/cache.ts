@@ -12,9 +12,20 @@ interface CacheEntry<T> {
 export class Cache<T> {
   private store = new Map<string, CacheEntry<T>>();
   private ttl: number;
+  private cleanupTimer?: NodeJS.Timeout;
 
   constructor(ttlMs: number) {
     this.ttl = ttlMs;
+    // Set up periodic cleanup every hour or when TTL expires (whichever is smaller)
+    const cleanupInterval = Math.min(ttlMs, 3600000); // Max 1 hour
+    this.cleanupTimer = setInterval(() => {
+      this.cleanup();
+    }, cleanupInterval);
+
+    // Ensure timer doesn't prevent process exit
+    if (this.cleanupTimer.unref) {
+      this.cleanupTimer.unref();
+    }
   }
 
   /**
@@ -104,6 +115,18 @@ export class Cache<T> {
 
     return removed;
   }
+
+  /**
+   * Destroy the cache and cleanup resources
+   */
+  destroy(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = undefined;
+    }
+    this.clear();
+    logger.debug('Cache destroyed');
+  }
 }
 
 /**
@@ -115,21 +138,44 @@ export class RequestDeduplicator {
   /**
    * Deduplicate requests by key
    * If a request with the same key is already in flight, return the existing promise
+   * @param timeoutMs - Maximum time to wait for the request (default: 60 seconds)
    */
-  async deduplicate<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  async deduplicate<T>(key: string, fn: () => Promise<T>, timeoutMs = 60000): Promise<T> {
     // If request already in flight, return existing promise
     if (this.pending.has(key)) {
       logger.debug(`Request deduplication: using existing request for ${key}`);
       return this.pending.get(key) as Promise<T>;
     }
 
-    // Start new request
-    const promise = fn().finally(() => {
-      this.pending.delete(key);
+    // Store timeout timer so it can be cleared
+    let timeoutTimer: NodeJS.Timeout | undefined;
+
+    // Create a timeout promise that will cleanup if request hangs
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutTimer = setTimeout(() => {
+        this.pending.delete(key);
+        reject(new Error(`Request timeout after ${timeoutMs}ms`));
+      }, timeoutMs);
+
+      // Allow garbage collection if request completes before timeout
+      if (timeoutTimer.unref) {
+        timeoutTimer.unref();
+      }
     });
 
-    this.pending.set(key, promise);
-    return promise;
+    // Start new request with automatic cleanup
+    const requestPromise = fn().finally(() => {
+      this.pending.delete(key);
+      // Clear the timeout if request completes
+      if (timeoutTimer) {
+        clearTimeout(timeoutTimer);
+      }
+    });
+
+    // Race between request and timeout
+    // Store promise immediately to prevent race condition with cleanup
+    this.pending.set(key, Promise.race([requestPromise, timeoutPromise]));
+    return this.pending.get(key) as Promise<T>;
   }
 
   /**

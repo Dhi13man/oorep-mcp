@@ -1,0 +1,77 @@
+name: PR Validation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate:
+    name: Validate PR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check for lockfile changes
+        run: |
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "package-lock.json"; then
+            echo "✓ Lockfile changes detected"
+          fi
+
+      - name: Verify no uncommitted changes after build
+        run: |
+          npm run build
+          if [[ -n $(git status --porcelain) ]]; then
+            echo "❌ Build created uncommitted changes. Please commit them."
+            git status
+            exit 1
+          fi
+          echo "✓ No uncommitted changes after build"
+
+  size-check:
+    name: Package Size Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and check size
+        run: |
+          npm run build
+          npm pack
+          SIZE=$(ls -lh oorep-mcp-*.tgz | awk '{print $5}')
+          echo "📦 Package size: $SIZE"
+          # Warn if package is larger than 1MB
+          SIZE_BYTES=$(ls -l oorep-mcp-*.tgz | awk '{print $5}')
+          if [ $SIZE_BYTES -gt 1048576 ]; then
+            echo "⚠️ Warning: Package size exceeds 1MB"
+          fi
