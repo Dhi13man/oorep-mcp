@@ -3,7 +3,19 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createServer } from './server.js';
+import { createServer, runServer } from './server.js';
+
+// Mock the stdio transport
+vi.mock('@modelcontextprotocol/sdk/server/stdio.js', () => ({
+  StdioServerTransport: class MockStdioServerTransport {
+    async start() {
+      // Mock start - do nothing
+    }
+    async close() {
+      // Mock close - do nothing
+    }
+  },
+}));
 
 describe('createServer', () => {
   let originalEnv: NodeJS.ProcessEnv;
@@ -273,11 +285,14 @@ describe('createServer', () => {
 
   describe('prompt retrieval', () => {
     it('createServer when get prompt succeeds then returns messages', async () => {
-      const server = await createServer();
       let getPromptHandler: ((request: any) => Promise<any>) | null = null;
 
+      const server = await createServer();
       const mockSetRequestHandler = vi.spyOn(server, 'setRequestHandler');
+
+      // Re-create to capture handlers with spy
       await createServer();
+      void server;
 
       mockSetRequestHandler.mock.calls.forEach((call) => {
         if (call[0]?.method === 'prompts/get') {
@@ -298,11 +313,14 @@ describe('createServer', () => {
     });
 
     it('createServer when get prompt fails then throws sanitized error', async () => {
-      const server = await createServer();
       let getPromptHandler: ((request: any) => Promise<any>) | null = null;
 
+      const server = await createServer();
       const mockSetRequestHandler = vi.spyOn(server, 'setRequestHandler');
+
+      // Re-create to capture handlers with spy
       await createServer();
+      void server;
 
       mockSetRequestHandler.mock.calls.forEach((call) => {
         if (call[0]?.method === 'prompts/get') {
@@ -393,5 +411,57 @@ describe('createServer', () => {
         expect(result.prompts.map((p: any) => p.name)).toContain('analyze-symptoms');
       }
     });
+  });
+});
+
+describe('runServer', () => {
+  let originalEnv: NodeJS.ProcessEnv;
+  let originalArgv: string[];
+  let mockExit: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    originalEnv = { ...process.env };
+    originalArgv = [...process.argv];
+    // Set minimal required env vars
+    process.env.OOREP_MCP_BASE_URL = 'https://test.oorep.com';
+    process.env.OOREP_MCP_LOG_LEVEL = 'error';
+    process.argv = ['node', 'script.js'];
+    // Mock process.exit to prevent actual exit
+    mockExit = vi.spyOn(process, 'exit').mockImplementation((() => {
+      throw new Error('process.exit called');
+    }) as () => never);
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
+    process.argv = originalArgv;
+    vi.restoreAllMocks();
+  });
+
+  it('runServer when called successfully then connects transport', async () => {
+    // The server will be created and connected
+    const serverPromise = runServer();
+
+    // Give it a moment to start
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // The promise should not reject with valid config
+    await expect(serverPromise).resolves.toBeUndefined();
+  });
+
+  it('runServer when createServer fails then exits with code 1', async () => {
+    // Set invalid config to make createServer fail
+    process.env.OOREP_MCP_BASE_URL = '';
+
+    await expect(runServer()).rejects.toThrow('process.exit called');
+    expect(mockExit).toHaveBeenCalledWith(1);
+  });
+
+  it('runServer when configuration is invalid then logs error and exits', async () => {
+    // Use invalid timeout to trigger error
+    process.env.OOREP_MCP_TIMEOUT_MS = '-1';
+
+    await expect(runServer()).rejects.toThrow('process.exit called');
+    expect(mockExit).toHaveBeenCalledWith(1);
   });
 });
