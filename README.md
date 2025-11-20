@@ -70,18 +70,39 @@ npm install oorep-mcp
 
 4. Look for the 🔌 MCP indicator in the bottom-right corner
 
-### Codex
+### Codex CLI
 
-Add to your `config.toml`:
+1. Locate your Codex CLI configuration file:
+   - **macOS/Linux**: `~/.codex/config.toml`
+   - **Windows**: `C:\Users\<Username>\.codex\config.toml`
 
-```toml
-[mcp_servers.oorep_mcp]
-command = "npx"
-args = ["-y", "oorep-mcp"]
-[mcp_servers.oorep_mcp.env]
-OOREP_MCP_BASE_URL = "https://www.oorep.com"
-OOREP_MCP_LOG_LEVEL = "info"
-```
+2. Create the file if it doesn't exist, then add the OOREP MCP server:
+
+   ```toml
+   [mcp_servers.oorep_mcp]
+   command = "npx"
+   args = ["-y", "oorep-mcp"]
+   startup_timeout_sec = 15.0
+   tool_timeout_sec = 60.0
+
+   [mcp_servers.oorep_mcp.env]
+   OOREP_MCP_BASE_URL = "https://www.oorep.com"
+   OOREP_MCP_LOG_LEVEL = "info"
+   ```
+
+   Or add via CLI:
+
+   ```bash
+   codex mcp add oorep_mcp --env OOREP_MCP_BASE_URL=https://www.oorep.com --env OOREP_MCP_LOG_LEVEL=info -- npx -y oorep-mcp
+   ```
+
+3. Verify the configuration:
+
+   ```bash
+   codex mcp list
+   ```
+
+4. Restart Codex CLI and run `/mcp` in the TUI to verify the server is connected
 
 ### Gemini CLI
 
