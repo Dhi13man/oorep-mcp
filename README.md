@@ -58,8 +58,8 @@ npm install oorep-mcp
          "command": "npx",
          "args": ["-y", "oorep-mcp"],
          "env": {
-         "OOREP_MCP_BASE_URL": "https://www.oorep.com",
-         "OOREP_MCP_LOG_LEVEL": "info"
+           "OOREP_MCP_BASE_URL": "https://www.oorep.com",
+           "OOREP_MCP_LOG_LEVEL": "info"
          }
       }
    }
@@ -70,6 +70,93 @@ npm install oorep-mcp
 
 4. Look for the 🔌 MCP indicator in the bottom-right corner
 
+### Codex CLI
+
+1. Locate your Codex CLI configuration file:
+   - **macOS/Linux**: `~/.codex/config.toml`
+   - **Windows**: `C:\Users\<Username>\.codex\config.toml`
+
+2. Create the file if it doesn't exist, then add the OOREP MCP server:
+
+   ```toml
+   [mcp_servers.oorep_mcp]
+   command = "npx"
+   args = ["-y", "oorep-mcp"]
+   startup_timeout_sec = 15.0
+   tool_timeout_sec = 60.0
+
+   [mcp_servers.oorep_mcp.env]
+   OOREP_MCP_BASE_URL = "https://www.oorep.com"
+   OOREP_MCP_LOG_LEVEL = "info"
+   ```
+
+   Or add via CLI:
+
+   ```bash
+   codex mcp add oorep_mcp --env OOREP_MCP_BASE_URL=https://www.oorep.com --env OOREP_MCP_LOG_LEVEL=info -- npx -y oorep-mcp
+   ```
+
+3. Verify the configuration:
+
+   ```bash
+   codex mcp list
+   ```
+
+4. Restart Codex CLI and run `/mcp` in the TUI to verify the server is connected
+
+### Gemini CLI
+
+1. Locate your Gemini CLI settings file at `~/.gemini/settings.json`
+
+2. Add the OOREP MCP server:
+
+   ```json
+   {
+     "mcpServers": {
+       "oorep": {
+         "command": "npx",
+         "args": ["-y", "oorep-mcp"],
+         "env": {
+           "OOREP_MCP_BASE_URL": "https://www.oorep.com",
+           "OOREP_MCP_LOG_LEVEL": "info"
+         },
+         "timeout": 30000
+       }
+     }
+   }
+   ```
+
+3. Restart Gemini CLI and run `/mcp` to verify the server is connected
+
+### Claude Code
+
+1. Locate your Claude Code configuration file at `~/.claude.json`
+
+2. Add the OOREP MCP server:
+
+   ```json
+   {
+     "mcpServers": {
+       "oorep": {
+         "command": "npx",
+         "args": ["-y", "oorep-mcp"],
+         "env": {
+           "OOREP_MCP_BASE_URL": "https://www.oorep.com",
+           "OOREP_MCP_LOG_LEVEL": "info"
+         }
+       }
+     }
+   }
+   ```
+
+   Or add via CLI:
+
+   ```bash
+   claude mcp add oorep --scope user -- npx -y oorep-mcp
+   ```
+
+3. Restart Claude Code and run `/mcp` to verify the server is connected
+
 ## Usage Examples
 
 Once installed, you can interact with OOREP through Claude naturally. Here are some example conversations:
@@ -79,6 +166,7 @@ Once installed, you can interact with OOREP through Claude naturally. Here are s
 **You:** "Can you search OOREP for remedies for headache that's worse at night?"
 
 **Claude will:**
+
 1. Use the `search_repertory` tool
 2. Search for "headache worse night" in the Kent repertory
 3. Return matching rubrics with remedy recommendations and their weights
@@ -88,6 +176,7 @@ Once installed, you can interact with OOREP through Claude naturally. Here are s
 **You:** "Tell me more about Aconite - what conditions is it used for?"
 
 **Claude will:**
+
 1. Use the `get_remedy_info` tool to fetch details about Aconite
 2. Provide information about its common uses, characteristics, and therapeutic applications
 
@@ -96,6 +185,7 @@ Once installed, you can interact with OOREP through Claude naturally. Here are s
 **You:** "Compare Aconite and Belladonna for fever symptoms"
 
 **Claude will:**
+
 1. Use the `remedy-comparison` prompt
 2. Search materia medicas for both remedies
 3. Provide a side-by-side comparison focusing on fever symptoms
@@ -106,6 +196,7 @@ Once installed, you can interact with OOREP through Claude naturally. Here are s
 **You:** "I want to repertorize a case with these symptoms: anxiety, palpitations, and insomnia"
 
 **Claude will:**
+
 1. Use the `repertorization-workflow` prompt
 2. Guide you through systematic symptom analysis
 3. Search relevant rubrics for each symptom
@@ -116,6 +207,7 @@ Once installed, you can interact with OOREP through Claude naturally. Here are s
 **You:** "What repertories are available in OOREP?"
 
 **Claude will:**
+
 1. Use the `list_available_repertories` tool
 2. Show all 12+ available repertories with their names and descriptions
 
@@ -126,6 +218,7 @@ Once installed, you can interact with OOREP through Claude naturally. Here are s
 **Problem:** The MCP indicator doesn't show up after configuration.
 
 **Solutions:**
+
 1. **Completely quit Claude Desktop** (Cmd+Q on macOS, not just close window)
 2. **Restart Claude Desktop** and wait 10-15 seconds for MCP initialization
 3. **Check the configuration file** for valid JSON syntax (use a JSON validator)
@@ -139,16 +232,21 @@ Once installed, you can interact with OOREP through Claude naturally. Here are s
 **Problem:** "Connection timeout" or "Request timed out" errors.
 
 **Solutions:**
+
 1. **Increase timeout** in configuration:
+
    ```json
    "env": {
      "OOREP_MCP_TIMEOUT_MS": "60000"
    }
    ```
-2. **Check network connectivity** to www.oorep.com:
+
+2. **Check network connectivity** to <www.oorep.com>:
+
    ```bash
    curl https://www.oorep.com
    ```
+
 3. **Check for firewall/proxy issues** that might block connections
 
 ### No Results Returned
@@ -156,9 +254,10 @@ Once installed, you can interact with OOREP through Claude naturally. Here are s
 **Problem:** Searches return empty results or "No results found".
 
 **Solutions:**
+
 1. **Try broader search terms** (e.g., "headache" instead of "headache left temple worse 3pm")
 2. **Remove filters** like `minWeight` or specific repertory restrictions
-3. **Check if OOREP website is accessible** at https://www.oorep.com
+3. **Check if OOREP website is accessible** at <https://www.oorep.com>
 4. **Try a different repertory:**
    **Ask Claude:** "Search in the Kent repertory instead"
 
@@ -167,18 +266,23 @@ Once installed, you can interact with OOREP through Claude naturally. Here are s
 **Problem:** MCP server consuming excessive memory.
 
 **Solutions:**
+
 1. **Reduce cache TTL** to clear cache more frequently:
+
    ```json
    "env": {
      "OOREP_MCP_CACHE_TTL_MS": "60000"
    }
    ```
+
 2. **Reduce max results:**
+
    ```json
    "env": {
      "OOREP_MCP_MAX_RESULTS": "50"
    }
    ```
+
 3. **Restart Claude Desktop** periodically to clear cache
 
 ### Permission Errors on macOS/Linux
@@ -186,11 +290,15 @@ Once installed, you can interact with OOREP through Claude naturally. Here are s
 **Problem:** "Permission denied" when running the server.
 
 **Solutions:**
+
 1. **For global install:** Ensure proper npm permissions
+
    ```bash
    sudo npm install -g oorep-mcp
    ```
+
 2. **For npx (recommended):** No permissions needed, use `-y` flag:
+
    ```bash
    npx -y oorep-mcp
    ```
@@ -200,6 +308,7 @@ Once installed, you can interact with OOREP through Claude naturally. Here are s
 To see detailed debug logs for troubleshooting:
 
 1. **Set log level to debug:**
+
    ```json
    "env": {
      "OOREP_MCP_LOG_LEVEL": "debug"
@@ -218,7 +327,7 @@ To see detailed debug logs for troubleshooting:
 
 ### Still Having Issues?
 
-1. **Check existing issues:** https://github.com/Dhi13man/oorep-mcp/issues
+1. **Check existing issues:** <https://github.com/Dhi13man/oorep-mcp/issues>
 2. **Report a new issue:** Include:
    - Your OS and version
    - Node.js version (`node --version`)
