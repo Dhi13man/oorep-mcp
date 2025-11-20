@@ -29,7 +29,7 @@ function matchesPartially(
   remedy: { nameAbbrev: string; nameLong: string; namealt?: string[] },
   normalizedQuery: string
 ): boolean {
-  const normalize = (value: string) => value.replace(/[^a-z0-9]/g, '').toLowerCase();
+  const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
   const abbrev = normalize(remedy.nameAbbrev);
   const longName = normalize(remedy.nameLong);
   const altNames = (remedy.namealt || []).map((alt) => normalize(alt));

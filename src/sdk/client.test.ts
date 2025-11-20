@@ -397,6 +397,21 @@ describe('OOREPSDKClient', () => {
       expect(result?.id).toBe(1);
     });
 
+    it('when exactly 3 char partial match then returns remedy', async () => {
+      // Arrange - tests minimum 3-char partial matching
+      const mockRemedies = [
+        { id: 1, nameAbbrev: 'Acon.', nameLong: 'Aconitum napellus', namealt: [] },
+      ];
+      mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue(mockRemedies);
+
+      // Act - "aco" is exactly 3 chars and should match "aconitum" via substring
+      const result = await client.getRemedyInfo({ remedy: 'aco' });
+
+      // Assert - "aconitumnapellus".includes("aco") = true
+      expect(result).not.toBeNull();
+      expect(result?.id).toBe(1);
+    });
+
     it('when query too short for partial match then does not match', async () => {
       // Arrange - partial matching requires 3+ chars
       const mockRemedies = [
