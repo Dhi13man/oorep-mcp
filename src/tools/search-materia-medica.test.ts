@@ -140,20 +140,23 @@ describe('SearchMateriaMedicaTool', () => {
       );
     });
 
-    it('execute when remedy filter is empty string then allows it', async () => {
+    it('execute when remedy filter is undefined then does not include remedy param', async () => {
       const mockFormattedResponse = {
         totalResults: 0,
         results: [],
       };
       mockSearchMateriaMedica.mockResolvedValue(mockFormattedResponse);
 
-      await mockTool.execute({ symptom: 'test', remedy: '' });
+      await mockTool.execute({ symptom: 'test' });
 
       expect(mockSearchMateriaMedica).toHaveBeenCalledWith(
         expect.objectContaining({
-          remedy: '',
+          symptom: 'test',
         })
       );
+      // Verify remedy is not explicitly set to empty string
+      const callArgs = mockSearchMateriaMedica.mock.calls[0][0];
+      expect(callArgs.remedy).toBeUndefined();
     });
   });
 });

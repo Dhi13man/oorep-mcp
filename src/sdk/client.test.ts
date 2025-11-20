@@ -352,6 +352,95 @@ describe('OOREPSDKClient', () => {
       expect(result).toBeNull();
     });
 
+    it('when partial match with 3+ chars on long name then returns remedy', async () => {
+      // Arrange - tests matchesPartially function
+      const mockRemedies = [
+        { id: 1, nameAbbrev: 'Acon.', nameLong: 'Aconitum napellus', namealt: [] },
+      ];
+      mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue(mockRemedies);
+
+      // Act - "aconit" is partial match for "aconitum"
+      const result = await client.getRemedyInfo({ remedy: 'aconit' });
+
+      // Assert
+      expect(result).not.toBeNull();
+      expect(result?.id).toBe(1);
+    });
+
+    it('when partial match with 3+ chars on long name then returns remedy via substring', async () => {
+      // Arrange - "bella" should match "belladonna" via partial match
+      const mockRemedies = [
+        { id: 1, nameAbbrev: 'Bell.', nameLong: 'Belladonna', namealt: [] },
+      ];
+      mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue(mockRemedies);
+
+      // Act - "bella" is partial match for "belladonna"
+      const result = await client.getRemedyInfo({ remedy: 'bella' });
+
+      // Assert
+      expect(result).not.toBeNull();
+      expect(result?.id).toBe(1);
+    });
+
+    it('when partial match on alternative name substring then returns remedy', async () => {
+      // Arrange
+      const mockRemedies = [
+        { id: 1, nameAbbrev: 'Acon.', nameLong: 'Aconitum napellus', namealt: ['Monkshood', 'Wolfsbane'] },
+      ];
+      mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue(mockRemedies);
+
+      // Act - "monkshood" exact match on alternative name
+      const result = await client.getRemedyInfo({ remedy: 'monkshood' });
+
+      // Assert
+      expect(result).not.toBeNull();
+      expect(result?.id).toBe(1);
+    });
+
+    it('when query too short for partial match then does not match', async () => {
+      // Arrange - partial matching requires 3+ chars
+      const mockRemedies = [
+        { id: 1, nameAbbrev: 'Acon.', nameLong: 'Aconitum napellus', namealt: [] },
+      ];
+      mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue(mockRemedies);
+
+      // Act - "ac" is too short for partial matching
+      const result = await client.getRemedyInfo({ remedy: 'ac' });
+
+      // Assert - should not match because query is < 3 chars
+      expect(result).toBeNull();
+    });
+
+    it('when multiple remedies match then returns first match', async () => {
+      // Arrange
+      const mockRemedies = [
+        { id: 1, nameAbbrev: 'Acon.', nameLong: 'Aconitum napellus', namealt: [] },
+        { id: 2, nameAbbrev: 'Acon-l.', nameLong: 'Aconitum lycoctonum', namealt: [] },
+      ];
+      mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue(mockRemedies);
+
+      // Act
+      const result = await client.getRemedyInfo({ remedy: 'aconitum' });
+
+      // Assert - first match wins
+      expect(result?.id).toBe(1);
+    });
+
+    it('when case differs then still matches', async () => {
+      // Arrange
+      const mockRemedies = [
+        { id: 1, nameAbbrev: 'ACON.', nameLong: 'ACONITUM NAPELLUS', namealt: ['MONKSHOOD'] },
+      ];
+      mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue(mockRemedies);
+
+      // Act - lowercase query should match uppercase data
+      const result = await client.getRemedyInfo({ remedy: 'aconitum napellus' });
+
+      // Assert
+      expect(result).not.toBeNull();
+      expect(result?.id).toBe(1);
+    });
+
     it('when cached then returns cached result', async () => {
       // Arrange
       const cachedResult = { id: 1, nameAbbrev: 'Acon.', nameLong: 'Aconitum napellus' };

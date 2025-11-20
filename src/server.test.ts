@@ -324,25 +324,65 @@ describe('createServer', () => {
   });
 
   describe('registry initialization', () => {
-    it('createServer when initialized then tool registry has tools', async () => {
+    it('createServer when initialized then tool registry has correct number of tools', async () => {
+      const server = await createServer();
+      let listToolsHandler: ((request: any) => Promise<any>) | null = null;
+
+      const mockSetRequestHandler = vi.spyOn(server, 'setRequestHandler');
       await createServer();
 
-      // Server initializes successfully, meaning tool registry was created
-      expect(true).toBe(true);
+      mockSetRequestHandler.mock.calls.forEach((call) => {
+        if (call[0]?.method === 'tools/list') {
+          listToolsHandler = call[1];
+        }
+      });
+
+      if (listToolsHandler) {
+        const result = await listToolsHandler({});
+        expect(result.tools).toHaveLength(5);
+        expect(result.tools.map((t: any) => t.name)).toContain('search_repertory');
+        expect(result.tools.map((t: any) => t.name)).toContain('get_remedy_info');
+      }
     });
 
-    it('createServer when initialized then resource registry has resources', async () => {
+    it('createServer when initialized then resource registry has correct number of resources', async () => {
+      const server = await createServer();
+      let listResourcesHandler: ((request: any) => Promise<any>) | null = null;
+
+      const mockSetRequestHandler = vi.spyOn(server, 'setRequestHandler');
       await createServer();
 
-      // Server initializes successfully, meaning resource registry was created
-      expect(true).toBe(true);
+      mockSetRequestHandler.mock.calls.forEach((call) => {
+        if (call[0]?.method === 'resources/list') {
+          listResourcesHandler = call[1];
+        }
+      });
+
+      if (listResourcesHandler) {
+        const result = await listResourcesHandler({});
+        expect(result.resources).toHaveLength(4);
+        expect(result.resources.map((r: any) => r.uri)).toContain('oorep://help/search-syntax');
+      }
     });
 
-    it('createServer when initialized then prompt registry has prompts', async () => {
+    it('createServer when initialized then prompt registry has correct number of prompts', async () => {
+      const server = await createServer();
+      let listPromptsHandler: ((request: any) => Promise<any>) | null = null;
+
+      const mockSetRequestHandler = vi.spyOn(server, 'setRequestHandler');
       await createServer();
 
-      // Server initializes successfully, meaning prompt registry was created
-      expect(true).toBe(true);
+      mockSetRequestHandler.mock.calls.forEach((call) => {
+        if (call[0]?.method === 'prompts/list') {
+          listPromptsHandler = call[1];
+        }
+      });
+
+      if (listPromptsHandler) {
+        const result = await listPromptsHandler({});
+        expect(result.prompts).toHaveLength(3);
+        expect(result.prompts.map((p: any) => p.name)).toContain('analyze-symptoms');
+      }
     });
   });
 });
