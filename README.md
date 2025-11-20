@@ -58,8 +58,8 @@ npm install oorep-mcp
          "command": "npx",
          "args": ["-y", "oorep-mcp"],
          "env": {
-         "OOREP_MCP_BASE_URL": "https://www.oorep.com",
-         "OOREP_MCP_LOG_LEVEL": "info"
+           "OOREP_MCP_BASE_URL": "https://www.oorep.com",
+           "OOREP_MCP_LOG_LEVEL": "info"
          }
       }
    }
