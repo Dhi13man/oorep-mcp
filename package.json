@@ -9,6 +9,40 @@
   "bin": {
     "oorep-mcp": "dist/index.js"
   },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./sdk": {
+      "types": "./dist/sdk/index.d.ts",
+      "import": "./dist/sdk/index.js"
+    },
+    "./sdk/client": {
+      "types": "./dist/sdk/client.d.ts",
+      "import": "./dist/sdk/client.js"
+    },
+    "./sdk/tools": {
+      "types": "./dist/sdk/tools.d.ts",
+      "import": "./dist/sdk/tools.js"
+    },
+    "./sdk/openai": {
+      "types": "./dist/sdk/adapters/openai.d.ts",
+      "import": "./dist/sdk/adapters/openai.js"
+    },
+    "./sdk/vercel-ai": {
+      "types": "./dist/sdk/adapters/vercel-ai.d.ts",
+      "import": "./dist/sdk/adapters/vercel-ai.js"
+    },
+    "./sdk/langchain": {
+      "types": "./dist/sdk/adapters/langchain.d.ts",
+      "import": "./dist/sdk/adapters/langchain.js"
+    },
+    "./sdk/adapters": {
+      "types": "./dist/sdk/adapters/index.d.ts",
+      "import": "./dist/sdk/adapters/index.js"
+    }
+  },
   "files": [
     "dist",
     "package.json",
@@ -34,6 +68,13 @@
     "model-context-protocol",
     "modelcontextprotocol",
     "server",
+    "sdk",
+    "ai-sdk",
+    "openai",
+    "langchain",
+    "vercel-ai",
+    "function-calling",
+    "tool-calling",
     "oorep",
     "homeopathy",
     "repertory",
