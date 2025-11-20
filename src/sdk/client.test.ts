@@ -73,10 +73,9 @@ vi.mock('../utils/validation.js', () => ({
   validateLanguage: vi.fn(),
 }));
 
-import { OOREPClient } from '../lib/oorep-client.js';
-import { Cache, RequestDeduplicator } from '../lib/cache.js';
-import { formatRepertoryResults, formatMateriaMedicaResults } from '../lib/data-formatter.js';
+// Import mocked functions for assertions
 import { validateSymptom, validateRemedyName, validateLanguage } from '../utils/validation.js';
+import { formatRepertoryResults, formatMateriaMedicaResults } from '../lib/data-formatter.js';
 
 describe('OOREPSDKClient', () => {
   let client: OOREPSDKClient;

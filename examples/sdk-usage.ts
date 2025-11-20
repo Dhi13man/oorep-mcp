@@ -262,6 +262,9 @@ async function main() {
 
   console.log('\n=== Error Handling ===\n');
   await errorHandlingExample();
+
+  console.log('\n=== Azure OpenAI Integration ===\n');
+  await azureOpenAIExample();
 }
 
 main().catch(console.error);

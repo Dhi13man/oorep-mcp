@@ -148,6 +148,9 @@ export class OOREPSDKClient {
   }): Promise<MateriaMedicaSearchResult> {
     const validated = SearchMateriaMedicaArgsSchema.parse(args);
     validateSymptom(validated.symptom);
+    if (validated.remedy !== undefined) {
+      validateRemedyName(validated.remedy);
+    }
 
     const cacheKey = generateCacheKey('mm', {
       symptom: validated.symptom,

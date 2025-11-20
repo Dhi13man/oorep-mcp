@@ -325,11 +325,14 @@ describe('createServer', () => {
 
   describe('registry initialization', () => {
     it('createServer when initialized then tool registry has correct number of tools', async () => {
-      const server = await createServer();
       let listToolsHandler: ((request: any) => Promise<any>) | null = null;
 
+      const server = await createServer();
       const mockSetRequestHandler = vi.spyOn(server, 'setRequestHandler');
+
+      // Re-create to capture handlers with spy
       await createServer();
+      void server; // First server used for spy setup
 
       mockSetRequestHandler.mock.calls.forEach((call) => {
         if (call[0]?.method === 'tools/list') {
@@ -346,11 +349,14 @@ describe('createServer', () => {
     });
 
     it('createServer when initialized then resource registry has correct number of resources', async () => {
-      const server = await createServer();
       let listResourcesHandler: ((request: any) => Promise<any>) | null = null;
 
+      const server = await createServer();
       const mockSetRequestHandler = vi.spyOn(server, 'setRequestHandler');
+
+      // Re-create to capture handlers with spy
       await createServer();
+      void server; // First server used for spy setup
 
       mockSetRequestHandler.mock.calls.forEach((call) => {
         if (call[0]?.method === 'resources/list') {
@@ -366,11 +372,14 @@ describe('createServer', () => {
     });
 
     it('createServer when initialized then prompt registry has correct number of prompts', async () => {
-      const server = await createServer();
       let listPromptsHandler: ((request: any) => Promise<any>) | null = null;
 
+      const server = await createServer();
       const mockSetRequestHandler = vi.spyOn(server, 'setRequestHandler');
+
+      // Re-create to capture handlers with spy
       await createServer();
+      void server; // First server used for spy setup
 
       mockSetRequestHandler.mock.calls.forEach((call) => {
         if (call[0]?.method === 'prompts/list') {
