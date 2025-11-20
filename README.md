@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/oorep-mcp.svg)](https://www.npmjs.com/package/oorep-mcp)
 [![CI](https://github.com/Dhi13man/oorep-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Dhi13man/oorep-mcp/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/Dhi13man/oorep-mcp/actions/workflows/codeql.yml/badge.svg)](https://github.com/Dhi13man/oorep-mcp/actions/workflows/codeql.yml)
-[![Test Coverage](https://img.shields.io/badge/coverage-92%25-brightgreen.svg)](https://github.com/Dhi13man/oorep-mcp/actions)
+[![Test Coverage](https://img.shields.io/badge/coverage-93%25-brightgreen.svg)](https://github.com/Dhi13man/oorep-mcp/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Model Context Protocol (MCP) server that provides AI assistants with access to [OOREP](https://www.oorep.com) (Open Online Repertory) - a comprehensive homeopathic repertory and materia medica database.
@@ -18,6 +18,7 @@ Model Context Protocol (MCP) server that provides AI assistants with access to [
 - ⚡ **Performance**: Built-in caching, request deduplication, and retry logic
 - 🛡️ **Type-Safe**: Full TypeScript implementation with Zod validation
 - 🔒 **Secure**: Input validation, error sanitization, and no credential storage required
+- 🔌 **SDK Adapters**: Programmatic integration with OpenAI, Vercel AI SDK, and LangChain
 
 ## Installation
 
@@ -372,6 +373,165 @@ The server is configured entirely through environment variables. The defaults wo
 | `OOREP_MCP_DEFAULT_MATERIA_MEDICA` | `boericke` | Default materia medica abbreviation when omitted |
 
 > ℹ️ The MCP server now maintains an anonymous OOREP session automatically. It performs a lightweight bootstrap request to fetch the required cookies and reuses them for subsequent search calls, so no additional authentication setup is necessary for public data.
+
+## SDK Integration
+
+In addition to the MCP server, oorep-mcp provides SDK exports for programmatic integration with AI frameworks.
+
+### Direct SDK Usage
+
+Use the SDK client directly for custom integrations:
+
+```typescript
+import { createOOREPClient } from 'oorep-mcp/sdk/client';
+
+const client = createOOREPClient({
+  baseUrl: 'https://www.oorep.com',
+  timeoutMs: 30000,
+  cacheTtlMs: 300000,
+});
+
+// Search repertory
+const results = await client.searchRepertory({
+  symptom: 'headache worse motion',
+  repertory: 'kent',
+  minWeight: 2,
+  maxResults: 20,
+});
+
+// Get remedy information
+const remedy = await client.getRemedyInfo({
+  remedy: 'Belladonna'
+});
+
+// Search materia medica
+const mmResults = await client.searchMateriaMedica({
+  symptom: 'anxiety',
+  remedy: 'Aconite'
+});
+
+// List available resources
+const repertories = await client.listRepertories({ language: 'en' });
+const materiaMedicas = await client.listMateriaMedicas();
+
+// Cleanup when done
+client.destroy();
+```
+
+### OpenAI Function Calling
+
+Integrate with OpenAI's function calling API:
+
+```typescript
+import OpenAI from 'openai';
+import { createOOREPClient } from 'oorep-mcp/sdk/client';
+import { openAITools, executeOpenAITool } from 'oorep-mcp/sdk/openai';
+
+const openai = new OpenAI();
+const oorep = createOOREPClient();
+
+// Send request with OOREP tools
+const response = await openai.chat.completions.create({
+  model: 'gpt-4',
+  messages: [{ role: 'user', content: 'Find remedies for throbbing headache' }],
+  tools: openAITools
+});
+
+// Execute tool calls
+for (const call of response.choices[0].message.tool_calls ?? []) {
+  const result = await executeOpenAITool(
+    oorep,
+    call.function.name,
+    call.function.arguments
+  );
+  console.log(result);
+}
+
+// Cleanup
+oorep.destroy();
+```
+
+### Vercel AI SDK
+
+Works with any AI provider supported by Vercel AI SDK:
+
+```typescript
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { createOOREPClient } from 'oorep-mcp/sdk/client';
+import { createOOREPTools } from 'oorep-mcp/sdk/vercel-ai';
+
+const client = createOOREPClient();
+const tools = createOOREPTools(client);
+
+const result = await generateText({
+  model: openai('gpt-4'),
+  tools,
+  prompt: 'Find remedies for throbbing headache worse from motion'
+});
+
+console.log(result.text);
+client.destroy();
+```
+
+### LangChain / LangGraph
+
+Use with LangChain agents and LangGraph workflows:
+
+```typescript
+import { ChatOpenAI } from '@langchain/openai';
+import { createReactAgent } from '@langchain/langgraph/prebuilt';
+import { DynamicStructuredTool } from '@langchain/core/tools';
+import { createOOREPClient } from 'oorep-mcp/sdk/client';
+import { createLangChainTools } from 'oorep-mcp/sdk/langchain';
+
+const client = createOOREPClient();
+const toolDefinitions = createLangChainTools(client);
+
+// Convert to DynamicStructuredTool instances
+const tools = toolDefinitions.map(
+  def => new DynamicStructuredTool({
+    name: def.name,
+    description: def.description,
+    schema: def.schema,
+    func: def.func
+  })
+);
+
+// Create agent
+const model = new ChatOpenAI({ model: 'gpt-4' });
+const agent = createReactAgent({ llm: model, tools });
+
+const result = await agent.invoke({
+  messages: [{ role: 'user', content: 'Find remedies for headache with nausea' }]
+});
+
+client.destroy();
+```
+
+### Available SDK Tools
+
+All adapters provide these tools:
+
+| Tool | Description |
+| --- | --- |
+| `search_repertory` | Search for symptoms in homeopathic repertories |
+| `search_materia_medica` | Search materia medica texts for remedy descriptions |
+| `get_remedy_info` | Get detailed information about a specific remedy |
+| `list_available_repertories` | List all accessible repertories |
+| `list_available_materia_medicas` | List all accessible materia medicas |
+
+### SDK Configuration
+
+```typescript
+const client = createOOREPClient({
+  baseUrl: 'https://www.oorep.com',  // OOREP API base URL
+  timeoutMs: 30000,                   // Request timeout (ms)
+  cacheTtlMs: 300000,                 // Cache TTL (ms, 0 to disable)
+  defaultRepertory: 'publicum',       // Default repertory
+  defaultMateriaMedica: 'boericke',   // Default materia medica
+});
+```
 
 ## Development
 
