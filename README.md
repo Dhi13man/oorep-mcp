@@ -43,6 +43,35 @@ npm install oorep-mcp
 
 ## Quick Start
 
+### Claude Code
+
+1. Locate your Claude Code configuration file at `~/.claude.json`
+
+2. Add the OOREP MCP server:
+
+   ```json
+   {
+     "mcpServers": {
+       "oorep": {
+         "command": "npx",
+         "args": ["-y", "oorep-mcp"],
+         "env": {
+           "OOREP_MCP_BASE_URL": "https://www.oorep.com",
+           "OOREP_MCP_LOG_LEVEL": "info"
+         }
+       }
+     }
+   }
+   ```
+
+   Or add via CLI:
+
+   ```bash
+   claude mcp add oorep --scope user -- npx -y oorep-mcp
+   ```
+
+3. Restart Claude Code and run `/mcp` to verify the server is connected
+
 ### Claude Desktop
 
 1. Locate your Claude Desktop configuration file:
@@ -127,35 +156,6 @@ npm install oorep-mcp
    ```
 
 3. Restart Gemini CLI and run `/mcp` to verify the server is connected
-
-### Claude Code
-
-1. Locate your Claude Code configuration file at `~/.claude.json`
-
-2. Add the OOREP MCP server:
-
-   ```json
-   {
-     "mcpServers": {
-       "oorep": {
-         "command": "npx",
-         "args": ["-y", "oorep-mcp"],
-         "env": {
-           "OOREP_MCP_BASE_URL": "https://www.oorep.com",
-           "OOREP_MCP_LOG_LEVEL": "info"
-         }
-       }
-     }
-   }
-   ```
-
-   Or add via CLI:
-
-   ```bash
-   claude mcp add oorep --scope user -- npx -y oorep-mcp
-   ```
-
-3. Restart Claude Code and run `/mcp` to verify the server is connected
 
 ## Usage Examples
 
