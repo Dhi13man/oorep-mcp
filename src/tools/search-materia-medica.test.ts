@@ -2,14 +2,14 @@
  * Unit tests for search_materia_medica tool
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SearchMateriaMedicaTool } from './search-materia-medica.js';
 import type { OOREPConfig } from '../config.js';
 
 describe('SearchMateriaMedicaTool', () => {
   let mockTool: SearchMateriaMedicaTool;
   let mockConfig: OOREPConfig;
-  let mockClientLookupMM: ReturnType<typeof vi.fn>;
+  let mockSearchMateriaMedica: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     mockConfig = {
@@ -24,19 +24,22 @@ describe('SearchMateriaMedicaTool', () => {
 
     mockTool = new SearchMateriaMedicaTool(mockConfig);
 
-    mockClientLookupMM = vi.fn();
-    (mockTool as any).client.lookupMateriaMedica = mockClientLookupMM;
+    mockSearchMateriaMedica = vi.fn();
+    (mockTool as any).client.searchMateriaMedica = mockSearchMateriaMedica;
+  });
+
+  afterEach(() => {
+    mockTool.destroy();
   });
 
   describe('execute', () => {
     it('execute when valid symptom then returns formatted results', async () => {
-      const mockApiResponse = {
+      const mockFormattedResponse = {
+        totalResults: 5,
         results: [
           {
-            abbrev: 'boericke',
-            remedy_id: 1,
-            remedy_fullname: 'Aconitum napellus',
-            result_sections: [
+            remedy: 'Aconitum napellus',
+            sections: [
               {
                 heading: 'Mental',
                 content: 'Anxiety and fear',
@@ -45,9 +48,8 @@ describe('SearchMateriaMedicaTool', () => {
             ],
           },
         ],
-        numberOfMatchingSectionsPerChapter: [{ hits: 5, remedyId: 1 }],
       };
-      mockClientLookupMM.mockResolvedValue(mockApiResponse);
+      mockSearchMateriaMedica.mockResolvedValue(mockFormattedResponse);
 
       const result = await mockTool.execute({ symptom: 'anxiety' });
 
@@ -56,32 +58,16 @@ describe('SearchMateriaMedicaTool', () => {
       expect(result.results[0].remedy).toBe('Aconitum napellus');
     });
 
-    it('execute when no materiamedica specified then uses default', async () => {
-      const mockApiResponse = {
-        results: [],
-        numberOfMatchingSectionsPerChapter: [],
-      };
-      mockClientLookupMM.mockResolvedValue(mockApiResponse);
-
-      await mockTool.execute({ symptom: 'test' });
-
-      expect(mockClientLookupMM).toHaveBeenCalledWith(
-        expect.objectContaining({
-          materiamedica: 'test-mm',
-        })
-      );
-    });
-
     it('execute when materiamedica specified then uses it', async () => {
-      const mockApiResponse = {
+      const mockFormattedResponse = {
+        totalResults: 0,
         results: [],
-        numberOfMatchingSectionsPerChapter: [],
       };
-      mockClientLookupMM.mockResolvedValue(mockApiResponse);
+      mockSearchMateriaMedica.mockResolvedValue(mockFormattedResponse);
 
       await mockTool.execute({ symptom: 'test', materiamedica: 'boericke' });
 
-      expect(mockClientLookupMM).toHaveBeenCalledWith(
+      expect(mockSearchMateriaMedica).toHaveBeenCalledWith(
         expect.objectContaining({
           materiamedica: 'boericke',
         })
@@ -89,36 +75,19 @@ describe('SearchMateriaMedicaTool', () => {
     });
 
     it('execute when remedy filter specified then passes to client', async () => {
-      const mockApiResponse = {
+      const mockFormattedResponse = {
+        totalResults: 0,
         results: [],
-        numberOfMatchingSectionsPerChapter: [],
       };
-      mockClientLookupMM.mockResolvedValue(mockApiResponse);
+      mockSearchMateriaMedica.mockResolvedValue(mockFormattedResponse);
 
       await mockTool.execute({ symptom: 'test', remedy: 'Aconite' });
 
-      expect(mockClientLookupMM).toHaveBeenCalledWith(
+      expect(mockSearchMateriaMedica).toHaveBeenCalledWith(
         expect.objectContaining({
           remedy: 'Aconite',
         })
       );
-    });
-
-    it('execute when maxResults specified then limits results', async () => {
-      const mockApiResponse = {
-        results: Array.from({ length: 10 }, (_, i) => ({
-          abbrev: 'boericke',
-          remedy_id: i,
-          remedy_fullname: `Remedy ${i}`,
-          result_sections: [],
-        })),
-        numberOfMatchingSectionsPerChapter: [],
-      };
-      mockClientLookupMM.mockResolvedValue(mockApiResponse);
-
-      const result = await mockTool.execute({ symptom: 'test', maxResults: 5 });
-
-      expect(result.results).toHaveLength(5);
     });
 
     it('execute when symptom too short then throws ValidationError', async () => {
@@ -145,64 +114,8 @@ describe('SearchMateriaMedicaTool', () => {
       await expect(mockTool.execute({ symptom: 'test', remedy: longRemedy })).rejects.toThrow();
     });
 
-    it('execute when cached result then returns from cache', async () => {
-      const mockApiResponse = {
-        results: [],
-        numberOfMatchingSectionsPerChapter: [],
-      };
-      mockClientLookupMM.mockResolvedValue(mockApiResponse);
-
-      await mockTool.execute({ symptom: 'anxiety' });
-      mockClientLookupMM.mockClear();
-      const result = await mockTool.execute({ symptom: 'anxiety' });
-
-      expect(mockClientLookupMM).not.toHaveBeenCalled();
-      expect(result.totalResults).toBe(0);
-    });
-
-    it('execute when concurrent duplicate requests then deduplicates', async () => {
-      const mockApiResponse = {
-        results: [],
-        numberOfMatchingSectionsPerChapter: [],
-      };
-      mockClientLookupMM.mockResolvedValue(mockApiResponse);
-
-      const results = await Promise.all([
-        mockTool.execute({ symptom: 'anxiety' }),
-        mockTool.execute({ symptom: 'anxiety' }),
-        mockTool.execute({ symptom: 'anxiety' }),
-      ]);
-
-      expect(mockClientLookupMM).toHaveBeenCalledTimes(1);
-      expect(results).toHaveLength(3);
-    });
-
-    it('execute when different symptoms then makes separate calls', async () => {
-      const mockApiResponse = {
-        results: [],
-        numberOfMatchingSectionsPerChapter: [],
-      };
-      mockClientLookupMM.mockResolvedValue(mockApiResponse);
-
-      await Promise.all([
-        mockTool.execute({ symptom: 'anxiety' }),
-        mockTool.execute({ symptom: 'fever' }),
-      ]);
-
-      expect(mockClientLookupMM).toHaveBeenCalledTimes(2);
-    });
-
-    it('execute when API returns null then returns empty result', async () => {
-      mockClientLookupMM.mockResolvedValue(null);
-
-      const result = await mockTool.execute({ symptom: 'test' });
-
-      expect(result.totalResults).toBe(0);
-      expect(result.results).toEqual([]);
-    });
-
     it('execute when API error then sanitizes error', async () => {
-      mockClientLookupMM.mockRejectedValue(new Error('API Error'));
+      mockSearchMateriaMedica.mockRejectedValue(new Error('API Error'));
 
       await expect(mockTool.execute({ symptom: 'test' })).rejects.toThrow();
     });
@@ -212,15 +125,15 @@ describe('SearchMateriaMedicaTool', () => {
     });
 
     it('execute when symptom has whitespace then trims it', async () => {
-      const mockApiResponse = {
+      const mockFormattedResponse = {
+        totalResults: 0,
         results: [],
-        numberOfMatchingSectionsPerChapter: [],
       };
-      mockClientLookupMM.mockResolvedValue(mockApiResponse);
+      mockSearchMateriaMedica.mockResolvedValue(mockFormattedResponse);
 
       await mockTool.execute({ symptom: '  anxiety  ' });
 
-      expect(mockClientLookupMM).toHaveBeenCalledWith(
+      expect(mockSearchMateriaMedica).toHaveBeenCalledWith(
         expect.objectContaining({
           symptom: 'anxiety',
         })
@@ -228,32 +141,19 @@ describe('SearchMateriaMedicaTool', () => {
     });
 
     it('execute when remedy filter is empty string then allows it', async () => {
-      const mockApiResponse = {
+      const mockFormattedResponse = {
+        totalResults: 0,
         results: [],
-        numberOfMatchingSectionsPerChapter: [],
       };
-      mockClientLookupMM.mockResolvedValue(mockApiResponse);
+      mockSearchMateriaMedica.mockResolvedValue(mockFormattedResponse);
 
       await mockTool.execute({ symptom: 'test', remedy: '' });
 
-      expect(mockClientLookupMM).toHaveBeenCalledWith(
+      expect(mockSearchMateriaMedica).toHaveBeenCalledWith(
         expect.objectContaining({
           remedy: '',
         })
       );
-    });
-
-    it('execute when different cache keys then separate cache entries', async () => {
-      const mockApiResponse = {
-        results: [],
-        numberOfMatchingSectionsPerChapter: [],
-      };
-      mockClientLookupMM.mockResolvedValue(mockApiResponse);
-
-      await mockTool.execute({ symptom: 'test', materiamedica: 'boericke' });
-      await mockTool.execute({ symptom: 'test', materiamedica: 'clarke' });
-
-      expect(mockClientLookupMM).toHaveBeenCalledTimes(2);
     });
   });
 });

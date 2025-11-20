@@ -3,26 +3,24 @@
  * Search for symptoms in homeopathic repertories and return matching rubrics with remedies
  */
 
-import { OOREPClient } from '../lib/oorep-client.js';
-import { Cache, RequestDeduplicator } from '../lib/cache.js';
-import { formatRepertoryResults, generateCacheKey } from '../lib/data-formatter.js';
-import { validateSymptom } from '../utils/validation.js';
+import { OOREPSDKClient, type OOREPSDKConfig } from '../sdk/client.js';
 import { SearchRepertoryArgsSchema, type RepertorySearchResult } from '../utils/schemas.js';
 import { sanitizeError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import type { OOREPConfig } from '../config.js';
 
 export class SearchRepertoryTool {
-  private client: OOREPClient;
-  private cache: Cache<RepertorySearchResult>;
-  private deduplicator: RequestDeduplicator;
-  private readonly defaultRepertory: string;
+  private client: OOREPSDKClient;
 
   constructor(config: OOREPConfig) {
-    this.client = new OOREPClient(config);
-    this.cache = new Cache<RepertorySearchResult>(config.cacheTtlMs);
-    this.deduplicator = new RequestDeduplicator();
-    this.defaultRepertory = config.defaultRepertory;
+    const sdkConfig: OOREPSDKConfig = {
+      baseUrl: config.baseUrl,
+      timeoutMs: config.timeoutMs,
+      cacheTtlMs: config.cacheTtlMs,
+      defaultRepertory: config.defaultRepertory,
+      defaultMateriaMedica: config.defaultMateriaMedica,
+    };
+    this.client = new OOREPSDKClient(sdkConfig);
   }
 
   async execute(args: unknown): Promise<RepertorySearchResult> {
@@ -31,46 +29,13 @@ export class SearchRepertoryTool {
       const validatedArgs = SearchRepertoryArgsSchema.parse(args);
       logger.info('Executing search_repertory', validatedArgs);
 
-      // Additional validation
-      validateSymptom(validatedArgs.symptom);
-
-      const resolvedRepertory = validatedArgs.repertory?.trim() || this.defaultRepertory;
-
-      // Generate cache key
-      const cacheKey = generateCacheKey('repertory', {
+      // Use SDK client (handles caching, validation, deduplication, formatting)
+      const result = await this.client.searchRepertory({
         symptom: validatedArgs.symptom,
-        repertory: resolvedRepertory,
+        repertory: validatedArgs.repertory,
         minWeight: validatedArgs.minWeight,
         maxResults: validatedArgs.maxResults,
-      });
-
-      // Check cache
-      const cached = this.cache.get(cacheKey);
-      if (cached) {
-        logger.info('Returning cached repertory results');
-        return cached;
-      }
-
-      // Deduplicate concurrent requests
-      const result = await this.deduplicator.deduplicate(cacheKey, async () => {
-        // Fetch from OOREP API
-        const apiResponse = await this.client.lookupRepertory({
-          symptom: validatedArgs.symptom,
-          repertory: resolvedRepertory,
-          minWeight: validatedArgs.minWeight,
-          includeRemedyStats: validatedArgs.includeRemedyStats,
-        });
-
-        // Format results
-        const formatted = formatRepertoryResults(apiResponse, {
-          includeRemedyStats: validatedArgs.includeRemedyStats,
-          maxResults: validatedArgs.maxResults,
-        });
-
-        // Cache the result
-        this.cache.set(cacheKey, formatted);
-
-        return formatted;
+        includeRemedyStats: validatedArgs.includeRemedyStats,
       });
 
       logger.info('Repertory search completed', {
@@ -83,6 +48,10 @@ export class SearchRepertoryTool {
       logger.error('Error in search_repertory', error);
       throw sanitizeError(error);
     }
+  }
+
+  destroy(): void {
+    this.client.destroy();
   }
 }
 

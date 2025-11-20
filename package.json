@@ -14,13 +14,9 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./sdk": {
+    "./sdk/client": {
       "types": "./dist/sdk/index.d.ts",
       "import": "./dist/sdk/index.js"
-    },
-    "./sdk/client": {
-      "types": "./dist/sdk/client.d.ts",
-      "import": "./dist/sdk/client.js"
     },
     "./sdk/tools": {
       "types": "./dist/sdk/tools.d.ts",

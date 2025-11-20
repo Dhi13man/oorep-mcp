@@ -2,14 +2,14 @@
  * Unit tests for get_remedy_info tool
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { GetRemedyInfoTool } from './get-remedy-info.js';
 import type { OOREPConfig } from '../config.js';
 
 describe('GetRemedyInfoTool', () => {
   let mockTool: GetRemedyInfoTool;
   let mockConfig: OOREPConfig;
-  let mockClientGetRemedies: ReturnType<typeof vi.fn>;
+  let mockGetRemedyInfo: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     mockConfig = {
@@ -24,21 +24,23 @@ describe('GetRemedyInfoTool', () => {
 
     mockTool = new GetRemedyInfoTool(mockConfig);
 
-    mockClientGetRemedies = vi.fn();
-    (mockTool as any).client.getAvailableRemedies = mockClientGetRemedies;
+    mockGetRemedyInfo = vi.fn();
+    (mockTool as any).client.getRemedyInfo = mockGetRemedyInfo;
+  });
+
+  afterEach(() => {
+    mockTool.destroy();
   });
 
   describe('execute', () => {
     it('execute when remedy exists with exact match then returns info', async () => {
-      const mockRemedies = [
-        {
-          id: 1,
-          nameAbbrev: 'Acon.',
-          nameLong: 'Aconitum napellus',
-          namealt: ['Monkshood'],
-        },
-      ];
-      mockClientGetRemedies.mockResolvedValue(mockRemedies);
+      const mockRemedyInfo = {
+        id: 1,
+        nameAbbrev: 'Acon.',
+        nameLong: 'Aconitum napellus',
+        nameAlt: ['Monkshood'],
+      };
+      mockGetRemedyInfo.mockResolvedValue(mockRemedyInfo);
 
       const result = await mockTool.execute({ remedy: 'Acon.' });
 
@@ -49,15 +51,13 @@ describe('GetRemedyInfoTool', () => {
     });
 
     it('execute when remedy matches by long name then returns info', async () => {
-      const mockRemedies = [
-        {
-          id: 2,
-          nameAbbrev: 'Bell.',
-          nameLong: 'Belladonna',
-          namealt: [],
-        },
-      ];
-      mockClientGetRemedies.mockResolvedValue(mockRemedies);
+      const mockRemedyInfo = {
+        id: 2,
+        nameAbbrev: 'Bell.',
+        nameLong: 'Belladonna',
+        nameAlt: [],
+      };
+      mockGetRemedyInfo.mockResolvedValue(mockRemedyInfo);
 
       const result = await mockTool.execute({ remedy: 'Belladonna' });
 
@@ -66,15 +66,13 @@ describe('GetRemedyInfoTool', () => {
     });
 
     it('execute when remedy matches by alternative name then returns info', async () => {
-      const mockRemedies = [
-        {
-          id: 1,
-          nameAbbrev: 'Acon.',
-          nameLong: 'Aconitum napellus',
-          namealt: ['Monkshood', 'Wolfsbane'],
-        },
-      ];
-      mockClientGetRemedies.mockResolvedValue(mockRemedies);
+      const mockRemedyInfo = {
+        id: 1,
+        nameAbbrev: 'Acon.',
+        nameLong: 'Aconitum napellus',
+        nameAlt: ['Monkshood', 'Wolfsbane'],
+      };
+      mockGetRemedyInfo.mockResolvedValue(mockRemedyInfo);
 
       const result = await mockTool.execute({ remedy: 'Monkshood' });
 
@@ -82,15 +80,13 @@ describe('GetRemedyInfoTool', () => {
     });
 
     it('execute when remedy is case-insensitive match then returns info', async () => {
-      const mockRemedies = [
-        {
-          id: 1,
-          nameAbbrev: 'Acon.',
-          nameLong: 'Aconitum napellus',
-          namealt: [],
-        },
-      ];
-      mockClientGetRemedies.mockResolvedValue(mockRemedies);
+      const mockRemedyInfo = {
+        id: 1,
+        nameAbbrev: 'Acon.',
+        nameLong: 'Aconitum napellus',
+        nameAlt: [],
+      };
+      mockGetRemedyInfo.mockResolvedValue(mockRemedyInfo);
 
       const result = await mockTool.execute({ remedy: 'ACON.' });
 
@@ -98,15 +94,13 @@ describe('GetRemedyInfoTool', () => {
     });
 
     it('execute when remedy has partial match then returns info', async () => {
-      const mockRemedies = [
-        {
-          id: 1,
-          nameAbbrev: 'Acon.',
-          nameLong: 'Aconitum napellus',
-          namealt: [],
-        },
-      ];
-      mockClientGetRemedies.mockResolvedValue(mockRemedies);
+      const mockRemedyInfo = {
+        id: 1,
+        nameAbbrev: 'Acon.',
+        nameLong: 'Aconitum napellus',
+        nameAlt: [],
+      };
+      mockGetRemedyInfo.mockResolvedValue(mockRemedyInfo);
 
       const result = await mockTool.execute({ remedy: 'aconit' });
 
@@ -114,28 +108,13 @@ describe('GetRemedyInfoTool', () => {
     });
 
     it('execute when partial match less than 3 chars then requires exact match', async () => {
-      const mockRemedies = [
-        {
-          id: 1,
-          nameAbbrev: 'Acon.',
-          nameLong: 'Aconitum napellus',
-          namealt: [],
-        },
-      ];
-      mockClientGetRemedies.mockResolvedValue(mockRemedies);
+      mockGetRemedyInfo.mockResolvedValue(null);
 
       await expect(mockTool.execute({ remedy: 'ac' })).rejects.toThrow();
     });
 
     it('execute when remedy not found then throws error', async () => {
-      mockClientGetRemedies.mockResolvedValue([
-        {
-          id: 1,
-          nameAbbrev: 'Acon.',
-          nameLong: 'Aconitum napellus',
-          namealt: [],
-        },
-      ]);
+      mockGetRemedyInfo.mockResolvedValue(null);
 
       await expect(mockTool.execute({ remedy: 'NonExistent' })).rejects.toThrow();
     });
@@ -154,55 +133,13 @@ describe('GetRemedyInfoTool', () => {
       await expect(mockTool.execute({ remedy: 'Test@Remedy' })).rejects.toThrow();
     });
 
-    it('execute when cached result then returns from cache', async () => {
-      const mockRemedies = [
-        {
-          id: 1,
-          nameAbbrev: 'Acon.',
-          nameLong: 'Aconitum napellus',
-          namealt: [],
-        },
-      ];
-      mockClientGetRemedies.mockResolvedValue(mockRemedies);
-
-      await mockTool.execute({ remedy: 'Acon.' });
-      mockClientGetRemedies.mockClear();
-      const result = await mockTool.execute({ remedy: 'Acon.' });
-
-      expect(mockClientGetRemedies).not.toHaveBeenCalled();
-      expect(result.id).toBe(1);
-    });
-
-    it('execute when concurrent duplicate requests then deduplicates', async () => {
-      const mockRemedies = [
-        {
-          id: 1,
-          nameAbbrev: 'Acon.',
-          nameLong: 'Aconitum napellus',
-          namealt: [],
-        },
-      ];
-      mockClientGetRemedies.mockResolvedValue(mockRemedies);
-
-      const results = await Promise.all([
-        mockTool.execute({ remedy: 'Acon.' }),
-        mockTool.execute({ remedy: 'Acon.' }),
-        mockTool.execute({ remedy: 'Acon.' }),
-      ]);
-
-      expect(mockClientGetRemedies).toHaveBeenCalledTimes(1);
-      expect(results).toHaveLength(3);
-    });
-
     it('execute when remedy has no alternative names then nameAlt is undefined', async () => {
-      const mockRemedies = [
-        {
-          id: 1,
-          nameAbbrev: 'Test',
-          nameLong: 'Test Remedy',
-        },
-      ];
-      mockClientGetRemedies.mockResolvedValue(mockRemedies);
+      const mockRemedyInfo = {
+        id: 1,
+        nameAbbrev: 'Test',
+        nameLong: 'Test Remedy',
+      };
+      mockGetRemedyInfo.mockResolvedValue(mockRemedyInfo);
 
       const result = await mockTool.execute({ remedy: 'Test' });
 
@@ -214,7 +151,7 @@ describe('GetRemedyInfoTool', () => {
     });
 
     it('execute when API error then sanitizes error', async () => {
-      mockClientGetRemedies.mockRejectedValue(new Error('API Error'));
+      mockGetRemedyInfo.mockRejectedValue(new Error('API Error'));
 
       await expect(mockTool.execute({ remedy: 'Test' })).rejects.toThrow();
     });

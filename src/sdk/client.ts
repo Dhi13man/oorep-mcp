@@ -23,6 +23,31 @@ import {
 } from '../utils/schemas.js';
 
 /**
+ * Helper function for partial remedy name matching
+ */
+function matchesPartially(
+  remedy: { nameAbbrev: string; nameLong: string; namealt?: string[] },
+  normalizedQuery: string
+): boolean {
+  const normalize = (value: string) => value.replace(/[^a-z0-9]/g, '').toLowerCase();
+  const abbrev = normalize(remedy.nameAbbrev);
+  const longName = normalize(remedy.nameLong);
+  const altNames = (remedy.namealt || []).map((alt) => normalize(alt));
+
+  const queryContainsName = (name: string) => normalizedQuery.includes(name);
+  const nameContainsQuery = (name: string) => name.includes(normalizedQuery);
+
+  return (
+    nameContainsQuery(longName) ||
+    nameContainsQuery(abbrev) ||
+    altNames.some((alt) => nameContainsQuery(alt)) ||
+    queryContainsName(longName) ||
+    queryContainsName(abbrev) ||
+    altNames.some((alt) => queryContainsName(alt))
+  );
+}
+
+/**
  * Configuration options for the OOREP SDK client
  */
 export interface OOREPSDKConfig {
@@ -161,13 +186,16 @@ export class OOREPSDKClient {
 
     return this.deduplicator.deduplicate(cacheKey, async () => {
       const remedies = await this.client.getAvailableRemedies();
-      const searchTerm = validated.remedy.toLowerCase();
+      const query = validated.remedy.trim().toLowerCase();
+      const normalizedQuery = query.replace(/[^a-z0-9]/g, '');
+      const allowPartialMatch = normalizedQuery.length >= 3;
 
       const remedy = remedies.find(
         (r) =>
-          r.nameAbbrev.toLowerCase() === searchTerm ||
-          r.nameLong.toLowerCase() === searchTerm ||
-          r.namealt?.some((alt) => alt.toLowerCase() === searchTerm)
+          r.nameAbbrev.toLowerCase() === query ||
+          r.nameLong.toLowerCase() === query ||
+          r.namealt?.some((alt) => alt.toLowerCase() === query) ||
+          (allowPartialMatch && matchesPartially(r, normalizedQuery))
       );
 
       if (!remedy) return null;
