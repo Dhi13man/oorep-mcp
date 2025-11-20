@@ -70,8 +70,6 @@ npm install oorep-mcp
 
 4. Look for the 🔌 MCP indicator in the bottom-right corner
 
-For full documentation, see the sections below or the [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
-
 ## Usage Examples
 
 Once installed, you can interact with OOREP through Claude naturally. Here are some example conversations:
