@@ -5,6 +5,7 @@ Thank you for your interest in contributing to the OOREP MCP server! This docume
 ## Code of Conduct
 
 This project follows a simple code of conduct:
+
 - Be respectful and constructive
 - Welcome newcomers and help them learn
 - Focus on what is best for the community
@@ -221,7 +222,7 @@ npx vitest run src/lib/cache.test.ts
 
 Follow [Conventional Commits](https://www.conventionalcommits.org/):
 
-```
+```text
 <type>(<scope>): <description>
 
 [optional body]
@@ -243,7 +244,7 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/):
 
 ### Examples
 
-```
+```text
 feat(tools): add support for remedy comparison
 
 fix(cache): resolve memory leak in Cache cleanup
@@ -312,6 +313,7 @@ Regular contributors may request release privileges after several successful con
 ## Recognition
 
 Contributors are recognized in:
+
 - Git commit history
 - GitHub contributors page
 - Release notes (for significant contributions)

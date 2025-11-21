@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.6] - 2025-11-21
+
+### Documentation
+
+- Updated CONTRIBUTING.md with improved guidelines
+- Documentation refinements across README and IMPLEMENTATION_PLAN
+
+### Milestones
+
+- **Market Validation**: MCP server successfully integrated by a B2B business product, demonstrating production readiness and real-world applicability
+
 ## [0.0.5] - 2025-11-21
 
 ### Added
@@ -96,6 +107,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - For full functionality, users should run a local OOREP instance or configure authentication
 - Public metadata endpoints work without authentication (remedies list, repertories list, materia medicas list)
 
-[Unreleased]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.5...HEAD
+[Unreleased]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.6...HEAD
+[0.0.6]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.5...v0.0.6
 [0.0.5]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.1...v0.0.5
 [0.0.1]: https://github.com/Dhi13man/oorep-mcp/releases/tag/v0.0.1
