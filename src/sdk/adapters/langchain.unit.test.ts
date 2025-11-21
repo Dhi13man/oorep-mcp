@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { z } from 'zod';
+import { z } from '../../utils/schemas.js';
 import {
   createLangChainTools,
   getLangChainTools,

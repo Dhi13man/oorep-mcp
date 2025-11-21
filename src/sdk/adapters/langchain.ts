@@ -21,7 +21,7 @@
  * ```
  */
 
-import { z } from 'zod';
+import { z } from '../../utils/schemas.js';
 import type { OOREPSDKClient } from '../client.js';
 
 /**
