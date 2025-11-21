@@ -4,6 +4,9 @@
 
 import { z } from 'zod/v4';
 
+// Re-export z for consistent usage across the codebase
+export { z };
+
 // ====================
 // Tool Input Schemas
 // ====================
