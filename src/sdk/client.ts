@@ -7,7 +7,11 @@
 
 import { OOREPClient } from '../lib/oorep-client.js';
 import { Cache, RequestDeduplicator } from '../lib/cache.js';
-import { formatRepertoryResults, formatMateriaMedicaResults, generateCacheKey } from '../lib/data-formatter.js';
+import {
+  formatRepertoryResults,
+  formatMateriaMedicaResults,
+  generateCacheKey,
+} from '../lib/data-formatter.js';
 import { validateSymptom, validateRemedyName, validateLanguage } from '../utils/validation.js';
 import {
   SearchRepertoryArgsSchema,
@@ -239,9 +243,7 @@ export class OOREPSDKClient {
 
       if (validated.language) {
         const lang = validated.language.toLowerCase();
-        repertories = repertories.filter(
-          (r) => r.language?.toLowerCase() === lang
-        );
+        repertories = repertories.filter((r) => r.language?.toLowerCase() === lang);
       }
 
       this.cache.set(cacheKey, repertories);
@@ -267,9 +269,7 @@ export class OOREPSDKClient {
 
       if (validated.language) {
         const lang = validated.language.toLowerCase();
-        materiaMedicas = materiaMedicas.filter(
-          (mm) => mm.language?.toLowerCase() === lang
-        );
+        materiaMedicas = materiaMedicas.filter((mm) => mm.language?.toLowerCase() === lang);
       }
 
       this.cache.set(cacheKey, materiaMedicas);

@@ -6,11 +6,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { OOREPSDKClient } from '../client.js';
-import {
-  createLangChainTools,
-  getLangChainTools,
-  createLangGraphTools,
-} from './langchain.js';
+import { createLangChainTools, getLangChainTools, createLangGraphTools } from './langchain.js';
 
 // Store original fetch
 const originalFetch = global.fetch;
@@ -34,8 +30,7 @@ function createMockResponse(
     status,
     statusText: status === 200 ? 'OK' : 'Error',
     headers: responseHeaders,
-    text: () =>
-      Promise.resolve(typeof data === 'string' ? data : JSON.stringify(data)),
+    text: () => Promise.resolve(typeof data === 'string' ? data : JSON.stringify(data)),
     json: () => Promise.resolve(data),
     clone: function () {
       return this;
@@ -92,9 +87,7 @@ function createMateriaMedicaResponse(): Response {
           abbrev: 'boericke',
           remedy_id: 1,
           remedy_fullname: 'Aconitum napellus',
-          result_sections: [
-            { heading: 'Mind', content: 'Fear and anxiety', depth: 1 },
-          ],
+          result_sections: [{ heading: 'Mind', content: 'Fear and anxiety', depth: 1 }],
         },
       ],
       numberOfMatchingSectionsPerChapter: [{ hits: 1, remedyId: 1 }],
@@ -212,9 +205,7 @@ describe('LangChain Adapter Integration Tests', () => {
         .mockResolvedValueOnce(createRepertoriesResponse());
 
       const tools = createLangChainTools(client);
-      const listTool = tools.find(
-        (t) => t.name === 'list_available_repertories'
-      )!;
+      const listTool = tools.find((t) => t.name === 'list_available_repertories')!;
 
       const result = await listTool.func({ language: 'en' });
 
@@ -229,9 +220,7 @@ describe('LangChain Adapter Integration Tests', () => {
         .mockResolvedValueOnce(createMateriaMedicasResponse());
 
       const tools = createLangChainTools(client);
-      const listTool = tools.find(
-        (t) => t.name === 'list_available_materia_medicas'
-      )!;
+      const listTool = tools.find((t) => t.name === 'list_available_materia_medicas')!;
 
       const result = await listTool.func({});
 
@@ -255,9 +244,7 @@ describe('LangChain Adapter Integration Tests', () => {
       const tools = createLangChainTools(client);
       const searchTool = tools.find((t) => t.name === 'search_repertory')!;
 
-      await expect(
-        searchTool.func({ symptom: 'headache' })
-      ).rejects.toThrow('Network failure');
+      await expect(searchTool.func({ symptom: 'headache' })).rejects.toThrow('Network failure');
     });
 
     it('when caching enabled then subsequent calls use cache', async () => {
@@ -287,10 +274,7 @@ describe('LangChain Adapter Integration Tests', () => {
         .mockResolvedValueOnce(createSessionResponse())
         .mockResolvedValueOnce(createRepertoryResponse());
 
-      const tools = getLangChainTools(client, [
-        'search_repertory',
-        'get_remedy_info',
-      ]);
+      const tools = getLangChainTools(client, ['search_repertory', 'get_remedy_info']);
 
       expect(tools).toHaveLength(2);
       expect(tools.map((t) => t.name)).toContain('search_repertory');

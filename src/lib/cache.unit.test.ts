@@ -517,9 +517,12 @@ describe('RequestDeduplicator', () => {
     });
 
     it('deduplicate when request exceeds timeout then rejects with timeout error', async () => {
-      const slowFn = vi.fn(() => new Promise<string>((resolve) => {
-        setTimeout(() => resolve('result'), 70000); // Takes 70 seconds
-      }));
+      const slowFn = vi.fn(
+        () =>
+          new Promise<string>((resolve) => {
+            setTimeout(() => resolve('result'), 70000); // Takes 70 seconds
+          })
+      );
 
       const promise = mockDeduplicator.deduplicate('key', slowFn, 5000); // 5 second timeout
 
@@ -530,9 +533,12 @@ describe('RequestDeduplicator', () => {
     });
 
     it('deduplicate when request times out then clears from pending', async () => {
-      const slowFn = vi.fn(() => new Promise<string>((resolve) => {
-        setTimeout(() => resolve('result'), 70000);
-      }));
+      const slowFn = vi.fn(
+        () =>
+          new Promise<string>((resolve) => {
+            setTimeout(() => resolve('result'), 70000);
+          })
+      );
 
       const promise = mockDeduplicator.deduplicate('key', slowFn, 1000);
       expect(mockDeduplicator.getPendingCount()).toBe(1);
@@ -549,9 +555,12 @@ describe('RequestDeduplicator', () => {
     });
 
     it('deduplicate when request completes before timeout then resolves successfully', async () => {
-      const fastFn = vi.fn(() => new Promise<string>((resolve) => {
-        setTimeout(() => resolve('result'), 100);
-      }));
+      const fastFn = vi.fn(
+        () =>
+          new Promise<string>((resolve) => {
+            setTimeout(() => resolve('result'), 100);
+          })
+      );
 
       const promise = mockDeduplicator.deduplicate('key', fastFn, 5000);
 
@@ -562,9 +571,12 @@ describe('RequestDeduplicator', () => {
     });
 
     it('deduplicate when custom timeout specified then uses custom value', async () => {
-      const slowFn = vi.fn(() => new Promise<string>((resolve) => {
-        setTimeout(() => resolve('result'), 10000);
-      }));
+      const slowFn = vi.fn(
+        () =>
+          new Promise<string>((resolve) => {
+            setTimeout(() => resolve('result'), 10000);
+          })
+      );
 
       const promise = mockDeduplicator.deduplicate('key', slowFn, 2000);
 
@@ -574,9 +586,12 @@ describe('RequestDeduplicator', () => {
     });
 
     it('deduplicate when concurrent requests and one times out then all fail', async () => {
-      const slowFn = vi.fn(() => new Promise<string>((resolve) => {
-        setTimeout(() => resolve('result'), 10000);
-      }));
+      const slowFn = vi.fn(
+        () =>
+          new Promise<string>((resolve) => {
+            setTimeout(() => resolve('result'), 10000);
+          })
+      );
 
       const promise1 = mockDeduplicator.deduplicate('key', slowFn, 1000);
       const promise2 = mockDeduplicator.deduplicate('key', slowFn, 1000);
@@ -588,9 +603,12 @@ describe('RequestDeduplicator', () => {
     });
 
     it('deduplicate with default timeout uses 60 seconds', async () => {
-      const slowFn = vi.fn(() => new Promise<string>((resolve) => {
-        setTimeout(() => resolve('result'), 70000);
-      }));
+      const slowFn = vi.fn(
+        () =>
+          new Promise<string>((resolve) => {
+            setTimeout(() => resolve('result'), 70000);
+          })
+      );
 
       const promise = mockDeduplicator.deduplicate('key', slowFn);
 

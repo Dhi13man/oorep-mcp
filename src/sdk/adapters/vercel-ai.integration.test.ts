@@ -30,8 +30,7 @@ function createMockResponse(
     status,
     statusText: status === 200 ? 'OK' : 'Error',
     headers: responseHeaders,
-    text: () =>
-      Promise.resolve(typeof data === 'string' ? data : JSON.stringify(data)),
+    text: () => Promise.resolve(typeof data === 'string' ? data : JSON.stringify(data)),
     json: () => Promise.resolve(data),
     clone: function () {
       return this;
@@ -88,9 +87,7 @@ function createMateriaMedicaResponse(): Response {
           abbrev: 'boericke',
           remedy_id: 1,
           remedy_fullname: 'Aconitum napellus',
-          result_sections: [
-            { heading: 'Mind', content: 'Fear and anxiety', depth: 1 },
-          ],
+          result_sections: [{ heading: 'Mind', content: 'Fear and anxiety', depth: 1 }],
         },
       ],
       numberOfMatchingSectionsPerChapter: [{ hits: 1, remedyId: 1 }],
@@ -289,10 +286,7 @@ describe('Vercel AI Adapter Integration Tests', () => {
         .mockResolvedValueOnce(createSessionResponse())
         .mockResolvedValueOnce(createRepertoryResponse());
 
-      const tools = getOOREPTools(client, [
-        'search_repertory',
-        'get_remedy_info',
-      ]);
+      const tools = getOOREPTools(client, ['search_repertory', 'get_remedy_info']);
 
       expect(Object.keys(tools)).toHaveLength(2);
       expect(tools.search_repertory).toBeDefined();

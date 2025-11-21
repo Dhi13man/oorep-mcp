@@ -7,11 +7,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { OOREPSDKClient } from '../client.js';
-import {
-  executeOpenAITool,
-  executeOOREPTool,
-  processToolCalls,
-} from './openai.js';
+import { executeOpenAITool, executeOOREPTool, processToolCalls } from './openai.js';
 
 // Store original fetch
 const originalFetch = global.fetch;
@@ -35,8 +31,7 @@ function createMockResponse(
     status,
     statusText: status === 200 ? 'OK' : 'Error',
     headers: responseHeaders,
-    text: () =>
-      Promise.resolve(typeof data === 'string' ? data : JSON.stringify(data)),
+    text: () => Promise.resolve(typeof data === 'string' ? data : JSON.stringify(data)),
     json: () => Promise.resolve(data),
     clone: function () {
       return this;
@@ -99,9 +94,7 @@ function createMateriaMedicaResponse(): Response {
           abbrev: 'boericke',
           remedy_id: 1,
           remedy_fullname: 'Aconitum napellus',
-          result_sections: [
-            { heading: 'Mind', content: 'Fear and anxiety', depth: 1 },
-          ],
+          result_sections: [{ heading: 'Mind', content: 'Fear and anxiety', depth: 1 }],
         },
       ],
       numberOfMatchingSectionsPerChapter: [{ hits: 1, remedyId: 1 }],
@@ -234,13 +227,9 @@ describe('OpenAI Adapter Integration Tests', () => {
         .mockResolvedValueOnce(createSessionResponse())
         .mockResolvedValueOnce(createRepertoriesResponse());
 
-      const result = await executeOOREPTool(
-        client,
-        'list_available_repertories',
-        {
-          language: 'en',
-        }
-      );
+      const result = await executeOOREPTool(client, 'list_available_repertories', {
+        language: 'en',
+      });
 
       const typedResult = result as Array<{ abbreviation: string }>;
       expect(typedResult).toHaveLength(2);
@@ -252,11 +241,7 @@ describe('OpenAI Adapter Integration Tests', () => {
         .mockResolvedValueOnce(createSessionResponse())
         .mockResolvedValueOnce(createMateriaMedicasResponse());
 
-      const result = await executeOOREPTool(
-        client,
-        'list_available_materia_medicas',
-        {}
-      );
+      const result = await executeOOREPTool(client, 'list_available_materia_medicas', {});
 
       const typedResult = result as Array<{ abbreviation: string }>;
       expect(typedResult).toHaveLength(1);
@@ -301,9 +286,7 @@ describe('OpenAI Adapter Integration Tests', () => {
     });
 
     it('when invalid JSON then throws parse error', async () => {
-      await expect(
-        executeOpenAITool(client, 'search_repertory', 'not json')
-      ).rejects.toThrow();
+      await expect(executeOpenAITool(client, 'search_repertory', 'not json')).rejects.toThrow();
     });
   });
 

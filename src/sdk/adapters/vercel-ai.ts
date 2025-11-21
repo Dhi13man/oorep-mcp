@@ -58,13 +58,23 @@ export interface VercelAITool<TInput, TOutput> {
 export function createOOREPTools(client: OOREPSDKClient) {
   return {
     search_repertory: {
-      description: 'Search for symptoms in homeopathic repertories. Returns matching rubrics with remedies and their weights.',
+      description:
+        'Search for symptoms in homeopathic repertories. Returns matching rubrics with remedies and their weights.',
       parameters: z.object({
-        symptom: z.string().describe('The symptom to search for. Supports wildcards (*) at end of words.'),
-        repertory: z.string().optional().describe('Repertory abbreviation (e.g., "kent", "publicum")'),
+        symptom: z
+          .string()
+          .describe('The symptom to search for. Supports wildcards (*) at end of words.'),
+        repertory: z
+          .string()
+          .optional()
+          .describe('Repertory abbreviation (e.g., "kent", "publicum")'),
         minWeight: z.number().min(1).max(4).optional().describe('Minimum remedy weight (1-4)'),
         maxResults: z.number().min(1).max(100).optional().default(20).describe('Maximum results'),
-        includeRemedyStats: z.boolean().optional().default(true).describe('Include remedy statistics'),
+        includeRemedyStats: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe('Include remedy statistics'),
       }),
       execute: async (args: {
         symptom: string;
@@ -79,7 +89,10 @@ export function createOOREPTools(client: OOREPSDKClient) {
       description: 'Search materia medica texts for remedy descriptions and symptoms.',
       parameters: z.object({
         symptom: z.string().describe('The symptom to search for'),
-        materiamedica: z.string().optional().describe('Materia medica abbreviation (e.g., "boericke")'),
+        materiamedica: z
+          .string()
+          .optional()
+          .describe('Materia medica abbreviation (e.g., "boericke")'),
         remedy: z.string().optional().describe('Filter to specific remedy'),
         maxResults: z.number().min(1).max(50).optional().default(10).describe('Maximum results'),
       }),

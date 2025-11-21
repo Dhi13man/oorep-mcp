@@ -173,18 +173,22 @@ export function formatToolResult(result: unknown): string {
  */
 export async function processToolCalls(
   client: OOREPSDKClient,
-  toolCalls: Array<{
-    id: string;
-    function: {
-      name: string;
-      arguments: string;
-    };
-  }> | undefined
-): Promise<Array<{
-  tool_call_id: string;
-  role: 'tool';
-  content: string;
-}>> {
+  toolCalls:
+    | Array<{
+        id: string;
+        function: {
+          name: string;
+          arguments: string;
+        };
+      }>
+    | undefined
+): Promise<
+  Array<{
+    tool_call_id: string;
+    role: 'tool';
+    content: string;
+  }>
+> {
   if (!toolCalls || toolCalls.length === 0) {
     return [];
   }

@@ -430,7 +430,8 @@ describe('OOREPClient', () => {
         statusText: 'Bad Gateway',
         text: () => Promise.resolve('Bad Gateway'),
       };
-      mockFetch.mockClear()
+      mockFetch
+        .mockClear()
         .mockResolvedValueOnce(mockSessionResponse)
         .mockResolvedValue(mock502Response);
 
@@ -452,7 +453,8 @@ describe('OOREPClient', () => {
         statusText: 'Service Unavailable',
         text: () => Promise.resolve('Service Unavailable'),
       };
-      mockFetch.mockClear()
+      mockFetch
+        .mockClear()
         .mockResolvedValueOnce(mockSessionResponse)
         .mockResolvedValue(mock503Response);
 
@@ -474,7 +476,8 @@ describe('OOREPClient', () => {
         statusText: 'Gateway Timeout',
         text: () => Promise.resolve('Gateway Timeout'),
       };
-      mockFetch.mockClear()
+      mockFetch
+        .mockClear()
         .mockResolvedValueOnce(mockSessionResponse)
         .mockResolvedValue(mock504Response);
 
@@ -498,12 +501,15 @@ describe('OOREPClient', () => {
           headers: new Headers(),
           text: () => Promise.resolve(JSON.stringify({ unexpected: 'structure' })),
         };
-        mockFetch.mockClear()
+        mockFetch
+          .mockClear()
           .mockResolvedValueOnce(mockSessionResponse)
           .mockResolvedValue(mockMalformedResponse);
 
         // Should throw because response is not iterable
-        const promise = expect(freshClient.lookupRepertory({ symptom: 'test' })).rejects.toThrow(TypeError);
+        const promise = expect(freshClient.lookupRepertory({ symptom: 'test' })).rejects.toThrow(
+          TypeError
+        );
         await vi.runAllTimersAsync();
         await promise;
       } finally {
@@ -526,7 +532,8 @@ describe('OOREPClient', () => {
         statusText: 'Bad Request',
         text: () => Promise.resolve('Invalid parameters'),
       };
-      mockFetch.mockClear()
+      mockFetch
+        .mockClear()
         .mockResolvedValueOnce(mockSessionResponse)
         .mockResolvedValue(mock400Response);
 
@@ -548,7 +555,8 @@ describe('OOREPClient', () => {
         statusText: 'Forbidden',
         text: () => Promise.resolve('Access denied'),
       };
-      mockFetch.mockClear()
+      mockFetch
+        .mockClear()
         .mockResolvedValueOnce(mockSessionResponse)
         .mockResolvedValue(mock403Response);
 
@@ -570,7 +578,8 @@ describe('OOREPClient', () => {
         statusText: 'Not Found',
         text: () => Promise.resolve('Not found'),
       };
-      mockFetch.mockClear()
+      mockFetch
+        .mockClear()
         .mockResolvedValueOnce(mockSessionResponse)
         .mockResolvedValue(mock404Response);
 

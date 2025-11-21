@@ -57,7 +57,8 @@ export function createLangChainTools(client: OOREPSDKClient): LangChainToolDefin
   return [
     {
       name: 'search_repertory',
-      description: 'Search for symptoms in homeopathic repertories. Returns matching rubrics with remedies and their weights.',
+      description:
+        'Search for symptoms in homeopathic repertories. Returns matching rubrics with remedies and their weights.',
       schema: z.object({
         symptom: z.string().describe('The symptom to search for'),
         repertory: z.string().optional().describe('Repertory abbreviation'),

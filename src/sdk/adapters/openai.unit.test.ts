@@ -192,9 +192,9 @@ describe('executeOOREPTool', () => {
 
   it('when unknown tool then throws error', async () => {
     // Act & Assert
-    await expect(
-      executeOOREPTool(mockClient, 'unknown_tool', {})
-    ).rejects.toThrow('Unknown tool: unknown_tool');
+    await expect(executeOOREPTool(mockClient, 'unknown_tool', {})).rejects.toThrow(
+      'Unknown tool: unknown_tool'
+    );
   });
 });
 

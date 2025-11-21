@@ -3,7 +3,12 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { toolDefinitions, getToolDefinition, getToolNames, type OOREPToolDefinition } from './tools.js';
+import {
+  toolDefinitions,
+  getToolDefinition,
+  getToolNames,
+  type OOREPToolDefinition,
+} from './tools.js';
 
 describe('toolDefinitions', () => {
   it('when accessed then contains all five tools', () => {

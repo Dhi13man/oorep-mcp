@@ -31,16 +31,16 @@ const mockDeduplicatorInstance = {
 };
 
 vi.mock('../lib/oorep-client.js', () => ({
-  OOREPClient: vi.fn().mockImplementation(function() {
+  OOREPClient: vi.fn().mockImplementation(function () {
     return mockOOREPClientInstance;
   }),
 }));
 
 vi.mock('../lib/cache.js', () => ({
-  Cache: vi.fn().mockImplementation(function() {
+  Cache: vi.fn().mockImplementation(function () {
     return mockCacheInstance;
   }),
-  RequestDeduplicator: vi.fn().mockImplementation(function() {
+  RequestDeduplicator: vi.fn().mockImplementation(function () {
     return mockDeduplicatorInstance;
   }),
 }));
@@ -109,15 +109,11 @@ describe('OOREPSDKClient Unit Tests', () => {
       });
 
       // Verify cache key generation includes all params
-      expect(mockCacheInstance.get).toHaveBeenCalledWith(
-        expect.stringContaining('repertory:')
-      );
+      expect(mockCacheInstance.get).toHaveBeenCalledWith(expect.stringContaining('repertory:'));
       expect(mockCacheInstance.get).toHaveBeenCalledWith(
         expect.stringContaining('symptom=headache')
       );
-      expect(mockCacheInstance.get).toHaveBeenCalledWith(
-        expect.stringContaining('repertory=kent')
-      );
+      expect(mockCacheInstance.get).toHaveBeenCalledWith(expect.stringContaining('repertory=kent'));
 
       client.destroy();
     });

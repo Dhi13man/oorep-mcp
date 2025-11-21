@@ -16,7 +16,11 @@ const originalFetch = global.fetch;
 const mockFetch = vi.fn();
 
 // Helper to create mock Response
-function createMockResponse(data: unknown, status = 200, headers: Record<string, string> = {}): Response {
+function createMockResponse(
+  data: unknown,
+  status = 200,
+  headers: Record<string, string> = {}
+): Response {
   const responseHeaders = new Headers({
     'content-type': 'application/json',
     ...headers,
@@ -29,17 +33,23 @@ function createMockResponse(data: unknown, status = 200, headers: Record<string,
     headers: responseHeaders,
     text: () => Promise.resolve(typeof data === 'string' ? data : JSON.stringify(data)),
     json: () => Promise.resolve(data),
-    clone: function() { return this; },
+    clone: function () {
+      return this;
+    },
   } as Response;
 }
 
 // Helper for session init response (available remedies)
 function createSessionResponse(): Response {
-  return createMockResponse([
-    { id: 1, nameAbbrev: 'Acon.', nameLong: 'Aconitum napellus', namealt: ['Aconite'] },
-    { id: 2, nameAbbrev: 'Bell.', nameLong: 'Belladonna', namealt: [] },
-    { id: 3, nameAbbrev: 'Bry.', nameLong: 'Bryonia alba', namealt: ['Bryonia'] },
-  ], 200, { 'set-cookie': 'session=test123; Path=/' });
+  return createMockResponse(
+    [
+      { id: 1, nameAbbrev: 'Acon.', nameLong: 'Aconitum napellus', namealt: ['Aconite'] },
+      { id: 2, nameAbbrev: 'Bell.', nameLong: 'Belladonna', namealt: [] },
+      { id: 3, nameAbbrev: 'Bry.', nameLong: 'Bryonia alba', namealt: ['Bryonia'] },
+    ],
+    200,
+    { 'set-cookie': 'session=test123; Path=/' }
+  );
 }
 
 // Helper for repertory lookup response
@@ -58,9 +68,7 @@ function createRepertoryResponse(totalResults = 2): Response {
       {
         rubric: { fullPath: 'Head > Pain > Throbbing', textt: null },
         repertoryAbbrev: 'kent',
-        weightedRemedies: [
-          { remedy: { nameAbbrev: 'Bell.', nameLong: 'Belladonna' }, weight: 4 },
-        ],
+        weightedRemedies: [{ remedy: { nameAbbrev: 'Bell.', nameLong: 'Belladonna' }, weight: 4 }],
       },
     ],
   };
@@ -71,37 +79,89 @@ function createRepertoryResponse(totalResults = 2): Response {
 
 // Helper for materia medica response
 function createMateriaMedicaResponse(): Response {
-  return createMockResponse({
-    results: [
-      {
-        abbrev: 'boericke',
-        remedy_id: 1,
-        remedy_fullname: 'Aconitum napellus',
-        result_sections: [
-          { heading: 'Mind', content: 'Fear and anxiety', depth: 1 },
-        ],
-      },
-    ],
-    // totalResults is sum of all hits, so set to 1 for single result
-    numberOfMatchingSectionsPerChapter: [{ hits: 1, remedyId: 1 }],
-  }, 200, { 'set-cookie': 'session=test123' });
+  return createMockResponse(
+    {
+      results: [
+        {
+          abbrev: 'boericke',
+          remedy_id: 1,
+          remedy_fullname: 'Aconitum napellus',
+          result_sections: [{ heading: 'Mind', content: 'Fear and anxiety', depth: 1 }],
+        },
+      ],
+      // totalResults is sum of all hits, so set to 1 for single result
+      numberOfMatchingSectionsPerChapter: [{ hits: 1, remedyId: 1 }],
+    },
+    200,
+    { 'set-cookie': 'session=test123' }
+  );
 }
 
 // Helper for repertories list response (matches OOREPClient expected format)
 function createRepertoriesResponse(): Response {
-  return createMockResponse([
-    { info: { abbrev: 'kent', title: 'Kent Repertory', language: 'en', authorFirstName: 'James', authorLastName: 'Kent' } },
-    { info: { abbrev: 'boger', title: 'Boger Boenninghausen', language: 'en', authorFirstName: 'C.M.', authorLastName: 'Boger' } },
-    { info: { abbrev: 'synth', title: 'Synthesis', language: 'de', authorFirstName: 'Frederik', authorLastName: 'Schroyens' } },
-  ], 200, { 'set-cookie': 'session=test123' });
+  return createMockResponse(
+    [
+      {
+        info: {
+          abbrev: 'kent',
+          title: 'Kent Repertory',
+          language: 'en',
+          authorFirstName: 'James',
+          authorLastName: 'Kent',
+        },
+      },
+      {
+        info: {
+          abbrev: 'boger',
+          title: 'Boger Boenninghausen',
+          language: 'en',
+          authorFirstName: 'C.M.',
+          authorLastName: 'Boger',
+        },
+      },
+      {
+        info: {
+          abbrev: 'synth',
+          title: 'Synthesis',
+          language: 'de',
+          authorFirstName: 'Frederik',
+          authorLastName: 'Schroyens',
+        },
+      },
+    ],
+    200,
+    { 'set-cookie': 'session=test123' }
+  );
 }
 
 // Helper for materia medicas list response (matches OOREPClient expected format)
 function createMateriaMedicasResponse(): Response {
-  return createMockResponse([
-    { mminfo: { id: 1, abbrev: 'boericke', displaytitle: 'Boericke Materia Medica', lang: 'en', authorfirstname: 'William', authorlastname: 'Boericke' } },
-    { mminfo: { id: 2, abbrev: 'hering', displaytitle: 'Hering Guiding Symptoms', lang: 'de', authorfirstname: 'Constantine', authorlastname: 'Hering' } },
-  ], 200, { 'set-cookie': 'session=test123' });
+  return createMockResponse(
+    [
+      {
+        mminfo: {
+          id: 1,
+          abbrev: 'boericke',
+          displaytitle: 'Boericke Materia Medica',
+          lang: 'en',
+          authorfirstname: 'William',
+          authorlastname: 'Boericke',
+        },
+      },
+      {
+        mminfo: {
+          id: 2,
+          abbrev: 'hering',
+          displaytitle: 'Hering Guiding Symptoms',
+          lang: 'de',
+          authorfirstname: 'Constantine',
+          authorlastname: 'Hering',
+        },
+      },
+    ],
+    200,
+    { 'set-cookie': 'session=test123' }
+  );
 }
 
 describe('OOREPSDKClient Integration Tests', () => {
@@ -191,14 +251,14 @@ describe('OOREPSDKClient Integration Tests', () => {
       const client = new OOREPSDKClient();
       const result = await client.searchRepertory({
         symptom: 'headache',
-        includeRemedyStats: true
+        includeRemedyStats: true,
       });
 
       // Belladonna appears in both rubrics with weights 3 and 4
       expect(result.remedyStats).toBeDefined();
       expect(result.remedyStats!.length).toBeGreaterThan(0);
 
-      const bellStats = result.remedyStats!.find(s => s.name === 'Belladonna');
+      const bellStats = result.remedyStats!.find((s) => s.name === 'Belladonna');
       expect(bellStats).toBeDefined();
       expect(bellStats!.count).toBe(2);
       expect(bellStats!.cumulativeWeight).toBe(7); // 3 + 4
@@ -251,8 +311,7 @@ describe('OOREPSDKClient Integration Tests', () => {
       const client = new OOREPSDKClient();
 
       // Zod schema validates min length before custom validators run
-      await expect(client.searchRepertory({ symptom: 'ab' }))
-        .rejects.toThrow();
+      await expect(client.searchRepertory({ symptom: 'ab' })).rejects.toThrow();
 
       expect(mockFetch).not.toHaveBeenCalled();
 
@@ -263,8 +322,7 @@ describe('OOREPSDKClient Integration Tests', () => {
       const client = new OOREPSDKClient();
 
       // Zod schema validates character pattern before custom validators run
-      await expect(client.searchRepertory({ symptom: 'head@che' }))
-        .rejects.toThrow();
+      await expect(client.searchRepertory({ symptom: 'head@che' })).rejects.toThrow();
 
       expect(mockFetch).not.toHaveBeenCalled();
 
@@ -278,8 +336,7 @@ describe('OOREPSDKClient Integration Tests', () => {
 
       const client = new OOREPSDKClient();
 
-      await expect(client.searchRepertory({ symptom: 'abc' }))
-        .resolves.toBeDefined();
+      await expect(client.searchRepertory({ symptom: 'abc' })).resolves.toBeDefined();
 
       client.destroy();
     });
@@ -292,8 +349,7 @@ describe('OOREPSDKClient Integration Tests', () => {
       const client = new OOREPSDKClient();
       const longSymptom = 'a'.repeat(200);
 
-      await expect(client.searchRepertory({ symptom: longSymptom }))
-        .resolves.toBeDefined();
+      await expect(client.searchRepertory({ symptom: longSymptom })).resolves.toBeDefined();
 
       client.destroy();
     });
@@ -302,8 +358,7 @@ describe('OOREPSDKClient Integration Tests', () => {
       const client = new OOREPSDKClient();
       const tooLongSymptom = 'a'.repeat(201);
 
-      await expect(client.searchRepertory({ symptom: tooLongSymptom }))
-        .rejects.toThrow();
+      await expect(client.searchRepertory({ symptom: tooLongSymptom })).rejects.toThrow();
 
       client.destroy();
     });
@@ -318,9 +373,7 @@ describe('OOREPSDKClient Integration Tests', () => {
 
       // Verify the API call includes minWeight
       const calls = mockFetch.mock.calls;
-      const lookupCall = calls.find(call =>
-        call[0].toString().includes('lookup_rep')
-      );
+      const lookupCall = calls.find((call) => call[0].toString().includes('lookup_rep'));
       expect(lookupCall).toBeDefined();
 
       client.destroy();
@@ -334,7 +387,7 @@ describe('OOREPSDKClient Integration Tests', () => {
       const client = new OOREPSDKClient();
       const result = await client.searchRepertory({
         symptom: 'headache',
-        maxResults: 1
+        maxResults: 1,
       });
 
       expect(result.rubrics.length).toBeLessThanOrEqual(1);
@@ -368,10 +421,12 @@ describe('OOREPSDKClient Integration Tests', () => {
       const client = new OOREPSDKClient();
 
       // Valid remedy name
-      await expect(client.searchMateriaMedica({
-        symptom: 'anxiety',
-        remedy: 'acon'
-      })).resolves.toBeDefined();
+      await expect(
+        client.searchMateriaMedica({
+          symptom: 'anxiety',
+          remedy: 'acon',
+        })
+      ).resolves.toBeDefined();
 
       client.destroy();
     });
@@ -379,10 +434,12 @@ describe('OOREPSDKClient Integration Tests', () => {
     it('when remedy name invalid then throws ValidationError', async () => {
       const client = new OOREPSDKClient();
 
-      await expect(client.searchMateriaMedica({
-        symptom: 'anxiety',
-        remedy: '' // Empty remedy name
-      })).rejects.toThrow(ValidationError);
+      await expect(
+        client.searchMateriaMedica({
+          symptom: 'anxiety',
+          remedy: '', // Empty remedy name
+        })
+      ).rejects.toThrow(ValidationError);
 
       client.destroy();
     });
@@ -507,8 +564,7 @@ describe('OOREPSDKClient Integration Tests', () => {
     it('when remedy name invalid then throws error', async () => {
       const client = new OOREPSDKClient();
 
-      await expect(client.getRemedyInfo({ remedy: '' }))
-        .rejects.toThrow(); // Throws ZodError for empty string
+      await expect(client.getRemedyInfo({ remedy: '' })).rejects.toThrow(); // Throws ZodError for empty string
 
       client.destroy();
     });
@@ -568,7 +624,7 @@ describe('OOREPSDKClient Integration Tests', () => {
       const result = await client.listRepertories({ language: 'en' });
 
       expect(result).toHaveLength(2);
-      expect(result.every(r => r.language === 'en')).toBe(true);
+      expect(result.every((r) => r.language === 'en')).toBe(true);
 
       client.destroy();
     });
@@ -576,8 +632,7 @@ describe('OOREPSDKClient Integration Tests', () => {
     it('when language filter invalid then throws ValidationError', async () => {
       const client = new OOREPSDKClient();
 
-      await expect(client.listRepertories({ language: 'e' }))
-        .rejects.toThrow(ValidationError);
+      await expect(client.listRepertories({ language: 'e' })).rejects.toThrow(ValidationError);
 
       client.destroy();
     });
@@ -630,13 +685,11 @@ describe('OOREPSDKClient Integration Tests', () => {
   describe('concurrent request deduplication', () => {
     it('when concurrent identical requests then only one HTTP call made', async () => {
       let resolveRequest: (value: Response) => void;
-      const pendingRequest = new Promise<Response>(resolve => {
+      const pendingRequest = new Promise<Response>((resolve) => {
         resolveRequest = resolve;
       });
 
-      mockFetch
-        .mockResolvedValueOnce(createSessionResponse())
-        .mockReturnValueOnce(pendingRequest);
+      mockFetch.mockResolvedValueOnce(createSessionResponse()).mockReturnValueOnce(pendingRequest);
 
       const client = new OOREPSDKClient();
 

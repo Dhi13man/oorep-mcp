@@ -13,14 +13,17 @@ export interface OOREPToolDefinition {
   description: string;
   parameters: {
     type: 'object';
-    properties: Record<string, {
-      type: string;
-      description: string;
-      enum?: string[];
-      minimum?: number;
-      maximum?: number;
-      default?: unknown;
-    }>;
+    properties: Record<
+      string,
+      {
+        type: string;
+        description: string;
+        enum?: string[];
+        minimum?: number;
+        maximum?: number;
+        default?: unknown;
+      }
+    >;
     required: string[];
   };
 }
@@ -31,21 +34,25 @@ export interface OOREPToolDefinition {
 export const toolDefinitions: OOREPToolDefinition[] = [
   {
     name: 'search_repertory',
-    description: 'Search for symptoms in homeopathic repertories. Returns matching rubrics with remedies and their weights. Useful for finding remedies associated with specific symptoms.',
+    description:
+      'Search for symptoms in homeopathic repertories. Returns matching rubrics with remedies and their weights. Useful for finding remedies associated with specific symptoms.',
     parameters: {
       type: 'object',
       properties: {
         symptom: {
           type: 'string',
-          description: 'The symptom to search for. Supports wildcards (*) at end of words and exclusions with quotes. Example: "head*" or "headache -migraine"',
+          description:
+            'The symptom to search for. Supports wildcards (*) at end of words and exclusions with quotes. Example: "head*" or "headache -migraine"',
         },
         repertory: {
           type: 'string',
-          description: 'Repertory abbreviation to search in (e.g., "kent", "publicum"). If not specified, uses the default repertory.',
+          description:
+            'Repertory abbreviation to search in (e.g., "kent", "publicum"). If not specified, uses the default repertory.',
         },
         minWeight: {
           type: 'number',
-          description: 'Minimum remedy weight/grade to include (1-4). Higher weights indicate stronger associations.',
+          description:
+            'Minimum remedy weight/grade to include (1-4). Higher weights indicate stronger associations.',
           minimum: 1,
           maximum: 4,
         },
@@ -67,7 +74,8 @@ export const toolDefinitions: OOREPToolDefinition[] = [
   },
   {
     name: 'search_materia_medica',
-    description: 'Search materia medica texts for remedy descriptions and symptoms. Returns sections from materia medica books that match the search term.',
+    description:
+      'Search materia medica texts for remedy descriptions and symptoms. Returns sections from materia medica books that match the search term.',
     parameters: {
       type: 'object',
       properties: {
@@ -77,7 +85,8 @@ export const toolDefinitions: OOREPToolDefinition[] = [
         },
         materiamedica: {
           type: 'string',
-          description: 'Materia medica abbreviation to search in (e.g., "boericke", "kent"). If not specified, uses the default.',
+          description:
+            'Materia medica abbreviation to search in (e.g., "boericke", "kent"). If not specified, uses the default.',
         },
         remedy: {
           type: 'string',
@@ -96,13 +105,15 @@ export const toolDefinitions: OOREPToolDefinition[] = [
   },
   {
     name: 'get_remedy_info',
-    description: 'Get detailed information about a specific homeopathic remedy including its full name, abbreviation, and alternative names.',
+    description:
+      'Get detailed information about a specific homeopathic remedy including its full name, abbreviation, and alternative names.',
     parameters: {
       type: 'object',
       properties: {
         remedy: {
           type: 'string',
-          description: 'Remedy name or abbreviation to look up (case-insensitive). Examples: "acon", "Aconitum", "bell"',
+          description:
+            'Remedy name or abbreviation to look up (case-insensitive). Examples: "acon", "Aconitum", "bell"',
         },
       },
       required: ['remedy'],
@@ -110,13 +121,15 @@ export const toolDefinitions: OOREPToolDefinition[] = [
   },
   {
     name: 'list_available_repertories',
-    description: 'List all available homeopathic repertories with their metadata including title, author, and language.',
+    description:
+      'List all available homeopathic repertories with their metadata including title, author, and language.',
     parameters: {
       type: 'object',
       properties: {
         language: {
           type: 'string',
-          description: 'Filter repertories by language code (e.g., "en" for English, "de" for German)',
+          description:
+            'Filter repertories by language code (e.g., "en" for English, "de" for German)',
         },
       },
       required: [],
@@ -124,13 +137,15 @@ export const toolDefinitions: OOREPToolDefinition[] = [
   },
   {
     name: 'list_available_materia_medicas',
-    description: 'List all available materia medica texts with their metadata including title, author, and language.',
+    description:
+      'List all available materia medica texts with their metadata including title, author, and language.',
     parameters: {
       type: 'object',
       properties: {
         language: {
           type: 'string',
-          description: 'Filter materia medicas by language code (e.g., "en" for English, "de" for German)',
+          description:
+            'Filter materia medicas by language code (e.g., "en" for English, "de" for German)',
         },
       },
       required: [],
