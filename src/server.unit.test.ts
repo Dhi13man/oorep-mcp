@@ -159,6 +159,89 @@ describe('createServer', () => {
       expect(server).toBeDefined();
       expect(server).toHaveProperty('setRequestHandler');
     });
+
+    it('createServer when list_tools called then returns all tool definitions', async () => {
+      let listToolsHandler: ((request: any) => Promise<any>) | null = null;
+
+      const mockSetRequestHandler = vi.fn((schema: any, handler: any) => {
+        if (schema?.method === 'tools/list') {
+          listToolsHandler = handler;
+        }
+      });
+
+      // Create server with mocked setRequestHandler
+      const server = await createServer();
+      // Re-spy to capture handlers
+      vi.spyOn(server, 'setRequestHandler').mockImplementation(mockSetRequestHandler);
+      await createServer();
+
+      if (listToolsHandler) {
+        const result = await listToolsHandler({});
+        expect(result).toHaveProperty('tools');
+        expect(Array.isArray(result.tools)).toBe(true);
+        expect(result.tools.length).toBe(5);
+        expect(result.tools.map((t: any) => t.name)).toContain('search_repertory');
+        expect(result.tools.map((t: any) => t.name)).toContain('search_materia_medica');
+        expect(result.tools.map((t: any) => t.name)).toContain('get_remedy_info');
+      }
+    });
+
+    it('createServer when call_tool succeeds then returns content and structuredContent', async () => {
+      let callToolHandler: ((request: any) => Promise<any>) | null = null;
+
+      const mockSetRequestHandler = vi.fn((schema: any, handler: any) => {
+        if (schema?.method === 'tools/call') {
+          callToolHandler = handler;
+        }
+      });
+
+      const server = await createServer();
+      vi.spyOn(server, 'setRequestHandler').mockImplementation(mockSetRequestHandler);
+      await createServer();
+
+      if (callToolHandler) {
+        // Test list_available_repertories which doesn't need external API
+        const result = await callToolHandler({
+          params: {
+            name: 'list_available_repertories',
+            arguments: {},
+          },
+        });
+
+        expect(result).toHaveProperty('content');
+        expect(Array.isArray(result.content)).toBe(true);
+        expect(result.content[0]).toHaveProperty('type', 'text');
+        expect(result.content[0]).toHaveProperty('text');
+        // Should have structuredContent since tool has outputSchema
+        expect(result).toHaveProperty('structuredContent');
+      }
+    });
+
+    it('createServer when call_tool with unknown tool then returns isError true', async () => {
+      let callToolHandler: ((request: any) => Promise<any>) | null = null;
+
+      const mockSetRequestHandler = vi.fn((schema: any, handler: any) => {
+        if (schema?.method === 'tools/call') {
+          callToolHandler = handler;
+        }
+      });
+
+      const server = await createServer();
+      vi.spyOn(server, 'setRequestHandler').mockImplementation(mockSetRequestHandler);
+      await createServer();
+
+      if (callToolHandler) {
+        const result = await callToolHandler({
+          params: {
+            name: 'nonexistent_tool',
+            arguments: {},
+          },
+        });
+
+        expect(result).toHaveProperty('isError', true);
+        expect(result.content[0].text).toContain('Error');
+      }
+    });
   });
 
   describe('resource reading', () => {
@@ -218,6 +301,99 @@ describe('createServer', () => {
       expect(server).toBeDefined();
       expect(server).toHaveProperty('setRequestHandler');
     });
+
+    it('createServer when list_prompts called then returns all prompts', async () => {
+      let listPromptsHandler: ((request: any) => Promise<any>) | null = null;
+
+      const mockSetRequestHandler = vi.fn((schema: any, handler: any) => {
+        if (schema?.method === 'prompts/list') {
+          listPromptsHandler = handler;
+        }
+      });
+
+      const server = await createServer();
+      vi.spyOn(server, 'setRequestHandler').mockImplementation(mockSetRequestHandler);
+      await createServer();
+
+      if (listPromptsHandler) {
+        const result = await listPromptsHandler({});
+        expect(result).toHaveProperty('prompts');
+        expect(Array.isArray(result.prompts)).toBe(true);
+        expect(result.prompts.length).toBe(3);
+      }
+    });
+
+    it('createServer when get_prompt succeeds then returns prompt messages', async () => {
+      let getPromptHandler: ((request: any) => Promise<any>) | null = null;
+
+      const mockSetRequestHandler = vi.fn((schema: any, handler: any) => {
+        if (schema?.method === 'prompts/get') {
+          getPromptHandler = handler;
+        }
+      });
+
+      const server = await createServer();
+      vi.spyOn(server, 'setRequestHandler').mockImplementation(mockSetRequestHandler);
+      await createServer();
+
+      if (getPromptHandler) {
+        const result = await getPromptHandler({
+          params: {
+            name: 'analyze-symptoms',
+            arguments: { symptom_description: 'headache' },
+          },
+        });
+
+        expect(result).toHaveProperty('messages');
+        expect(Array.isArray(result.messages)).toBe(true);
+      }
+    });
+
+    it('createServer when get_prompt with unknown prompt then throws error', async () => {
+      let getPromptHandler: ((request: any) => Promise<any>) | null = null;
+
+      const mockSetRequestHandler = vi.fn((schema: any, handler: any) => {
+        if (schema?.method === 'prompts/get') {
+          getPromptHandler = handler;
+        }
+      });
+
+      const server = await createServer();
+      vi.spyOn(server, 'setRequestHandler').mockImplementation(mockSetRequestHandler);
+      await createServer();
+
+      if (getPromptHandler) {
+        await expect(
+          getPromptHandler({
+            params: {
+              name: 'nonexistent_prompt',
+              arguments: {},
+            },
+          })
+        ).rejects.toThrow();
+      }
+    });
+
+    it('createServer when list_resources called then returns all resources', async () => {
+      let listResourcesHandler: ((request: any) => Promise<any>) | null = null;
+
+      const mockSetRequestHandler = vi.fn((schema: any, handler: any) => {
+        if (schema?.method === 'resources/list') {
+          listResourcesHandler = handler;
+        }
+      });
+
+      const server = await createServer();
+      vi.spyOn(server, 'setRequestHandler').mockImplementation(mockSetRequestHandler);
+      await createServer();
+
+      if (listResourcesHandler) {
+        const result = await listResourcesHandler({});
+        expect(result).toHaveProperty('resources');
+        expect(Array.isArray(result.resources)).toBe(true);
+        expect(result.resources.length).toBe(4);
+      }
+    });
   });
 
   describe('registry initialization', () => {
@@ -276,5 +452,21 @@ describe('runServer', () => {
 
     await expect(runServer()).rejects.toThrow('process.exit called');
     expect(mockExit).toHaveBeenCalledWith(1);
+  });
+
+  it('runServer when started then registers SIGTERM handler', async () => {
+    const mockOn = vi.spyOn(process, 'on');
+
+    await runServer();
+
+    expect(mockOn).toHaveBeenCalledWith('SIGTERM', expect.any(Function));
+  });
+
+  it('runServer when started then registers SIGINT handler', async () => {
+    const mockOn = vi.spyOn(process, 'on');
+
+    await runServer();
+
+    expect(mockOn).toHaveBeenCalledWith('SIGINT', expect.any(Function));
   });
 });

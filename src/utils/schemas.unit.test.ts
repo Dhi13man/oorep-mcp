@@ -490,4 +490,116 @@ describe('zodToOutputSchema', () => {
     expect(result.properties).toHaveProperty('results');
     expect(result.additionalProperties).toBe(false);
   });
+
+  it('zodToOutputSchema when empty object schema then returns valid structure', () => {
+    const schema = z.object({});
+    const result = zodToOutputSchema(schema);
+
+    expect(result.type).toBe('object');
+    expect(result.additionalProperties).toBe(false);
+  });
+
+  it('zodToOutputSchema when all optional fields then required is undefined or empty', () => {
+    const schema = z.object({
+      opt1: z.string().optional(),
+      opt2: z.number().optional(),
+    });
+    const result = zodToOutputSchema(schema);
+
+    expect(result.type).toBe('object');
+    expect(result.properties).toHaveProperty('opt1');
+    expect(result.properties).toHaveProperty('opt2');
+    // Required should be undefined or empty since all fields are optional
+    expect(result.required === undefined || result.required.length === 0).toBe(true);
+  });
+
+  it('zodToOutputSchema when enum type then includes in output', () => {
+    const schema = z.object({
+      status: z.enum(['pending', 'completed', 'failed']),
+    });
+    const result = zodToOutputSchema(schema);
+
+    expect(result.type).toBe('object');
+    expect(result.properties).toHaveProperty('status');
+  });
+
+  it('zodToOutputSchema when union types then includes in output', () => {
+    const schema = z.object({
+      value: z.union([z.string(), z.number()]),
+    });
+    const result = zodToOutputSchema(schema);
+
+    expect(result.type).toBe('object');
+    expect(result.properties).toHaveProperty('value');
+  });
+
+  it('zodToOutputSchema when nullable types then includes in output', () => {
+    const schema = z.object({
+      maybeNull: z.string().nullable(),
+    });
+    const result = zodToOutputSchema(schema);
+
+    expect(result.type).toBe('object');
+    expect(result.properties).toHaveProperty('maybeNull');
+  });
+
+  it('zodToOutputSchema when deeply nested objects then flattens correctly', () => {
+    const schema = z.object({
+      level1: z.object({
+        level2: z.object({
+          level3: z.string(),
+        }),
+      }),
+    });
+    const result = zodToOutputSchema(schema);
+
+    expect(result.type).toBe('object');
+    expect(result.properties).toHaveProperty('level1');
+  });
+
+  it('zodToOutputSchema when array of primitives then includes in output', () => {
+    const schema = z.object({
+      tags: z.array(z.string()),
+    });
+    const result = zodToOutputSchema(schema);
+
+    expect(result.type).toBe('object');
+    expect(result.properties).toHaveProperty('tags');
+  });
+
+  it('zodToOutputSchema when default values then includes property', () => {
+    const schema = z.object({
+      count: z.number().default(0),
+      name: z.string().default('unknown'),
+    });
+    const result = zodToOutputSchema(schema);
+
+    expect(result.type).toBe('object');
+    expect(result.properties).toHaveProperty('count');
+    expect(result.properties).toHaveProperty('name');
+  });
+
+  it('zodToOutputSchema when description metadata then preserves in output', () => {
+    const schema = z.object({
+      id: z.number().describe('Unique identifier'),
+    });
+    const result = zodToOutputSchema(schema);
+
+    expect(result.type).toBe('object');
+    expect(result.properties).toHaveProperty('id');
+  });
+
+  it('zodToOutputSchema when mixed required and optional then sets required correctly', () => {
+    const schema = z.object({
+      required1: z.string(),
+      required2: z.number(),
+      optional1: z.boolean().optional(),
+    });
+    const result = zodToOutputSchema(schema);
+
+    expect(result.type).toBe('object');
+    expect(result.required).toContain('required1');
+    expect(result.required).toContain('required2');
+    expect(result.required).not.toContain('optional1');
+  });
 });

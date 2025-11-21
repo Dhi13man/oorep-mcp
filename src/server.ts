@@ -159,6 +159,23 @@ export async function runServer() {
   try {
     const server = await createServer();
     const transport = new StdioServerTransport();
+
+    // Set up graceful shutdown handlers
+    const shutdown = async (signal: string) => {
+      logger.info(`Received ${signal}, shutting down gracefully...`);
+      try {
+        await server.close();
+        logger.info('Server closed successfully');
+        process.exit(0);
+      } catch (error) {
+        logger.error('Error during shutdown', error);
+        process.exit(1);
+      }
+    };
+
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
+
     await server.connect(transport);
 
     logger.info('OOREP MCP Server running on stdio');
