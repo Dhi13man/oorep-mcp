@@ -2,7 +2,7 @@
  * Zod schemas for runtime validation and type safety
  */
 
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 // ====================
 // Tool Input Schemas
@@ -193,7 +193,7 @@ export interface MCPOutputSchema {
 /**
  * Convert a Zod schema to MCP-compatible JSON Schema format for outputSchema
  *
- * Uses zod-to-json-schema library for accurate conversion
+ * Uses Zod v4's native toJSONSchema for accurate conversion
  *
  * @param schema - Zod schema to convert
  * @returns JSON Schema object compatible with MCP outputSchema field
