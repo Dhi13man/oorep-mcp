@@ -3,6 +3,13 @@
  *
  * This file demonstrates various ways to use the OOREP SDK
  * with different AI client SDKs.
+ *
+ * Note: These examples use relative imports for development.
+ * When using as a package consumer, import from:
+ * - 'oorep-mcp/sdk/client'
+ * - 'oorep-mcp/sdk/openai'
+ * - 'oorep-mcp/sdk/vercel-ai'
+ * - 'oorep-mcp/sdk/langchain'
  */
 
 // =====================================================
@@ -55,7 +62,7 @@ async function directUsageExample() {
 // =====================================================
 
 // import OpenAI from 'openai';
-import { openAITools } from '../src/sdk/adapters/openai.js';
+import { openAITools, processToolCalls } from '../src/sdk/adapters/openai.js';
 
 async function openAIExample() {
   // Uncomment when using with actual OpenAI SDK
