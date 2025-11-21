@@ -836,8 +836,8 @@ All inputs are validated using Zod schemas:
 - No user credentials are stored or required
 - OOREP sessions are anonymous and cookie-based
 - No data is persisted to disk (memory cache only)
-
-For more details, see [SECURITY.md](SECURITY.md).
+- All inputs validated using Zod schemas
+- Errors are sanitized before returning to clients
 
 ## Rate Limiting
 
