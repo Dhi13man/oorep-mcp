@@ -75,6 +75,11 @@ export class OOREPSDKClient {
   private cache: Cache<unknown>;
   private deduplicator: RequestDeduplicator;
   private config: Required<OOREPSDKConfig>;
+  
+  private normalizeOverride(value: string | undefined, fallback: string): string {
+    const trimmed = value?.trim();
+    return trimmed && trimmed.length > 0 ? trimmed : fallback;
+  }
 
   constructor(config: OOREPSDKConfig = {}) {
     this.config = {
@@ -112,8 +117,8 @@ export class OOREPSDKClient {
     const validated = SearchRepertoryArgsSchema.parse(args);
     validateSymptom(validated.symptom);
 
-    // Apply default repertory consistently for cache key and API call
-    const repertory = validated.repertory ?? this.config.defaultRepertory;
+    // Trim whitespace overrides and apply default repertory consistently for cache and API
+    const repertory = this.normalizeOverride(validated.repertory, this.config.defaultRepertory);
 
     const cacheKey = generateCacheKey('repertory', {
       symptom: validated.symptom,
@@ -159,8 +164,11 @@ export class OOREPSDKClient {
       validateRemedyName(validated.remedy);
     }
 
-    // Apply default materia medica consistently for cache key and API call
-    const materiamedica = validated.materiamedica ?? this.config.defaultMateriaMedica;
+    // Trim whitespace overrides and apply default materia medica consistently for cache and API
+    const materiamedica = this.normalizeOverride(
+      validated.materiamedica,
+      this.config.defaultMateriaMedica
+    );
 
     const cacheKey = generateCacheKey('mm', {
       symptom: validated.symptom,
