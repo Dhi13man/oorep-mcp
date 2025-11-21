@@ -75,7 +75,7 @@ export class OOREPSDKClient {
   private cache: Cache<unknown>;
   private deduplicator: RequestDeduplicator;
   private config: Required<OOREPSDKConfig>;
-  
+
   private normalizeOverride(value: string | undefined, fallback: string): string {
     const trimmed = value?.trim();
     return trimmed && trimmed.length > 0 ? trimmed : fallback;
