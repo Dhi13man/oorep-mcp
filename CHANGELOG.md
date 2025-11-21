@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.8] - 2025-11-21
+
+### Fixed
+
+- **Build Error**: Fixed `z.toJSONSchema` TypeScript error in `zodToOutputSchema` function
+  - Replaced non-existent `z.toJSONSchema` with `zodToJsonSchema` from `zod-to-json-schema` library
+  - Corrected documentation references from "Zod 4" to "zod-to-json-schema library"
+
 ## [0.0.7] - 2025-11-21
 
 ### Added
@@ -24,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `content`: Text representation (JSON string) for backwards compatibility
   - `structuredContent`: Machine-parseable JSON object for modern clients
 
-- **zodToOutputSchema Utility**: Helper function using Zod 4's native `z.toJSONSchema` to convert schemas to MCP-compatible JSON Schema format
+- **zodToOutputSchema Utility**: Helper function using `zod-to-json-schema` library to convert schemas to MCP-compatible JSON Schema format
 
 ### Changed
 
@@ -142,7 +150,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - For full functionality, users should run a local OOREP instance or configure authentication
 - Public metadata endpoints work without authentication (remedies list, repertories list, materia medicas list)
 
-[Unreleased]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.7...HEAD
+[Unreleased]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.8...HEAD
+[0.0.8]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.7...v0.0.8
 [0.0.7]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.6...v0.0.7
 [0.0.6]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.5...v0.0.6
 [0.0.5]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.1...v0.0.5
