@@ -6,6 +6,12 @@
 [![Test Coverage](https://img.shields.io/badge/coverage-94.6%25-brightgreen.svg)](https://github.com/Dhi13man/oorep-mcp/actions)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Contributors](https://img.shields.io/github/contributors-anon/dhi13man/oorep-mcp?style=flat)](https://github.com/Dhi13man/oorep-mcp/graphs/contributors)
+[![GitHub forks](https://img.shields.io/github/forks/dhi13man/oorep-mcp?style=social)](https://github.com/Dhi13man/oorep-mcp/network/members)
+[![GitHub Repo stars](https://img.shields.io/github/stars/dhi13man/oorep-mcp?style=social)](https://github.com/Dhi13man/oorep-mcp/stargazers)
+[![Last Commit](https://img.shields.io/github/last-commit/dhi13man/oorep-mcp)](https://github.com/Dhi13man/oorep-mcp/commits/master)
+
+[!["Buy Me A Coffee"](https://img.buymeacoffee.com/button-api/?text=Buy%20me%20an%20Ego%20boost&emoji=%F0%9F%98%B3&slug=dhi13man&button_colour=FF5F5F&font_colour=ffffff&font_family=Lato&outline_colour=000000&coffee_colour=FFDD00)](https://www.buymeacoffee.com/dhi13man)
 
 **Model Context Protocol server providing AI assistants access to OOREP - a comprehensive homeopathic repertory and materia medica database.**
 

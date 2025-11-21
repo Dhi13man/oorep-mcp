@@ -57,7 +57,7 @@ Combining OOREP's extensive database with MCP enables:
 
 ### High-Level Architecture
 
-```plain
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                    AI Client Layer                           │
 │  (Claude Desktop, VS Code, Cursor, Custom Apps)              │
@@ -372,7 +372,7 @@ oorep-mcp --base-url https://localhost:9000 --timeout 60000
 
 **Example**:
 
-```plain
+```text
 Input: { symptom: "headache worse night", repertory: "kent", maxResults: 5 }
 Output: [List of 5 matching rubrics with remedies]
 ```
@@ -424,7 +424,7 @@ Output: [List of 5 matching rubrics with remedies]
 
 **Example**:
 
-```plain
+```text
 Input: { symptom: "fever", materiamedica: "hering", maxResults: 3 }
 Output: [3 remedies with matching sections]
 ```
@@ -608,7 +608,7 @@ Output: [3 remedies with matching sections]
 
 **Template**:
 
-```plain
+```text
 You are helping a user analyze homeopathic symptoms and find relevant remedies.
 
 Follow this workflow:
@@ -643,7 +643,7 @@ Always:
 
 **Template**:
 
-```plain
+```text
 You are comparing homeopathic remedies to help identify the best match.
 
 Remedies to compare: {{remedies}}
@@ -683,7 +683,7 @@ Conclude with:
 
 **Template**:
 
-```plain
+```text
 You are guiding a user through homeopathic case repertorization.
 
 **Step 1: Chief Complaint**
@@ -723,7 +723,7 @@ Provide the top 1-2 remedies with:
 
 ### Directory Layout
 
-```plain
+```text
 oorep-mcp/
 ├── src/
 │   ├── index.ts                    # Entry point (#!/usr/bin/env node)
@@ -997,7 +997,7 @@ export default defineConfig({
 
 ### Test Pyramid
 
-```plain
+```text
         ╱╲
        ╱E2E╲           5% - End-to-end tests (MCP Inspector, client integration)
       ╱────╲
