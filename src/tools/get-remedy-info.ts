@@ -3,46 +3,24 @@
  * Retrieve comprehensive information about a specific homeopathic remedy
  */
 
-import { OOREPClient } from '../lib/oorep-client.js';
-import { Cache, RequestDeduplicator } from '../lib/cache.js';
-import { generateCacheKey } from '../lib/data-formatter.js';
-import { validateRemedyName } from '../utils/validation.js';
+import { OOREPSDKClient, type OOREPSDKConfig } from '../sdk/client.js';
 import { GetRemedyInfoArgsSchema, type RemedyInfo } from '../utils/schemas.js';
 import { sanitizeError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import type { OOREPConfig } from '../config.js';
 
-function matchesPartially(
-  remedy: { nameAbbrev: string; nameLong: string; namealt?: string[] },
-  normalizedQuery: string
-): boolean {
-  const normalize = (value: string) => value.replace(/[^a-z0-9]/g, '').toLowerCase();
-  const abbrev = normalize(remedy.nameAbbrev);
-  const longName = normalize(remedy.nameLong);
-  const altNames = (remedy.namealt || []).map((alt) => normalize(alt));
-
-  const queryContainsName = (name: string) => normalizedQuery.includes(name);
-  const nameContainsQuery = (name: string) => name.includes(normalizedQuery);
-
-  return (
-    nameContainsQuery(longName) ||
-    nameContainsQuery(abbrev) ||
-    altNames.some((alt) => nameContainsQuery(alt)) ||
-    queryContainsName(longName) ||
-    queryContainsName(abbrev) ||
-    altNames.some((alt) => queryContainsName(alt))
-  );
-}
-
 export class GetRemedyInfoTool {
-  private client: OOREPClient;
-  private cache: Cache<RemedyInfo>;
-  private deduplicator: RequestDeduplicator;
+  private client: OOREPSDKClient;
 
   constructor(config: OOREPConfig) {
-    this.client = new OOREPClient(config);
-    this.cache = new Cache<RemedyInfo>(config.cacheTtlMs);
-    this.deduplicator = new RequestDeduplicator();
+    const sdkConfig: OOREPSDKConfig = {
+      baseUrl: config.baseUrl,
+      timeoutMs: config.timeoutMs,
+      cacheTtlMs: config.cacheTtlMs,
+      defaultRepertory: config.defaultRepertory,
+      defaultMateriaMedica: config.defaultMateriaMedica,
+    };
+    this.client = new OOREPSDKClient(sdkConfig);
   }
 
   async execute(args: unknown): Promise<RemedyInfo> {
@@ -51,57 +29,17 @@ export class GetRemedyInfoTool {
       const validatedArgs = GetRemedyInfoArgsSchema.parse(args);
       logger.info('Executing get_remedy_info', validatedArgs);
 
-      // Additional validation
-      validateRemedyName(validatedArgs.remedy);
-
-      // Generate cache key
-      const cacheKey = generateCacheKey('remedy', {
+      // Use SDK client (handles caching, validation, deduplication, partial matching)
+      const result = await this.client.getRemedyInfo({
         remedy: validatedArgs.remedy,
       });
 
-      // Check cache
-      const cached = this.cache.get(cacheKey);
-      if (cached) {
-        logger.info('Returning cached remedy info');
-        return cached;
-      }
-
-      // Deduplicate concurrent requests
-      const result = await this.deduplicator.deduplicate(cacheKey, async () => {
-        // Get all available remedies to find the matching one
-        const remedies = await this.client.getAvailableRemedies();
-
-        const query = validatedArgs.remedy.trim().toLowerCase();
-        const normalizedQuery = query.replace(/[^a-z0-9]/g, '');
-        const allowPartialMatch = normalizedQuery.length >= 3;
-
-        const remedy = remedies.find(
-          (r) =>
-            r.nameAbbrev.toLowerCase() === query ||
-            r.nameLong.toLowerCase() === query ||
-            r.namealt?.some((alt) => alt.toLowerCase() === query) ||
-            (allowPartialMatch && matchesPartially(r, normalizedQuery))
+      // SDK returns null if not found, MCP tool should throw error
+      if (!result) {
+        throw new Error(
+          `Remedy "${validatedArgs.remedy}" not found. Check the spelling or use the list_available_remedies tool to see available remedies.`
         );
-
-        if (!remedy) {
-          throw new Error(
-            `Remedy "${validatedArgs.remedy}" not found. Check the spelling or use the list_available_remedies tool to see available remedies.`
-          );
-        }
-
-        // Build remedy info
-        const remedyInfo: RemedyInfo = {
-          id: remedy.id,
-          nameAbbrev: remedy.nameAbbrev,
-          nameLong: remedy.nameLong,
-          nameAlt: remedy.namealt, // API uses lowercase 'alt'
-        };
-
-        // Cache the result
-        this.cache.set(cacheKey, remedyInfo);
-
-        return remedyInfo;
-      });
+      }
 
       logger.info('Remedy info retrieved', {
         remedy: result.nameAbbrev,
@@ -113,6 +51,10 @@ export class GetRemedyInfoTool {
       logger.error('Error in get_remedy_info', error);
       throw sanitizeError(error);
     }
+  }
+
+  destroy(): void {
+    this.client.destroy();
   }
 }
 

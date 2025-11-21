@@ -3,22 +3,24 @@
  * Get list of all accessible repertories with metadata
  */
 
-import { OOREPClient } from '../lib/oorep-client.js';
-import { Cache } from '../lib/cache.js';
-import { validateLanguage } from '../utils/validation.js';
+import { OOREPSDKClient, type OOREPSDKConfig } from '../sdk/client.js';
 import { ListRepertoriesArgsSchema, type RepertoryMetadata } from '../utils/schemas.js';
 import { sanitizeError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import type { OOREPConfig } from '../config.js';
 
 export class ListRepertoriesTool {
-  private client: OOREPClient;
-  private cache: Cache<RepertoryMetadata[]>;
+  private client: OOREPSDKClient;
 
   constructor(config: OOREPConfig) {
-    this.client = new OOREPClient(config);
-    // Cache for 5 minutes (metadata changes rarely)
-    this.cache = new Cache<RepertoryMetadata[]>(300000);
+    const sdkConfig: OOREPSDKConfig = {
+      baseUrl: config.baseUrl,
+      timeoutMs: config.timeoutMs,
+      cacheTtlMs: config.cacheTtlMs,
+      defaultRepertory: config.defaultRepertory,
+      defaultMateriaMedica: config.defaultMateriaMedica,
+    };
+    this.client = new OOREPSDKClient(sdkConfig);
   }
 
   async execute(args: unknown): Promise<{ repertories: RepertoryMetadata[] }> {
@@ -27,49 +29,10 @@ export class ListRepertoriesTool {
       const validatedArgs = ListRepertoriesArgsSchema.parse(args);
       logger.info('Executing list_available_repertories', validatedArgs);
 
-      // Additional validation
-      if (validatedArgs.language) {
-        validateLanguage(validatedArgs.language);
-      }
-
-      const cacheKey = `repertories:${validatedArgs.language || 'all'}`;
-
-      // Check cache
-      const cached = this.cache.get(cacheKey);
-      if (cached) {
-        logger.info('Returning cached repertories list');
-        return { repertories: cached };
-      }
-
-      // Fetch from OOREP API
-      const apiRepertories = await this.client.getAvailableRepertories();
-
-      // Transform to metadata format
-      let repertories: RepertoryMetadata[] = apiRepertories.map((rep) => {
-        const base = {
-          abbreviation: rep.abbreviation,
-          title: rep.title,
-          author: rep.author,
-          language: rep.language,
-        };
-        return {
-          ...base,
-          ...(rep.year !== undefined ? { year: rep.year } : {}),
-          ...(rep.edition !== undefined ? { edition: rep.edition } : {}),
-          ...(rep.publisher !== undefined ? { publisher: rep.publisher } : {}),
-          ...(rep.license !== undefined ? { license: rep.license } : {}),
-          ...(rep.remedyCount !== undefined ? { remedyCount: rep.remedyCount } : {}),
-        };
+      // Use SDK client (handles caching, validation, deduplication)
+      const repertories = await this.client.listRepertories({
+        language: validatedArgs.language,
       });
-
-      // Filter by language if specified
-      if (validatedArgs.language) {
-        const lang = validatedArgs.language.toLowerCase();
-        repertories = repertories.filter((rep) => rep.language?.toLowerCase() === lang);
-      }
-
-      // Cache the result
-      this.cache.set(cacheKey, repertories);
 
       logger.info('Repertories list retrieved', {
         count: repertories.length,
@@ -81,6 +44,10 @@ export class ListRepertoriesTool {
       logger.error('Error in list_available_repertories', error);
       throw sanitizeError(error);
     }
+  }
+
+  destroy(): void {
+    this.client.destroy();
   }
 }
 

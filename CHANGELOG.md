@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.5] - 2025-11-21
+
+### Added
+
+#### SDK Integration System
+
+- **SDK Client** (`createOOREPClient`): Programmatic access to OOREP with in-memory caching, request deduplication, and session management
+- **OpenAI Adapter** (`oorep-mcp/sdk/openai`): Function calling integration for OpenAI API
+- **Vercel AI Adapter** (`oorep-mcp/sdk/vercel-ai`): Tool integration for Vercel AI SDK
+- **LangChain Adapter** (`oorep-mcp/sdk/langchain`): Tool integration for LangChain/LangGraph
+- **New Package Exports**: `./sdk/client`, `./sdk/tools`, `./sdk/openai`, `./sdk/vercel-ai`, `./sdk/langchain`, `./sdk/adapters`
+
+### Changed
+
+- **README Overhaul**: Complete rewrite with TL;DR section, architecture diagram, full API reference, search syntax documentation, and SDK usage examples for all supported frameworks
+- **Test Naming Convention**: Enforced rigid naming convention (`*.unit.test.ts`, `*.integration.test.ts`)
+
+### Improved
+
+- **Test Coverage**: Increased from 92% to 94.6%
+- **SDK Client Tests**: Added unit tests for isolation testing
+- **Adapter Integration Tests**: Added integration tests for all SDK adapters
+- **Server Tests**: Added runServer tests for improved coverage
+
+### Fixed
+
+- Code scanning alerts (unused variables, imports, functions)
+- Whitespace handling with `normalizeOverride` method for repertory and materia medica
+- Prettier formatting across SDK files
+- Multiple code review feedback items
+
 ## [0.0.1] - 2025-11-20
 
 ### Added
@@ -65,5 +96,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - For full functionality, users should run a local OOREP instance or configure authentication
 - Public metadata endpoints work without authentication (remedies list, repertories list, materia medicas list)
 
-[Unreleased]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.1...HEAD
+[Unreleased]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.5...HEAD
+[0.0.5]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.1...v0.0.5
 [0.0.1]: https://github.com/Dhi13man/oorep-mcp/releases/tag/v0.0.1

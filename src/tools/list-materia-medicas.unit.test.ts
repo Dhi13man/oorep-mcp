@@ -2,14 +2,14 @@
  * Unit tests for list_available_materia_medicas tool
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { ListMateriaMedicasTool } from './list-materia-medicas.js';
 import type { OOREPConfig } from '../config.js';
 
 describe('ListMateriaMedicasTool', () => {
   let mockTool: ListMateriaMedicasTool;
   let mockConfig: OOREPConfig;
-  let mockClientGetMateriaMedicas: ReturnType<typeof vi.fn>;
+  let mockListMateriaMedicas: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     mockConfig = {
@@ -24,8 +24,13 @@ describe('ListMateriaMedicasTool', () => {
 
     mockTool = new ListMateriaMedicasTool(mockConfig);
 
-    mockClientGetMateriaMedicas = vi.fn();
-    (mockTool as any).client.getAvailableMateriaMedicas = mockClientGetMateriaMedicas;
+    // Mock the OOREPSDKClient.listMateriaMedicas method
+    mockListMateriaMedicas = vi.fn();
+    (mockTool as any).client.listMateriaMedicas = mockListMateriaMedicas;
+  });
+
+  afterEach(() => {
+    mockTool.destroy();
   });
 
   describe('execute', () => {
@@ -44,7 +49,7 @@ describe('ListMateriaMedicasTool', () => {
           language: 'en',
         },
       ];
-      mockClientGetMateriaMedicas.mockResolvedValue(mockMateriaMedicas);
+      mockListMateriaMedicas.mockResolvedValue(mockMateriaMedicas);
 
       const result = await mockTool.execute({});
 
@@ -56,22 +61,18 @@ describe('ListMateriaMedicasTool', () => {
     it('execute when language filter specified then returns filtered materia medicas', async () => {
       const mockMateriaMedicas = [
         {
-          abbreviation: 'boericke',
-          title: 'Boericke MM',
-          language: 'en',
-        },
-        {
           abbreviation: 'german-mm',
           title: 'German MM',
           language: 'de',
         },
       ];
-      mockClientGetMateriaMedicas.mockResolvedValue(mockMateriaMedicas);
+      mockListMateriaMedicas.mockResolvedValue(mockMateriaMedicas);
 
       const result = await mockTool.execute({ language: 'de' });
 
       expect(result.materiaMedicas).toHaveLength(1);
       expect(result.materiaMedicas[0].abbreviation).toBe('german-mm');
+      expect(mockListMateriaMedicas).toHaveBeenCalledWith({ language: 'de' });
     });
 
     it('execute when language filter is case-insensitive then filters correctly', async () => {
@@ -82,7 +83,7 @@ describe('ListMateriaMedicasTool', () => {
           language: 'EN',
         },
       ];
-      mockClientGetMateriaMedicas.mockResolvedValue(mockMateriaMedicas);
+      mockListMateriaMedicas.mockResolvedValue(mockMateriaMedicas);
 
       const result = await mockTool.execute({ language: 'en' });
 
@@ -90,14 +91,7 @@ describe('ListMateriaMedicasTool', () => {
     });
 
     it('execute when no materia medicas match language then returns empty array', async () => {
-      const mockMateriaMedicas = [
-        {
-          abbreviation: 'boericke',
-          title: 'Boericke MM',
-          language: 'en',
-        },
-      ];
-      mockClientGetMateriaMedicas.mockResolvedValue(mockMateriaMedicas);
+      mockListMateriaMedicas.mockResolvedValue([]);
 
       const result = await mockTool.execute({ language: 'fr' });
 
@@ -117,7 +111,7 @@ describe('ListMateriaMedicasTool', () => {
           license: 'Public Domain',
         },
       ];
-      mockClientGetMateriaMedicas.mockResolvedValue(mockMateriaMedicas);
+      mockListMateriaMedicas.mockResolvedValue(mockMateriaMedicas);
 
       const result = await mockTool.execute({});
 
@@ -135,7 +129,7 @@ describe('ListMateriaMedicasTool', () => {
           title: 'Boericke MM',
         },
       ];
-      mockClientGetMateriaMedicas.mockResolvedValue(mockMateriaMedicas);
+      mockListMateriaMedicas.mockResolvedValue(mockMateriaMedicas);
 
       const result = await mockTool.execute({});
 
@@ -158,46 +152,40 @@ describe('ListMateriaMedicasTool', () => {
       await expect(mockTool.execute({ language: 'engl' })).rejects.toThrow();
     });
 
-    it('execute when cached result then returns from cache', async () => {
+    it('execute when called twice then SDK handles caching', async () => {
       const mockMateriaMedicas = [
         {
           abbreviation: 'boericke',
           title: 'Boericke MM',
         },
       ];
-      mockClientGetMateriaMedicas.mockResolvedValue(mockMateriaMedicas);
+      mockListMateriaMedicas.mockResolvedValue(mockMateriaMedicas);
 
       await mockTool.execute({});
-      mockClientGetMateriaMedicas.mockClear();
       const result = await mockTool.execute({});
 
-      expect(mockClientGetMateriaMedicas).not.toHaveBeenCalled();
+      // SDK handles caching internally
       expect(result.materiaMedicas).toHaveLength(1);
     });
 
-    it('execute when different language filters then caches separately', async () => {
+    it('execute when different language filters then makes separate calls', async () => {
       const mockMateriaMedicas = [
         {
           abbreviation: 'boericke',
           title: 'Boericke MM',
           language: 'en',
         },
-        {
-          abbreviation: 'german',
-          title: 'German MM',
-          language: 'de',
-        },
       ];
-      mockClientGetMateriaMedicas.mockResolvedValue(mockMateriaMedicas);
+      mockListMateriaMedicas.mockResolvedValue(mockMateriaMedicas);
 
       await mockTool.execute({ language: 'en' });
       await mockTool.execute({ language: 'de' });
 
-      expect(mockClientGetMateriaMedicas).toHaveBeenCalledTimes(2);
+      expect(mockListMateriaMedicas).toHaveBeenCalledTimes(2);
     });
 
     it('execute when API returns empty array then returns empty array', async () => {
-      mockClientGetMateriaMedicas.mockResolvedValue([]);
+      mockListMateriaMedicas.mockResolvedValue([]);
 
       const result = await mockTool.execute({});
 
@@ -205,7 +193,7 @@ describe('ListMateriaMedicasTool', () => {
     });
 
     it('execute when API error then sanitizes error', async () => {
-      mockClientGetMateriaMedicas.mockRejectedValue(new Error('API Error'));
+      mockListMateriaMedicas.mockRejectedValue(new Error('API Error'));
 
       await expect(mockTool.execute({})).rejects.toThrow();
     });

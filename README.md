@@ -3,175 +3,241 @@
 [![npm version](https://img.shields.io/npm/v/oorep-mcp.svg)](https://www.npmjs.com/package/oorep-mcp)
 [![CI](https://github.com/Dhi13man/oorep-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Dhi13man/oorep-mcp/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/Dhi13man/oorep-mcp/actions/workflows/codeql.yml/badge.svg)](https://github.com/Dhi13man/oorep-mcp/actions/workflows/codeql.yml)
-[![Test Coverage](https://img.shields.io/badge/coverage-92%25-brightgreen.svg)](https://github.com/Dhi13man/oorep-mcp/actions)
+[![Test Coverage](https://img.shields.io/badge/coverage-94.6%25-brightgreen.svg)](https://github.com/Dhi13man/oorep-mcp/actions)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Model Context Protocol (MCP) server that provides AI assistants with access to [OOREP](https://www.oorep.com) (Open Online Repertory) - a comprehensive homeopathic repertory and materia medica database.
+**Model Context Protocol server providing AI assistants access to OOREP - a comprehensive homeopathic repertory and materia medica database.**
+
+## TL;DR
+
+```bash
+# Install and run (no setup required)
+npx oorep-mcp
+```
+
+```typescript
+// Or use programmatically
+import { createOOREPClient } from 'oorep-mcp/sdk/client';
+
+const client = createOOREPClient();
+const results = await client.searchRepertory({ symptom: 'headache worse motion' });
+console.log(results.rubrics);
+client.destroy();
+```
+
+**Ask your AI assistant:** *"Search OOREP for remedies for throbbing headache worse from light"*
+
+## What is OOREP?
+
+**OOREP (Open Online Repertory)** is an open-source homeopathic database containing:
+
+- **12+ Repertories** - Systematic indexes of symptoms mapped to remedies (Kent, Boger, Boericke, etc.)
+- **Multiple Materia Medicas** - Detailed remedy descriptions and therapeutic indications
+- **600+ Remedies** - Comprehensive remedy database with names, abbreviations, and alternates
+
+### How Homeopathic Data is Structured
+
+```text
+Repertory Structure:
+├── Chapter (e.g., "Head")
+│   └── Rubric (e.g., "Pain > Throbbing")
+│       └── Remedies with weights (1-4)
+│           ├── Belladonna (4) - Highest indication
+│           ├── Glonoine (3)
+│           └── Natrum muriaticum (2)
+
+Materia Medica Structure:
+├── Remedy (e.g., "Belladonna")
+│   └── Sections by body system
+│       ├── Mind: "Sudden onset, violence, heat..."
+│       ├── Head: "Throbbing, bursting pain..."
+│       └── ...
+```
+
+This MCP server enables AI assistants to query this data programmatically.
 
 ## Features
 
-- 🔍 **Search Repertories**: Query 12+ homeopathic repertories (Kent, Boger, Boericke, etc.) for symptoms and rubrics
-- 📚 **Search Materia Medicas**: Access detailed remedy descriptions from multiple materia medicas
-- 💊 **Remedy Information**: Get comprehensive details about 600+ homeopathic remedies
-- 📋 **List Resources**: Browse available repertories, materia medicas, and remedies
-- 🎯 **Guided Workflows**: Use prompts for symptom analysis, remedy comparison, and case repertorization
-- ⚡ **Performance**: Built-in caching, request deduplication, and retry logic
-- 🛡️ **Type-Safe**: Full TypeScript implementation with Zod validation
-- 🔒 **Secure**: Input validation, error sanitization, and no credential storage required
+| Feature | Description |
+|---------|-------------|
+| **Search Repertories** | Query symptoms across 12+ repertories, get matching rubrics with weighted remedies |
+| **Search Materia Medicas** | Find remedy descriptions and indications from multiple sources |
+| **Remedy Information** | Get comprehensive details for 600+ remedies |
+| **List Resources** | Browse available repertories, materia medicas, and remedies |
+| **Guided Workflows** | Prompts for symptom analysis, remedy comparison, case repertorization |
+| **Performance** | Built-in caching (5min TTL), request deduplication, automatic retries |
+| **Type Safety** | Full TypeScript with Zod validation on all inputs |
+| **Security** | Input sanitization, error message sanitization, no credentials required |
+| **SDK Adapters** | Direct integration with OpenAI, Vercel AI SDK, LangChain |
+
+## Quick Start
+
+### 1. Add to Claude Desktop
+
+**macOS:** Edit `~/Library/Application Support/Claude/claude_desktop_config.json`
+**Windows:** Edit `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "oorep": {
+      "command": "npx",
+      "args": ["-y", "oorep-mcp"]
+    }
+  }
+}
+```
+
+### 2. Restart Claude Desktop
+
+Quit completely (Cmd+Q / Alt+F4), then reopen.
+
+### 3. Start Using
+
+**You:** "Search OOREP for remedies for headache worse at night"
+
+**Claude will:**
+
+1. Call `search_repertory` with symptom "headache worse night"
+2. Return matching rubrics with remedies and their weights
+3. Explain the results in context
 
 ## Installation
 
 ### NPX (Recommended)
 
-No installation required! Use directly with:
+No installation required:
 
 ```bash
 npx oorep-mcp
 ```
 
-### NPM Global
+### npm Global
 
 ```bash
 npm install -g oorep-mcp
+oorep-mcp
 ```
 
-### NPM Local
+### npm Local (for SDK usage)
 
 ```bash
 npm install oorep-mcp
 ```
 
-## Quick Start
+## Platform Configuration
 
 ### Claude Code
 
-1. Locate your Claude Code configuration file at `~/.claude.json`
+#### Option A: CLI
 
-2. Add the OOREP MCP server:
+```bash
+claude mcp add oorep -- npx -y oorep-mcp
+```
 
-   ```json
-   {
-     "mcpServers": {
-       "oorep": {
-         "command": "npx",
-         "args": ["-y", "oorep-mcp"],
-         "env": {
-           "OOREP_MCP_BASE_URL": "https://www.oorep.com",
-           "OOREP_MCP_LOG_LEVEL": "info"
-         }
-       }
-     }
-   }
-   ```
+#### Option B: Config file (`~/.claude.json`)
 
-   Or add via CLI:
+```json
+{
+  "mcpServers": {
+    "oorep": {
+      "command": "npx",
+      "args": ["-y", "oorep-mcp"],
+      "env": {
+        "OOREP_MCP_BASE_URL": "https://www.oorep.com",
+        "OOREP_MCP_LOG_LEVEL": "info"
+      }
+    }
+  }
+}
+```
 
-   ```bash
-   claude mcp add oorep --scope user -- npx -y oorep-mcp
-   ```
-
-3. Restart Claude Code and run `/mcp` to verify the server is connected
+Verify: Run `/mcp` in Claude Code
 
 ### Claude Desktop
 
-1. Locate your Claude Desktop configuration file:
-   - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-   - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+**Config locations:**
 
-2. Add the OOREP MCP server:
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 
-   ```json
-   {
-   "mcpServers": {
-      "oorep": {
-         "command": "npx",
-         "args": ["-y", "oorep-mcp"],
-         "env": {
-           "OOREP_MCP_BASE_URL": "https://www.oorep.com",
-           "OOREP_MCP_LOG_LEVEL": "info"
-         }
+```json
+{
+  "mcpServers": {
+    "oorep": {
+      "command": "npx",
+      "args": ["-y", "oorep-mcp"],
+      "env": {
+        "OOREP_MCP_BASE_URL": "https://www.oorep.com",
+        "OOREP_MCP_LOG_LEVEL": "info"
       }
-   }
-   }
-   ```
+    }
+  }
+}
+```
 
-3. Restart Claude Desktop completely (Quit, not just close window)
-
-4. Look for the 🔌 MCP indicator in the bottom-right corner
+**Important:** Quit completely (Cmd+Q), not just close window.
 
 ### Codex CLI
 
-1. Locate your Codex CLI configuration file:
-   - **macOS/Linux**: `~/.codex/config.toml`
-   - **Windows**: `C:\Users\<Username>\.codex\config.toml`
+**Config:** `~/.codex/config.toml` (macOS/Linux) or `C:\Users\<Username>\.codex\config.toml` (Windows)
 
-2. Create the file if it doesn't exist, then add the OOREP MCP server:
+```toml
+[mcp_servers.oorep]
+command = "npx"
+args = ["-y", "oorep-mcp"]
+startup_timeout_sec = 15.0
+tool_timeout_sec = 60.0
 
-   ```toml
-   [mcp_servers.oorep_mcp]
-   command = "npx"
-   args = ["-y", "oorep-mcp"]
-   startup_timeout_sec = 15.0
-   tool_timeout_sec = 60.0
+[mcp_servers.oorep.env]
+OOREP_MCP_BASE_URL = "https://www.oorep.com"
+OOREP_MCP_LOG_LEVEL = "info"
+```
 
-   [mcp_servers.oorep_mcp.env]
-   OOREP_MCP_BASE_URL = "https://www.oorep.com"
-   OOREP_MCP_LOG_LEVEL = "info"
-   ```
+Or via CLI:
 
-   Or add via CLI:
+```bash
+codex mcp add oorep --env OOREP_MCP_BASE_URL=https://www.oorep.com --env OOREP_MCP_LOG_LEVEL=info -- npx -y oorep-mcp
+```
 
-   ```bash
-   codex mcp add oorep_mcp --env OOREP_MCP_BASE_URL=https://www.oorep.com --env OOREP_MCP_LOG_LEVEL=info -- npx -y oorep-mcp
-   ```
-
-3. Verify the configuration:
-
-   ```bash
-   codex mcp list
-   ```
-
-4. Restart Codex CLI and run `/mcp` in the TUI to verify the server is connected
+Verify: Run `codex mcp list`
 
 ### Gemini CLI
 
-1. Locate your Gemini CLI settings file at `~/.gemini/settings.json`
+**Config:** `~/.gemini/settings.json`
 
-2. Add the OOREP MCP server:
-
-   ```json
-   {
-     "mcpServers": {
-       "oorep": {
-         "command": "npx",
-         "args": ["-y", "oorep-mcp"],
-         "env": {
-           "OOREP_MCP_BASE_URL": "https://www.oorep.com",
-           "OOREP_MCP_LOG_LEVEL": "info"
-         },
-         "timeout": 30000
-       }
-     }
-   }
-   ```
-
-3. Restart Gemini CLI and run `/mcp` to verify the server is connected
+```json
+{
+  "mcpServers": {
+    "oorep": {
+      "command": "npx",
+      "args": ["-y", "oorep-mcp"],
+      "env": {
+        "OOREP_MCP_BASE_URL": "https://www.oorep.com",
+        "OOREP_MCP_LOG_LEVEL": "info"
+      },
+      "timeout": 30000
+    }
+  }
+}
+```
 
 ## Usage Examples
 
-Once installed, you can interact with OOREP through Claude naturally. Here are some example conversations:
+Once installed, you can interact with OOREP through Claude naturally:
 
-### Example 1: Searching for Remedies
+### Searching for Remedies
 
 **You:** "Can you search OOREP for remedies for headache that's worse at night?"
 
 **Claude will:**
 
 1. Use the `search_repertory` tool
-2. Search for "headache worse night" in the Kent repertory
+2. Search for "headache worse night" in the default repertory
 3. Return matching rubrics with remedy recommendations and their weights
 
-### Example 2: Getting Detailed Remedy Information
+### Getting Detailed Remedy Information
 
 **You:** "Tell me more about Aconite - what conditions is it used for?"
 
@@ -180,7 +246,7 @@ Once installed, you can interact with OOREP through Claude naturally. Here are s
 1. Use the `get_remedy_info` tool to fetch details about Aconite
 2. Provide information about its common uses, characteristics, and therapeutic applications
 
-### Example 3: Comparing Remedies
+### Comparing Remedies
 
 **You:** "Compare Aconite and Belladonna for fever symptoms"
 
@@ -191,7 +257,7 @@ Once installed, you can interact with OOREP through Claude naturally. Here are s
 3. Provide a side-by-side comparison focusing on fever symptoms
 4. Highlight key differentiating factors
 
-### Example 4: Case Repertorization
+### Case Repertorization
 
 **You:** "I want to repertorize a case with these symptoms: anxiety, palpitations, and insomnia"
 
@@ -202,7 +268,7 @@ Once installed, you can interact with OOREP through Claude naturally. Here are s
 3. Search relevant rubrics for each symptom
 4. Help synthesize results to identify well-indicated remedies
 
-### Example 5: Browsing Available Resources
+### Browsing Available Resources
 
 **You:** "What repertories are available in OOREP?"
 
@@ -210,6 +276,507 @@ Once installed, you can interact with OOREP through Claude naturally. Here are s
 
 1. Use the `list_available_repertories` tool
 2. Show all 12+ available repertories with their names and descriptions
+
+## API Reference
+
+### Tools
+
+#### `search_repertory`
+
+Search for symptoms in homeopathic repertories.
+
+**Parameters:**
+
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `symptom` | string | Yes | - | Symptom to search (3-200 chars). Supports wildcards. |
+| `repertory` | string | No | `publicum` | Repertory abbreviation (e.g., `kent`, `boger`) |
+| `minWeight` | number | No | `1` | Minimum remedy weight (1-4) |
+| `maxResults` | number | No | `20` | Maximum rubrics to return (1-100) |
+| `includeRemedyStats` | boolean | No | `true` | Include aggregated remedy statistics |
+
+**Returns:**
+
+```typescript
+{
+  totalResults: number;
+  rubrics: Array<{
+    rubric: string;           // Full path: "Head > Pain > Throbbing"
+    text: string | null;      // Additional rubric text
+    repertory: string;        // Repertory abbreviation
+    remedies: Array<{
+      name: string;           // Full name: "Belladonna"
+      abbreviation: string;   // "Bell."
+      weight: number;         // 1-4
+    }>;
+  }>;
+  remedyStats?: Array<{       // If includeRemedyStats=true
+    name: string;
+    abbreviation: string;
+    count: number;            // Times appearing
+    cumulativeWeight: number; // Sum of weights
+  }>;
+}
+```
+
+#### `search_materia_medica`
+
+Search materia medica texts for remedy descriptions.
+
+**Parameters:**
+
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `symptom` | string | Yes | - | Symptom to search (3-200 chars) |
+| `materiamedica` | string | No | `boericke` | Materia medica abbreviation |
+| `remedy` | string | No | - | Filter to specific remedy |
+| `maxResults` | number | No | `10` | Maximum results (1-50) |
+
+**Returns:**
+
+```typescript
+{
+  totalResults: number;
+  results: Array<{
+    remedy: string;           // "Aconitum napellus"
+    materiaMedica: string;    // "boericke"
+    sections: Array<{
+      heading: string;        // "Mind", "Head", etc.
+      content: string;        // Section text
+      depth: number;          // Heading depth
+    }>;
+  }>;
+}
+```
+
+#### `get_remedy_info`
+
+Get detailed information about a specific remedy.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `remedy` | string | Yes | Remedy name, abbreviation, or alternate name (1-100 chars) |
+
+**Returns:**
+
+```typescript
+{
+  id: number;
+  nameAbbrev: string;    // "Acon."
+  nameLong: string;      // "Aconitum napellus"
+  namealt: string[];     // ["Aconite", "Monkshood"]
+} | null  // null if not found
+```
+
+**Matching behavior:**
+
+- Exact match on abbreviation, long name, or alternate names (case-insensitive)
+- Partial match for queries ≥3 characters
+
+#### `list_available_repertories`
+
+List all accessible repertories.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `language` | string | No | Filter by language code (e.g., `en`, `de`) |
+
+**Returns:**
+
+```typescript
+Array<{
+  abbreviation: string;  // "kent"
+  title: string;         // "Kent Repertory"
+  author: string;        // "James Tyler Kent"
+  language: string;      // "en"
+}>
+```
+
+#### `list_available_materia_medicas`
+
+List all accessible materia medica texts.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `language` | string | No | Filter by language code |
+
+**Returns:**
+
+```typescript
+Array<{
+  abbreviation: string;  // "boericke"
+  title: string;         // "Boericke Materia Medica"
+  author: string;        // "William Boericke"
+  language: string;      // "en"
+}>
+```
+
+### Resources
+
+| URI | Description | Content Type |
+|-----|-------------|--------------|
+| `oorep://remedies/list` | Complete list of all 600+ remedies | JSON |
+| `oorep://repertories/list` | All available repertories with metadata | JSON |
+| `oorep://materia-medicas/list` | All available materia medicas | JSON |
+| `oorep://help/search-syntax` | Search syntax guide with examples | Text |
+
+### Prompts
+
+#### `analyze-symptoms`
+
+Guided workflow for systematic symptom analysis.
+
+**Arguments:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `symptom_description` | string | No | Initial symptom description |
+
+**Workflow:** Guides through symptom gathering → modality analysis → repertory search → synthesis
+
+#### `remedy-comparison`
+
+Compare multiple remedies side-by-side.
+
+**Arguments:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `remedies` | string | Yes | Comma-separated remedy names (2-6 remedies) |
+
+**Example:** `remedies: "Aconite, Belladonna, Gelsemium"`
+
+#### `repertorization-workflow`
+
+Step-by-step case taking and repertorization.
+
+**Workflow:** 7-step process from symptom collection through remedy differentiation.
+
+## Search Syntax
+
+### Basic Search
+
+```bash
+headache                    # Simple term
+headache night              # Multiple terms (AND)
+```
+
+### Wildcards
+
+```bash
+head*                       # Matches: head, headache, heading
+*ache                       # Matches: headache, stomachache
+```
+
+### Exact Phrases
+
+```bash
+"worse at night"            # Exact phrase match
+"throbbing pain"            # Must appear together
+```
+
+### Exclusions
+
+```bash
+headache -migraine          # Headache but not migraine
+fever -intermittent         # Fever excluding intermittent
+```
+
+### Combined
+
+```bash
+head* pain -chronic "worse motion"
+```
+
+### Tips
+
+- Minimum 3 characters per term
+- Wildcards only at word boundaries
+- Use repertory-specific terminology for better results
+
+## SDK Integration
+
+### Direct SDK Usage
+
+```typescript
+import { createOOREPClient } from 'oorep-mcp/sdk/client';
+
+const client = createOOREPClient({
+  baseUrl: 'https://www.oorep.com',
+  timeoutMs: 30000,
+  cacheTtlMs: 300000,
+});
+
+try {
+  // Search repertory
+  const results = await client.searchRepertory({
+    symptom: 'headache worse motion',
+    repertory: 'kent',
+    minWeight: 2,
+    maxResults: 20,
+    includeRemedyStats: true,
+  });
+
+  console.log(`Found ${results.totalResults} results`);
+  console.log('Top rubric:', results.rubrics[0]?.rubric);
+
+  // Get remedy info
+  const remedy = await client.getRemedyInfo({ remedy: 'Belladonna' });
+  if (remedy) {
+    console.log(`${remedy.nameLong} (${remedy.nameAbbrev})`);
+  }
+
+  // Search materia medica
+  const mmResults = await client.searchMateriaMedica({
+    symptom: 'anxiety',
+    remedy: 'Aconite',
+    maxResults: 5,
+  });
+
+  // List resources
+  const repertories = await client.listRepertories({ language: 'en' });
+  const materiaMedicas = await client.listMateriaMedicas();
+
+} catch (error) {
+  if (error instanceof Error) {
+    console.error('OOREP error:', error.message);
+  }
+} finally {
+  // Always cleanup to stop cache timers
+  client.destroy();
+}
+```
+
+### OpenAI Function Calling
+
+```typescript
+import OpenAI from 'openai';
+import { createOOREPClient } from 'oorep-mcp/sdk/client';
+import { openAITools, processToolCalls } from 'oorep-mcp/sdk/openai';
+
+const openai = new OpenAI();
+const oorep = createOOREPClient();
+
+try {
+  // Initial request with tools
+  const response = await openai.chat.completions.create({
+    model: 'gpt-5',
+    messages: [{ role: 'user', content: 'Find remedies for throbbing headache' }],
+    tools: openAITools,
+  });
+
+  // Process tool calls
+  const toolMessages = await processToolCalls(
+    oorep,
+    response.choices[0].message.tool_calls
+  );
+
+  // Continue conversation with tool results
+  if (toolMessages.length > 0) {
+    const finalResponse = await openai.chat.completions.create({
+      model: 'gpt-5',
+      messages: [
+        { role: 'user', content: 'Find remedies for throbbing headache' },
+        response.choices[0].message,
+        ...toolMessages,
+      ],
+    });
+    console.log(finalResponse.choices[0].message.content);
+  }
+} catch (error) {
+  console.error('Error:', error);
+} finally {
+  oorep.destroy();
+}
+```
+
+### Vercel AI SDK
+
+```typescript
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { createOOREPClient } from 'oorep-mcp/sdk/client';
+import { createOOREPTools } from 'oorep-mcp/sdk/vercel-ai';
+
+const client = createOOREPClient();
+
+try {
+  const tools = createOOREPTools(client);
+
+  const result = await generateText({
+    model: openai('gpt-5'),
+    tools,
+    maxSteps: 5,  // Allow multiple tool calls
+    prompt: 'Find remedies for throbbing headache worse from motion',
+  });
+
+  console.log(result.text);
+
+  // Access tool results
+  for (const step of result.steps) {
+    if (step.toolResults) {
+      console.log('Tool results:', step.toolResults);
+    }
+  }
+} catch (error) {
+  console.error('Error:', error);
+} finally {
+  client.destroy();
+}
+```
+
+### LangChain / LangGraph
+
+```typescript
+import { ChatOpenAI } from '@langchain/openai';
+import { createReactAgent } from '@langchain/langgraph/prebuilt';
+import { DynamicStructuredTool } from '@langchain/core/tools';
+import { HumanMessage } from '@langchain/core/messages';
+import { createOOREPClient } from 'oorep-mcp/sdk/client';
+import { createLangChainTools } from 'oorep-mcp/sdk/langchain';
+
+const client = createOOREPClient();
+
+try {
+  const toolDefinitions = createLangChainTools(client);
+
+  // Convert to DynamicStructuredTool instances
+  const tools = toolDefinitions.map(
+    (def) =>
+      new DynamicStructuredTool({
+        name: def.name,
+        description: def.description,
+        schema: def.schema,
+        func: async (args) => def.func(args),
+      })
+  );
+
+  // Create agent
+  const model = new ChatOpenAI({ model: 'gpt-5' });
+  const agent = createReactAgent({ llm: model, tools });
+
+  // Invoke agent
+  const result = await agent.invoke({
+    messages: [new HumanMessage('Find remedies for headache with nausea')],
+  });
+
+  // Get final message
+  const lastMessage = result.messages[result.messages.length - 1];
+  console.log(lastMessage.content);
+} catch (error) {
+  console.error('Error:', error);
+} finally {
+  client.destroy();
+}
+```
+
+### Available SDK Tools
+
+All adapters provide these tools:
+
+| Tool | Description |
+| --- | --- |
+| `search_repertory` | Search for symptoms in homeopathic repertories |
+| `search_materia_medica` | Search materia medica texts for remedy descriptions |
+| `get_remedy_info` | Get detailed information about a specific remedy |
+| `list_available_repertories` | List all accessible repertories |
+| `list_available_materia_medicas` | List all accessible materia medicas |
+
+### SDK Configuration
+
+```typescript
+const client = createOOREPClient({
+  baseUrl: 'https://www.oorep.com',  // OOREP API base URL
+  timeoutMs: 30000,                   // Request timeout (ms)
+  cacheTtlMs: 300000,                 // Cache TTL (ms, 0 to disable)
+  defaultRepertory: 'publicum',       // Default repertory
+  defaultMateriaMedica: 'boericke',   // Default materia medica
+});
+```
+
+## Configuration
+
+All configuration via environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `OOREP_MCP_BASE_URL` | `https://www.oorep.com` | OOREP API base URL |
+| `OOREP_MCP_TIMEOUT_MS` | `30000` | Request timeout (ms) |
+| `OOREP_MCP_CACHE_TTL_MS` | `300000` | Cache TTL (ms), 0 to disable |
+| `OOREP_MCP_MAX_RESULTS` | `100` | Maximum results cap |
+| `OOREP_MCP_LOG_LEVEL` | `info` | `debug` \| `info` \| `warn` \| `error` |
+| `OOREP_MCP_DEFAULT_REPERTORY` | `publicum` | Default repertory |
+| `OOREP_MCP_DEFAULT_MATERIA_MEDICA` | `boericke` | Default materia medica |
+
+> The MCP server maintains an anonymous OOREP session automatically. It performs a lightweight bootstrap request to fetch the required cookies and reuses them for subsequent search calls, so no additional authentication setup is necessary for public data.
+
+**Example with custom config:**
+
+```json
+{
+  "mcpServers": {
+    "oorep": {
+      "command": "npx",
+      "args": ["-y", "oorep-mcp"],
+      "env": {
+        "OOREP_MCP_TIMEOUT_MS": "60000",
+        "OOREP_MCP_CACHE_TTL_MS": "600000",
+        "OOREP_MCP_LOG_LEVEL": "debug"
+      }
+    }
+  }
+}
+```
+
+## Architecture
+
+```text
+┌─────────────────────────────────────────────────────────┐
+│                    MCP Client                           │
+│            (Claude, Codex, Gemini, etc.)                │
+└─────────────────────┬───────────────────────────────────┘
+                      │ MCP Protocol (stdio)
+┌─────────────────────▼───────────────────────────────────┐
+│                  OOREP MCP Server                       │
+├─────────────────────────────────────────────────────────┤
+│  ┌─────────┐  ┌──────────┐  ┌─────────┐  ┌──────────┐   │
+│  │  Tools  │  │ Resources│  │ Prompts │  │   SDK    │   │
+│  └────┬────┘  └────┬─────┘  └────┬────┘  └────┬─────┘   │
+│       └────────────┼─────────────┼────────────┘         │
+│                    ▼                                    │
+│  ┌─────────────────────────────────────────────────┐    │
+│  │              OOREPSDKClient                     │    │
+│  │  ┌───────────┐ ┌────────────┐ ┌─────────────┐   │    │
+│  │  │   Cache   │ │Deduplicator│ │  Validators │   │    │
+│  │  └───────────┘ └────────────┘ └─────────────┘   │    │
+│  └───────────────────────┬─────────────────────────┘    │
+│                          ▼                              │
+│  ┌─────────────────────────────────────────────────┐    │
+│  │              OOREPClient (HTTP)                 │    │
+│  │  • Session management (cookies)                 │    │
+│  │  • Retry logic (3 attempts)                     │    │
+│  │  • Timeout handling                             │    │
+│  └───────────────────────┬─────────────────────────┘    │
+└──────────────────────────┼──────────────────────────────┘
+                           │ HTTPS
+┌──────────────────────────▼──────────────────────────────┐
+│                   OOREP API                             │
+│              https://www.oorep.com                      │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Key Components:**
+
+- **Cache**: In-memory LRU cache with configurable TTL (default 5 min)
+- **Deduplicator**: Prevents duplicate concurrent requests for same data
+- **Validators**: Zod schemas validate all inputs before API calls
+- **Session Management**: Automatic cookie handling for OOREP API
 
 ## Troubleshooting
 
@@ -241,7 +808,7 @@ Once installed, you can interact with OOREP through Claude naturally. Here are s
    }
    ```
 
-2. **Check network connectivity** to <www.oorep.com>:
+2. **Check network connectivity** to <https://www.oorep.com>:
 
    ```bash
    curl https://www.oorep.com
@@ -336,43 +903,6 @@ To see detailed debug logs for troubleshooting:
    - Error logs from MCP log files
 3. **Join the discussion:** Share your experience and get community help
 
-## Available Tools
-
-- `search_repertory` - Search for symptoms in homeopathic repertories
-- `search_materia_medica` - Search materia medica texts for remedies
-- `get_remedy_info` - Get detailed information about a specific remedy
-- `list_available_repertories` - List all accessible repertories
-- `list_available_materia_medicas` - List all accessible materia medicas
-
-## Available Resources
-
-- `oorep://remedies/list` - Complete list of remedies
-- `oorep://repertories/list` - List of repertories
-- `oorep://materia-medicas/list` - List of materia medicas
-- `oorep://help/search-syntax` - Search syntax guide
-
-## Available Prompts
-
-- `analyze-symptoms` - Guided symptom analysis workflow
-- `remedy-comparison` - Compare multiple remedies
-- `repertorization-workflow` - Step-by-step case taking
-
-## Configuration
-
-The server is configured entirely through environment variables. The defaults work for the public <https://www.oorep.com> deployment, but you can override them as needed:
-
-| Variable | Default | Description |
-| --- | --- | --- |
-| `OOREP_MCP_BASE_URL` | `https://www.oorep.com` | Base URL for the upstream OOREP instance |
-| `OOREP_MCP_TIMEOUT_MS` | `30000` | HTTP timeout per request (milliseconds) |
-| `OOREP_MCP_CACHE_TTL_MS` | `300000` | In-memory cache TTL for search results (milliseconds) |
-| `OOREP_MCP_MAX_RESULTS` | `100` | Hard cap for search results returned to MCP clients |
-| `OOREP_MCP_LOG_LEVEL` | `info` | Log level (`debug`, `info`, `warn`, `error`) |
-| `OOREP_MCP_DEFAULT_REPERTORY` | `publicum` | Default repertory abbreviation when callers omit one |
-| `OOREP_MCP_DEFAULT_MATERIA_MEDICA` | `boericke` | Default materia medica abbreviation when omitted |
-
-> ℹ️ The MCP server now maintains an anonymous OOREP session automatically. It performs a lightweight bootstrap request to fetch the required cookies and reuses them for subsequent search calls, so no additional authentication setup is necessary for public data.
-
 ## Development
 
 ### Prerequisites
@@ -388,29 +918,40 @@ cd oorep-mcp
 npm install
 ```
 
-### Build
+### Commands
 
 ```bash
-npm run build        # Compile TypeScript
-npm run typecheck    # Type checking
-npm run dev          # Run in development mode
+npm run build          # Compile TypeScript
+npm run typecheck      # Type checking only
+npm run dev            # Development mode with watch
+npm test               # Run all tests
+npm run test:watch     # Watch mode
+npm run test:coverage  # Coverage report
+npm run lint           # ESLint
+npm run format         # Prettier
 ```
 
-### Testing
+### Test Structure
 
-```bash
-npm test             # Run tests
-npm run test:watch   # Watch mode
-npm run test:coverage # Coverage report
+```text
+src/
+├── **/*.unit.test.ts        # Unit tests (mocked dependencies)
+└── **/*.integration.test.ts # Integration tests (real implementations)
 ```
 
-## Important Disclaimer
+- **771 tests** with **94.6% coverage**
+- Unit tests use mocked dependencies
+- Integration tests use real implementations with mocked HTTP
+
+## Disclaimer
 
 **This tool is for educational and informational purposes only.**
 
-- Not a substitute for professional medical advice
-- Always consult a qualified homeopathic practitioner
-- Not for diagnosing or treating medical conditions
+- **Not medical advice** - Not a substitute for professional medical consultation
+- **Consult practitioners** - Always consult qualified homeopathic practitioners
+- **Not for diagnosis** - Not intended for diagnosing or treating medical conditions
+
+Homeopathic treatment should only be undertaken under the guidance of qualified professionals.
 
 ## License
 
@@ -428,3 +969,4 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - **OOREP GitHub**: <https://github.com/nondeterministic/oorep>
 - **MCP Documentation**: <https://modelcontextprotocol.io>
 - **Issue Tracker**: <https://github.com/Dhi13man/oorep-mcp/issues>
+- **npm Package**: <https://www.npmjs.com/package/oorep-mcp>
