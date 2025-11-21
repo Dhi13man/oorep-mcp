@@ -3,7 +3,6 @@
  */
 
 import { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
 
 // ====================
 // Tool Input Schemas
@@ -200,8 +199,8 @@ export interface MCPOutputSchema {
  * @returns JSON Schema object compatible with MCP outputSchema field
  */
 export function zodToOutputSchema(schema: z.ZodType): MCPOutputSchema {
-  // Use zod-to-json-schema for JSON Schema conversion
-  const jsonSchema = zodToJsonSchema(schema, { $refStrategy: 'none' });
+  // Use Zod v4's native JSON Schema conversion
+  const jsonSchema = z.toJSONSchema(schema);
 
   // Ensure the schema has the required structure for MCP
   const result: MCPOutputSchema = {
