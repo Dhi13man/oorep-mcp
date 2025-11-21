@@ -2,8 +2,10 @@
  * Zod schemas for runtime validation and type safety
  */
 
-import { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import { z } from 'zod/v4';
+
+// Re-export z for consistent usage across the codebase
+export { z };
 
 // ====================
 // Tool Input Schemas
@@ -194,14 +196,14 @@ export interface MCPOutputSchema {
 /**
  * Convert a Zod schema to MCP-compatible JSON Schema format for outputSchema
  *
- * Uses zod-to-json-schema library for accurate conversion
+ * Uses Zod v4's native toJSONSchema for accurate conversion
  *
  * @param schema - Zod schema to convert
  * @returns JSON Schema object compatible with MCP outputSchema field
  */
 export function zodToOutputSchema(schema: z.ZodType): MCPOutputSchema {
-  // Use zod-to-json-schema for JSON Schema conversion
-  const jsonSchema = zodToJsonSchema(schema, { $refStrategy: 'none' });
+  // Use Zod v4's native JSON Schema conversion
+  const jsonSchema = z.toJSONSchema(schema);
 
   // Ensure the schema has the required structure for MCP
   const result: MCPOutputSchema = {
