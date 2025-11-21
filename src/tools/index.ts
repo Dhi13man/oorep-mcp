@@ -23,6 +23,12 @@ export interface ToolDefinition {
     properties: Record<string, unknown>;
     required?: string[];
   };
+  outputSchema?: {
+    type: 'object';
+    properties?: Record<string, unknown>;
+    required?: string[];
+    additionalProperties?: boolean;
+  };
 }
 
 export interface ToolHandler {

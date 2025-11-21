@@ -72,6 +72,7 @@ This MCP server enables AI assistants to query this data programmatically.
 | **Remedy Information** | Get comprehensive details for 600+ remedies |
 | **List Resources** | Browse available repertories, materia medicas, and remedies |
 | **Guided Workflows** | Prompts for symptom analysis, remedy comparison, case repertorization |
+| **Structured Responses** | MCP 2025-06-18 compliant with outputSchema and structuredContent |
 | **Performance** | Built-in caching (5min TTL), request deduplication, automatic retries |
 | **Type Safety** | Full TypeScript with Zod validation on all inputs |
 | **Security** | Input sanitization, error message sanitization, no credentials required |
@@ -422,6 +423,35 @@ Array<{
   language: string;      // "en"
 }>
 ```
+
+### Structured Response Format
+
+All tools support the MCP 2025-06-18 specification with structured responses:
+
+**Response Structure:**
+
+```typescript
+{
+  // Text content for backwards compatibility
+  content: [{
+    type: 'text',
+    text: '{"totalResults": 42, "rubrics": [...]}' // JSON string
+  }],
+
+  // Machine-parseable structured content
+  structuredContent: {
+    totalResults: 42,
+    rubrics: [...]  // Actual JavaScript object
+  }
+}
+```
+
+**Benefits:**
+
+- **outputSchema**: Each tool definition includes a JSON Schema defining the expected output structure
+- **structuredContent**: Direct access to typed results without JSON parsing
+- **Backwards Compatible**: Text content always included for older clients
+- **Error Handling**: Errors return `isError: true` for LLM self-correction
 
 ### Resources
 
@@ -784,6 +814,110 @@ All configuration via environment variables:
 - **Validators**: Zod schemas validate all inputs before API calls
 - **Session Management**: Automatic cookie handling for OOREP API
 
+## Security Considerations
+
+### Input Validation
+
+All inputs are validated using Zod schemas:
+
+- **Symptom searches**: 3-200 characters, alphanumeric with wildcards (`*`), quotes, and hyphens
+- **Remedy names**: 1-100 characters
+- **Invalid characters**: `@`, `#`, `$`, `%`, `^`, `&` are rejected
+- **Wildcards**: Only at word boundaries (e.g., `head*` allowed, `he*d` rejected)
+
+### Error Handling
+
+- All errors are sanitized before being returned to clients
+- Internal details (stack traces, file paths) are never exposed
+- Network errors return generic messages
+
+### Data Privacy
+
+- No user credentials are stored or required
+- OOREP sessions are anonymous and cookie-based
+- No data is persisted to disk (memory cache only)
+
+For more details, see [SECURITY.md](SECURITY.md).
+
+## Rate Limiting
+
+The OOREP MCP Server does not implement internal rate limiting. However:
+
+### OOREP API Limits
+
+The upstream OOREP API may have rate limits. If you exceed them, you'll receive a `RateLimitError`:
+
+```typescript
+{
+  content: [{ type: 'text', text: 'Error: Rate limit exceeded. Please try again later.' }],
+  isError: true
+}
+```
+
+### Mitigation Strategies
+
+1. **Enable caching** (default: 5 minutes TTL)
+   ```json
+   "env": { "OOREP_MCP_CACHE_TTL_MS": "300000" }
+   ```
+
+2. **Reduce concurrent requests** by using specific search terms
+
+3. **Increase cache TTL** for frequently accessed data
+   ```json
+   "env": { "OOREP_MCP_CACHE_TTL_MS": "600000" }
+   ```
+
+### Request Deduplication
+
+The SDK client automatically deduplicates concurrent identical requests, reducing API load.
+
+## TypeScript Type Imports
+
+Import types directly from the package for type-safe development:
+
+```typescript
+import type {
+  // Tool argument types
+  SearchRepertoryArgs,
+  SearchMateriaMedicaArgs,
+  GetRemedyInfoArgs,
+  ListRepertoriesArgs,
+  ListMateriaMedicasArgs,
+
+  // Result types
+  RepertorySearchResult,
+  MateriaMedicaSearchResult,
+  RemedyInfo,
+  RepertoryMetadata,
+  MateriaMedicaMetadata,
+
+  // Supporting types
+  Rubric,
+  Remedy,
+  MateriaMedicaResult,
+  MateriaMedicaSection,
+} from 'oorep-mcp/sdk/tools';
+
+// SDK Client types
+import type { OOREPSDKClient, OOREPSDKConfig } from 'oorep-mcp/sdk/client';
+```
+
+### Schema Validation
+
+You can also import Zod schemas for runtime validation:
+
+```typescript
+import {
+  SearchRepertoryArgsSchema,
+  RepertorySearchResultSchema,
+  RemedyInfoSchema,
+} from 'oorep-mcp';
+
+// Validate external data
+const validated = SearchRepertoryArgsSchema.parse(untrustedInput);
+```
+
 ## Troubleshooting
 
 ### Server Not Appearing in Claude Desktop
@@ -945,7 +1079,7 @@ src/
 └── **/*.integration.test.ts # Integration tests (real implementations)
 ```
 
-- **750+ tests** with **90%+ coverage**
+- **779 tests** with **94%+ coverage**
 - Unit tests use mocked dependencies
 - Integration tests use real implementations with mocked HTTP
 

@@ -4,7 +4,12 @@
  */
 
 import { OOREPSDKClient, type OOREPSDKConfig } from '../sdk/client.js';
-import { SearchRepertoryArgsSchema, type RepertorySearchResult } from '../utils/schemas.js';
+import {
+  SearchRepertoryArgsSchema,
+  RepertorySearchResultSchema,
+  zodToOutputSchema,
+  type RepertorySearchResult,
+} from '../utils/schemas.js';
 import { sanitizeError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import type { OOREPConfig } from '../config.js';
@@ -104,4 +109,5 @@ export const searchRepertoryToolDefinition = {
     },
     required: ['symptom'],
   },
+  outputSchema: zodToOutputSchema(RepertorySearchResultSchema),
 };

@@ -4,7 +4,12 @@
  */
 
 import { OOREPSDKClient, type OOREPSDKConfig } from '../sdk/client.js';
-import { SearchMateriaMedicaArgsSchema, type MateriaMedicaSearchResult } from '../utils/schemas.js';
+import {
+  SearchMateriaMedicaArgsSchema,
+  MateriaMedicaSearchResultSchema,
+  zodToOutputSchema,
+  type MateriaMedicaSearchResult,
+} from '../utils/schemas.js';
 import { sanitizeError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import type { OOREPConfig } from '../config.js';
@@ -93,4 +98,5 @@ export const searchMateriaMedicaToolDefinition = {
     },
     required: ['symptom'],
   },
+  outputSchema: zodToOutputSchema(MateriaMedicaSearchResultSchema),
 };
