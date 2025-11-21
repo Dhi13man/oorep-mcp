@@ -4,7 +4,13 @@
  */
 
 import { OOREPSDKClient, type OOREPSDKConfig } from '../sdk/client.js';
-import { ListRepertoriesArgsSchema, type RepertoryMetadata } from '../utils/schemas.js';
+import { z } from 'zod';
+import {
+  ListRepertoriesArgsSchema,
+  RepertoryMetadataSchema,
+  zodToOutputSchema,
+  type RepertoryMetadata,
+} from '../utils/schemas.js';
 import { sanitizeError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import type { OOREPConfig } from '../config.js';
@@ -68,4 +74,9 @@ export const listRepertoriesToolDefinition = {
       },
     },
   },
+  outputSchema: zodToOutputSchema(
+    z.object({
+      repertories: z.array(RepertoryMetadataSchema),
+    })
+  ),
 };

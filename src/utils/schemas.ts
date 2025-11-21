@@ -175,3 +175,47 @@ export type MateriaMedicaSearchResult = z.infer<typeof MateriaMedicaSearchResult
 export type RepertoryMetadata = z.infer<typeof RepertoryMetadataSchema>;
 export type MateriaMedicaMetadata = z.infer<typeof MateriaMedicaMetadataSchema>;
 export type RemedyInfo = z.infer<typeof RemedyInfoSchema>;
+
+// ====================
+// Output Schema Utilities
+// ====================
+
+/**
+ * MCP-compatible output schema type definition
+ */
+export interface MCPOutputSchema {
+  type: 'object';
+  properties?: Record<string, unknown>;
+  required?: string[];
+  additionalProperties?: boolean;
+}
+
+/**
+ * Convert a Zod schema to MCP-compatible JSON Schema format for outputSchema
+ *
+ * Uses Zod 4's native z.toJSONSchema for accurate conversion
+ *
+ * @param schema - Zod schema to convert
+ * @returns JSON Schema object compatible with MCP outputSchema field
+ */
+export function zodToOutputSchema(schema: z.ZodType): MCPOutputSchema {
+  // Use Zod 4's native JSON Schema conversion
+  const jsonSchema = z.toJSONSchema(schema);
+
+  // Ensure the schema has the required structure for MCP
+  const result: MCPOutputSchema = {
+    type: 'object',
+    additionalProperties: false,
+  };
+
+  if (typeof jsonSchema === 'object' && jsonSchema !== null) {
+    if ('properties' in jsonSchema) {
+      result.properties = jsonSchema.properties as Record<string, unknown>;
+    }
+    if ('required' in jsonSchema && Array.isArray(jsonSchema.required)) {
+      result.required = jsonSchema.required as string[];
+    }
+  }
+
+  return result;
+}

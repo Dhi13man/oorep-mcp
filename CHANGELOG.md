@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.7] - 2025-11-21
+
+### Added
+
+#### MCP Structured Response Format (2025-06-18 Specification)
+
+- **outputSchema Definitions**: All 5 tools now include JSON Schema output definitions for response validation
+  - `search_repertory`: Returns `RepertorySearchResult` with rubrics and remedy statistics
+  - `search_materia_medica`: Returns `MateriaMedicaSearchResult` with remedy sections
+  - `get_remedy_info`: Returns `RemedyInfo` with abbreviations and alternative names
+  - `list_available_repertories`: Returns `{ repertories: RepertoryMetadata[] }`
+  - `list_available_materia_medicas`: Returns `{ materiaMedicas: MateriaMedicaMetadata[] }`
+
+- **structuredContent in Responses**: Tool results now include both:
+  - `content`: Text representation (JSON string) for backwards compatibility
+  - `structuredContent`: Machine-parseable JSON object for modern clients
+
+- **zodToOutputSchema Utility**: Helper function using Zod 4's native `z.toJSONSchema` to convert schemas to MCP-compatible JSON Schema format
+
+### Changed
+
+- **Error Handling**: Tool errors now return `isError: true` flag instead of throwing exceptions
+  - Allows LLMs to see errors and potentially self-correct
+  - Sanitized error messages in text content
+  - No structuredContent for error responses (bypasses validation)
+
+- **ToolDefinition Interface**: Extended to include optional `outputSchema` property
+
+### Improved
+
+- **Test Coverage**: Added comprehensive tests for:
+  - `zodToOutputSchema` utility function
+  - outputSchema properties in all tool definitions
+  - Structured response format validation
+
 ## [0.0.6] - 2025-11-21
 
 ### Documentation
@@ -107,7 +142,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - For full functionality, users should run a local OOREP instance or configure authentication
 - Public metadata endpoints work without authentication (remedies list, repertories list, materia medicas list)
 
-[Unreleased]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.6...HEAD
+[Unreleased]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.7...HEAD
+[0.0.7]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.6...v0.0.7
 [0.0.6]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.5...v0.0.6
 [0.0.5]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.1...v0.0.5
 [0.0.1]: https://github.com/Dhi13man/oorep-mcp/releases/tag/v0.0.1

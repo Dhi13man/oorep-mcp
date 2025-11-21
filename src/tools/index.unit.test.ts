@@ -196,4 +196,60 @@ describe('ToolRegistry', () => {
       expect(tool?.inputSchema.required).toBeUndefined();
     });
   });
+
+  describe('outputSchema definitions', () => {
+    it('all tools when definitions then have outputSchema', () => {
+      const definitions = mockRegistry.getDefinitions();
+
+      definitions.forEach((def) => {
+        expect(def.outputSchema).toBeDefined();
+        expect(def.outputSchema?.type).toBe('object');
+        expect(def.outputSchema?.additionalProperties).toBe(false);
+      });
+    });
+
+    it('search_repertory when definition then has valid outputSchema', () => {
+      const definitions = mockRegistry.getDefinitions();
+      const tool = definitions.find((d) => d.name === 'search_repertory');
+
+      expect(tool?.outputSchema).toBeDefined();
+      expect(tool?.outputSchema?.properties).toHaveProperty('totalResults');
+      expect(tool?.outputSchema?.properties).toHaveProperty('rubrics');
+    });
+
+    it('search_materia_medica when definition then has valid outputSchema', () => {
+      const definitions = mockRegistry.getDefinitions();
+      const tool = definitions.find((d) => d.name === 'search_materia_medica');
+
+      expect(tool?.outputSchema).toBeDefined();
+      expect(tool?.outputSchema?.properties).toHaveProperty('totalResults');
+      expect(tool?.outputSchema?.properties).toHaveProperty('results');
+    });
+
+    it('get_remedy_info when definition then has valid outputSchema', () => {
+      const definitions = mockRegistry.getDefinitions();
+      const tool = definitions.find((d) => d.name === 'get_remedy_info');
+
+      expect(tool?.outputSchema).toBeDefined();
+      expect(tool?.outputSchema?.properties).toHaveProperty('id');
+      expect(tool?.outputSchema?.properties).toHaveProperty('nameAbbrev');
+      expect(tool?.outputSchema?.properties).toHaveProperty('nameLong');
+    });
+
+    it('list_available_repertories when definition then has valid outputSchema', () => {
+      const definitions = mockRegistry.getDefinitions();
+      const tool = definitions.find((d) => d.name === 'list_available_repertories');
+
+      expect(tool?.outputSchema).toBeDefined();
+      expect(tool?.outputSchema?.properties).toHaveProperty('repertories');
+    });
+
+    it('list_available_materia_medicas when definition then has valid outputSchema', () => {
+      const definitions = mockRegistry.getDefinitions();
+      const tool = definitions.find((d) => d.name === 'list_available_materia_medicas');
+
+      expect(tool?.outputSchema).toBeDefined();
+      expect(tool?.outputSchema?.properties).toHaveProperty('materiaMedicas');
+    });
+  });
 });

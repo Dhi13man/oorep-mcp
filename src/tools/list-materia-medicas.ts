@@ -4,7 +4,13 @@
  */
 
 import { OOREPSDKClient, type OOREPSDKConfig } from '../sdk/client.js';
-import { ListMateriaMedicasArgsSchema, type MateriaMedicaMetadata } from '../utils/schemas.js';
+import { z } from 'zod';
+import {
+  ListMateriaMedicasArgsSchema,
+  MateriaMedicaMetadataSchema,
+  zodToOutputSchema,
+  type MateriaMedicaMetadata,
+} from '../utils/schemas.js';
 import { sanitizeError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import type { OOREPConfig } from '../config.js';
@@ -68,4 +74,9 @@ export const listMateriaMedicasToolDefinition = {
       },
     },
   },
+  outputSchema: zodToOutputSchema(
+    z.object({
+      materiaMedicas: z.array(MateriaMedicaMetadataSchema),
+    })
+  ),
 };

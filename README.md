@@ -72,6 +72,7 @@ This MCP server enables AI assistants to query this data programmatically.
 | **Remedy Information** | Get comprehensive details for 600+ remedies |
 | **List Resources** | Browse available repertories, materia medicas, and remedies |
 | **Guided Workflows** | Prompts for symptom analysis, remedy comparison, case repertorization |
+| **Structured Responses** | MCP 2025-06-18 compliant with outputSchema and structuredContent |
 | **Performance** | Built-in caching (5min TTL), request deduplication, automatic retries |
 | **Type Safety** | Full TypeScript with Zod validation on all inputs |
 | **Security** | Input sanitization, error message sanitization, no credentials required |
@@ -422,6 +423,35 @@ Array<{
   language: string;      // "en"
 }>
 ```
+
+### Structured Response Format
+
+All tools support the MCP 2025-06-18 specification with structured responses:
+
+**Response Structure:**
+
+```typescript
+{
+  // Text content for backwards compatibility
+  content: [{
+    type: 'text',
+    text: '{"totalResults": 42, "rubrics": [...]}' // JSON string
+  }],
+
+  // Machine-parseable structured content
+  structuredContent: {
+    totalResults: 42,
+    rubrics: [...]  // Actual JavaScript object
+  }
+}
+```
+
+**Benefits:**
+
+- **outputSchema**: Each tool definition includes a JSON Schema defining the expected output structure
+- **structuredContent**: Direct access to typed results without JSON parsing
+- **Backwards Compatible**: Text content always included for older clients
+- **Error Handling**: Errors return `isError: true` for LLM self-correction
 
 ### Resources
 

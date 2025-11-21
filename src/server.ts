@@ -62,7 +62,14 @@ export async function createServer() {
     try {
       const result = await toolRegistry.executeTool(request.params.name, request.params.arguments);
 
-      return {
+      // Get tool definition to check for outputSchema
+      const toolDef = toolRegistry.getDefinitions().find((t) => t.name === request.params.name);
+
+      // Build response with both content and structuredContent for MCP compliance
+      const response: {
+        content: Array<{ type: string; text: string }>;
+        structuredContent?: Record<string, unknown>;
+      } = {
         content: [
           {
             type: 'text',
@@ -70,10 +77,28 @@ export async function createServer() {
           },
         ],
       };
+
+      // Include structuredContent when tool has outputSchema (MCP 2025-06-18 spec)
+      if (toolDef?.outputSchema) {
+        response.structuredContent = result as Record<string, unknown>;
+      }
+
+      return response;
     } catch (error) {
       logger.error('Tool execution failed', error);
       const sanitized = sanitizeError(error);
-      throw new Error(sanitized.message);
+
+      // Return error with isError flag for MCP compliance
+      // This allows LLMs to see and potentially self-correct
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error: ${sanitized.message}`,
+          },
+        ],
+        isError: true,
+      };
     }
   });
 

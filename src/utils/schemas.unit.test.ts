@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { z } from 'zod';
 import {
   SearchRepertoryArgsSchema,
   SearchMateriaMedicaArgsSchema,
@@ -18,6 +19,7 @@ import {
   RepertoryMetadataSchema,
   MateriaMedicaMetadataSchema,
   RemedyInfoSchema,
+  zodToOutputSchema,
 } from './schemas.js';
 
 describe('SearchRepertoryArgsSchema', () => {
@@ -417,5 +419,75 @@ describe('RemedyInfoSchema', () => {
     const result = RemedyInfoSchema.parse(input);
 
     expect(result.nameAlt).toEqual(['Monkshood', 'Wolfsbane']);
+  });
+});
+
+describe('zodToOutputSchema', () => {
+  it('zodToOutputSchema when simple schema then returns JSON Schema object', () => {
+    const schema = z.object({
+      name: z.string(),
+      count: z.number(),
+    });
+    const result = zodToOutputSchema(schema);
+
+    expect(result.type).toBe('object');
+    expect(result.properties).toBeDefined();
+    expect(result.properties).toHaveProperty('name');
+    expect(result.properties).toHaveProperty('count');
+    expect(result.additionalProperties).toBe(false);
+  });
+
+  it('zodToOutputSchema when schema has required fields then includes required array', () => {
+    const schema = z.object({
+      required: z.string(),
+      optional: z.string().optional(),
+    });
+    const result = zodToOutputSchema(schema);
+
+    expect(result.required).toBeDefined();
+    expect(result.required).toContain('required');
+  });
+
+  it('zodToOutputSchema when nested schema then flattens references', () => {
+    const nestedSchema = z.object({
+      items: z.array(
+        z.object({
+          id: z.number(),
+          name: z.string(),
+        })
+      ),
+    });
+    const result = zodToOutputSchema(nestedSchema);
+
+    expect(result.type).toBe('object');
+    expect(result.properties).toHaveProperty('items');
+  });
+
+  it('zodToOutputSchema when RepertorySearchResultSchema then returns valid MCP outputSchema', () => {
+    const result = zodToOutputSchema(RepertorySearchResultSchema);
+
+    expect(result.type).toBe('object');
+    expect(result.properties).toHaveProperty('totalResults');
+    expect(result.properties).toHaveProperty('rubrics');
+    expect(result.additionalProperties).toBe(false);
+  });
+
+  it('zodToOutputSchema when RemedyInfoSchema then returns valid MCP outputSchema', () => {
+    const result = zodToOutputSchema(RemedyInfoSchema);
+
+    expect(result.type).toBe('object');
+    expect(result.properties).toHaveProperty('id');
+    expect(result.properties).toHaveProperty('nameAbbrev');
+    expect(result.properties).toHaveProperty('nameLong');
+    expect(result.additionalProperties).toBe(false);
+  });
+
+  it('zodToOutputSchema when MateriaMedicaSearchResultSchema then returns valid MCP outputSchema', () => {
+    const result = zodToOutputSchema(MateriaMedicaSearchResultSchema);
+
+    expect(result.type).toBe('object');
+    expect(result.properties).toHaveProperty('totalResults');
+    expect(result.properties).toHaveProperty('results');
+    expect(result.additionalProperties).toBe(false);
   });
 });
