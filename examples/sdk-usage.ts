@@ -74,7 +74,7 @@ async function openAIExample() {
   // Example of how to use with OpenAI
   /*
   const response = await openai.chat.completions.create({
-    model: 'gpt-4',
+    model: 'gpt-5',
     messages: [
       { role: 'user', content: 'Find remedies for throbbing headache worse from motion' }
     ],
@@ -86,7 +86,7 @@ async function openAIExample() {
 
   // Continue conversation with tool results
   const finalResponse = await openai.chat.completions.create({
-    model: 'gpt-4',
+    model: 'gpt-5',
     messages: [
       { role: 'user', content: 'Find remedies for throbbing headache worse from motion' },
       response.choices[0].message,
@@ -117,7 +117,7 @@ async function vercelAIExample() {
   // Example of how to use with Vercel AI SDK
   /*
   const result = await generateText({
-    model: openai('gpt-4'),
+    model: openai('gpt-5'),
     tools,
     prompt: 'What are the best remedies for anxiety with fear of death?'
   });
@@ -150,7 +150,7 @@ async function langchainExample() {
   const tools = toolDefinitions.map(def => new DynamicStructuredTool(def));
 
   // Create agent
-  const model = new ChatOpenAI({ model: 'gpt-4' });
+  const model = new ChatOpenAI({ model: 'gpt-5' });
   const agent = createReactAgent({ llm: model, tools });
 
   // Invoke
@@ -238,7 +238,7 @@ async function azureOpenAIExample() {
   const oorep = createOOREPClient();
 
   const response = await client.chat.completions.create({
-    model: 'gpt-4',  // deployment name
+    model: 'gpt-5',  // deployment name
     messages: [{ role: 'user', content: 'Find remedies for cough' }],
     tools: openAITools
   });

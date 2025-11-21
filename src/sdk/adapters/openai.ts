@@ -14,7 +14,7 @@
  * const oorep = createOOREPClient();
  *
  * const response = await openai.chat.completions.create({
- *   model: 'gpt-4',
+ *   model: 'gpt-5',
  *   messages: [{ role: 'user', content: 'Find remedies for headache' }],
  *   tools: openAITools
  * });

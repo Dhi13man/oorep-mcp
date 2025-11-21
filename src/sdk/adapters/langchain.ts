@@ -12,7 +12,7 @@
  *
  * const client = createOOREPClient();
  * const tools = createLangChainTools(client);
- * const model = new ChatOpenAI({ model: 'gpt-4' });
+ * const model = new ChatOpenAI({ model: 'gpt-5' });
  * const agent = createReactAgent({ llm: model, tools });
  *
  * const result = await agent.invoke({

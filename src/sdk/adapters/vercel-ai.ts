@@ -15,7 +15,7 @@
  * const tools = createOOREPTools(client);
  *
  * const result = await generateText({
- *   model: openai('gpt-4'),
+ *   model: openai('gpt-5'),
  *   tools,
  *   prompt: 'Find remedies for throbbing headache worse from motion'
  * });
@@ -49,7 +49,7 @@ export interface VercelAITool<TInput, TOutput> {
  * const tools = createOOREPTools(client);
  *
  * const result = await generateText({
- *   model: openai('gpt-4'),
+ *   model: openai('gpt-5'),
  *   tools,
  *   prompt: 'What remedies help with headache?'
  * });
