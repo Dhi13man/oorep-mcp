@@ -857,6 +857,7 @@ The upstream OOREP API may have rate limits. If you exceed them, you'll receive 
 ### Mitigation Strategies
 
 1. **Enable caching** (default: 5 minutes TTL)
+
    ```json
    "env": { "OOREP_MCP_CACHE_TTL_MS": "300000" }
    ```
@@ -864,6 +865,7 @@ The upstream OOREP API may have rate limits. If you exceed them, you'll receive 
 2. **Reduce concurrent requests** by using specific search terms
 
 3. **Increase cache TTL** for frequently accessed data
+
    ```json
    "env": { "OOREP_MCP_CACHE_TTL_MS": "600000" }
    ```
