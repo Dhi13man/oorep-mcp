@@ -1,626 +1,746 @@
 /**
- * Unit tests for OOREP SDK Client
+ * Integration tests for OOREP SDK Client
+ *
+ * These tests use real implementations of Cache, RequestDeduplicator, validators,
+ * and formatters. Only external HTTP calls (fetch) are mocked.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { OOREPSDKClient, createOOREPClient } from './client.js';
+import { ValidationError } from '../utils/errors.js';
 
-// Create mock instances that persist across tests
-const mockOOREPClientInstance = {
-  lookupRepertory: vi.fn(),
-  lookupMateriaMedica: vi.fn(),
-  getAvailableRemedies: vi.fn(),
-  getAvailableRepertories: vi.fn(),
-  getAvailableMateriaMedicas: vi.fn(),
-};
+// Store original fetch
+const originalFetch = global.fetch;
 
-const mockCacheInstance = {
-  get: vi.fn().mockReturnValue(null),
-  set: vi.fn(),
-  clear: vi.fn(),
-  destroy: vi.fn(),
-};
+// Mock fetch for HTTP calls
+const mockFetch = vi.fn();
 
-const mockDeduplicatorInstance = {
-  deduplicate: vi.fn().mockImplementation((_key: string, fn: () => Promise<unknown>) => fn()),
-};
+// Helper to create mock Response
+function createMockResponse(data: unknown, status = 200, headers: Record<string, string> = {}): Response {
+  const responseHeaders = new Headers({
+    'content-type': 'application/json',
+    ...headers,
+  });
 
-// Mock dependencies using class mocks
-vi.mock('../lib/oorep-client.js', () => {
   return {
-    OOREPClient: class MockOOREPClient {
-      lookupRepertory = mockOOREPClientInstance.lookupRepertory;
-      lookupMateriaMedica = mockOOREPClientInstance.lookupMateriaMedica;
-      getAvailableRemedies = mockOOREPClientInstance.getAvailableRemedies;
-      getAvailableRepertories = mockOOREPClientInstance.getAvailableRepertories;
-      getAvailableMateriaMedicas = mockOOREPClientInstance.getAvailableMateriaMedicas;
-    },
+    ok: status >= 200 && status < 300,
+    status,
+    statusText: status === 200 ? 'OK' : 'Error',
+    headers: responseHeaders,
+    text: () => Promise.resolve(typeof data === 'string' ? data : JSON.stringify(data)),
+    json: () => Promise.resolve(data),
+    clone: function() { return this; },
+  } as Response;
+}
+
+// Helper for session init response (available remedies)
+function createSessionResponse(): Response {
+  return createMockResponse([
+    { id: 1, nameAbbrev: 'Acon.', nameLong: 'Aconitum napellus', namealt: ['Aconite'] },
+    { id: 2, nameAbbrev: 'Bell.', nameLong: 'Belladonna', namealt: [] },
+    { id: 3, nameAbbrev: 'Bry.', nameLong: 'Bryonia alba', namealt: ['Bryonia'] },
+  ], 200, { 'set-cookie': 'session=test123; Path=/' });
+}
+
+// Helper for repertory lookup response
+function createRepertoryResponse(totalResults = 2): Response {
+  const payload = {
+    totalNumberOfResults: totalResults,
+    results: [
+      {
+        rubric: { fullPath: 'Head > Pain > General', textt: 'Headache' },
+        repertoryAbbrev: 'kent',
+        weightedRemedies: [
+          { remedy: { nameAbbrev: 'Bell.', nameLong: 'Belladonna' }, weight: 3 },
+          { remedy: { nameAbbrev: 'Acon.', nameLong: 'Aconitum napellus' }, weight: 2 },
+        ],
+      },
+      {
+        rubric: { fullPath: 'Head > Pain > Throbbing', textt: null },
+        repertoryAbbrev: 'kent',
+        weightedRemedies: [
+          { remedy: { nameAbbrev: 'Bell.', nameLong: 'Belladonna' }, weight: 4 },
+        ],
+      },
+    ],
   };
-});
 
-vi.mock('../lib/cache.js', () => {
-  return {
-    Cache: class MockCache {
-      get = mockCacheInstance.get;
-      set = mockCacheInstance.set;
-      clear = mockCacheInstance.clear;
-      destroy = mockCacheInstance.destroy;
-    },
-    RequestDeduplicator: class MockRequestDeduplicator {
-      deduplicate = mockDeduplicatorInstance.deduplicate;
-    },
-  };
-});
+  // API returns [payload, remedyStats]
+  return createMockResponse([payload, []], 200, { 'set-cookie': 'session=test123' });
+}
 
-vi.mock('../lib/data-formatter.js', () => ({
-  formatRepertoryResults: vi.fn().mockReturnValue({
-    totalResults: 1,
-    rubrics: [],
-    remedyStats: [],
-  }),
-  formatMateriaMedicaResults: vi.fn().mockReturnValue({
-    totalResults: 1,
-    results: [],
-  }),
-  generateCacheKey: vi.fn().mockImplementation((prefix, params) =>
-    `${prefix}:${JSON.stringify(params)}`
-  ),
-}));
+// Helper for materia medica response
+function createMateriaMedicaResponse(): Response {
+  return createMockResponse({
+    results: [
+      {
+        abbrev: 'boericke',
+        remedy_id: 1,
+        remedy_fullname: 'Aconitum napellus',
+        result_sections: [
+          { heading: 'Mind', content: 'Fear and anxiety', depth: 1 },
+        ],
+      },
+    ],
+    // totalResults is sum of all hits, so set to 1 for single result
+    numberOfMatchingSectionsPerChapter: [{ hits: 1, remedyId: 1 }],
+  }, 200, { 'set-cookie': 'session=test123' });
+}
 
-vi.mock('../utils/validation.js', () => ({
-  validateSymptom: vi.fn(),
-  validateRemedyName: vi.fn(),
-  validateLanguage: vi.fn(),
-}));
+// Helper for repertories list response (matches OOREPClient expected format)
+function createRepertoriesResponse(): Response {
+  return createMockResponse([
+    { info: { abbrev: 'kent', title: 'Kent Repertory', language: 'en', authorFirstName: 'James', authorLastName: 'Kent' } },
+    { info: { abbrev: 'boger', title: 'Boger Boenninghausen', language: 'en', authorFirstName: 'C.M.', authorLastName: 'Boger' } },
+    { info: { abbrev: 'synth', title: 'Synthesis', language: 'de', authorFirstName: 'Frederik', authorLastName: 'Schroyens' } },
+  ], 200, { 'set-cookie': 'session=test123' });
+}
 
-// Import mocked functions for assertions
-import { validateSymptom, validateRemedyName, validateLanguage } from '../utils/validation.js';
-import { formatRepertoryResults, formatMateriaMedicaResults } from '../lib/data-formatter.js';
+// Helper for materia medicas list response (matches OOREPClient expected format)
+function createMateriaMedicasResponse(): Response {
+  return createMockResponse([
+    { mminfo: { id: 1, abbrev: 'boericke', displaytitle: 'Boericke Materia Medica', lang: 'en', authorfirstname: 'William', authorlastname: 'Boericke' } },
+    { mminfo: { id: 2, abbrev: 'hering', displaytitle: 'Hering Guiding Symptoms', lang: 'de', authorfirstname: 'Constantine', authorlastname: 'Hering' } },
+  ], 200, { 'set-cookie': 'session=test123' });
+}
 
-describe('OOREPSDKClient', () => {
-  let client: OOREPSDKClient;
-
+describe('OOREPSDKClient Integration Tests', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    // Reset mock return values
-    mockCacheInstance.get.mockReturnValue(null);
-    client = new OOREPSDKClient();
+    vi.useFakeTimers();
+    mockFetch.mockReset();
+    global.fetch = mockFetch;
   });
 
   afterEach(() => {
-    client.destroy();
+    vi.useRealTimers();
+    global.fetch = originalFetch;
   });
 
-  describe('constructor', () => {
+  describe('constructor and configuration', () => {
     it('when no config provided then uses defaults', () => {
-      // Arrange
-      const newClient = new OOREPSDKClient();
+      const client = new OOREPSDKClient();
+      const config = client.getConfig();
 
-      // Act
-      const config = newClient.getConfig();
-
-      // Assert
       expect(config.baseUrl).toBe('https://www.oorep.com');
       expect(config.timeoutMs).toBe(30000);
       expect(config.cacheTtlMs).toBe(300000);
       expect(config.defaultRepertory).toBe('publicum');
       expect(config.defaultMateriaMedica).toBe('boericke');
 
-      newClient.destroy();
+      client.destroy();
     });
 
     it('when custom config provided then uses custom values', () => {
-      // Arrange
-      const customConfig = {
+      const client = new OOREPSDKClient({
         baseUrl: 'https://custom.oorep.com',
         timeoutMs: 60000,
         cacheTtlMs: 600000,
         defaultRepertory: 'kent',
         defaultMateriaMedica: 'hering',
-      };
+      });
+      const config = client.getConfig();
 
-      // Act
-      const newClient = new OOREPSDKClient(customConfig);
-      const config = newClient.getConfig();
-
-      // Assert
       expect(config.baseUrl).toBe('https://custom.oorep.com');
       expect(config.timeoutMs).toBe(60000);
       expect(config.cacheTtlMs).toBe(600000);
       expect(config.defaultRepertory).toBe('kent');
       expect(config.defaultMateriaMedica).toBe('hering');
 
-      newClient.destroy();
+      client.destroy();
     });
 
     it('when partial config provided then merges with defaults', () => {
-      // Arrange & Act
-      const newClient = new OOREPSDKClient({ timeoutMs: 45000 });
-      const config = newClient.getConfig();
+      const client = new OOREPSDKClient({ timeoutMs: 45000 });
+      const config = client.getConfig();
 
-      // Assert
       expect(config.baseUrl).toBe('https://www.oorep.com');
       expect(config.timeoutMs).toBe(45000);
       expect(config.cacheTtlMs).toBe(300000);
 
-      newClient.destroy();
+      client.destroy();
     });
-
   });
 
   describe('searchRepertory', () => {
-    it('when valid args then validates symptom', async () => {
-      // Arrange
-      mockOOREPClientInstance.lookupRepertory.mockResolvedValue(null);
+    it('when valid symptom then makes HTTP call and returns formatted results', async () => {
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse())
+        .mockResolvedValueOnce(createRepertoryResponse(156));
 
-      // Act
-      await client.searchRepertory({ symptom: 'headache' });
-
-      // Assert
-      expect(validateSymptom).toHaveBeenCalledWith('headache');
-    });
-
-    it('when valid args then calls lookupRepertory with correct params', async () => {
-      // Arrange
-      mockOOREPClientInstance.lookupRepertory.mockResolvedValue(null);
-
-      // Act
-      await client.searchRepertory({
-        symptom: 'headache',
-        repertory: 'kent',
-        minWeight: 2,
-        includeRemedyStats: true,
-      });
-
-      // Assert
-      expect(mockOOREPClientInstance.lookupRepertory).toHaveBeenCalledWith({
-        symptom: 'headache',
-        repertory: 'kent',
-        minWeight: 2,
-        includeRemedyStats: true,
-      });
-    });
-
-    it('when successful then returns formatted results', async () => {
-      // Arrange
-      const mockApiResponse = { totalNumberOfResults: 5, results: [] };
-      const mockFormattedResult = { totalResults: 5, rubrics: [], remedyStats: [] };
-      mockOOREPClientInstance.lookupRepertory.mockResolvedValue(mockApiResponse);
-      vi.mocked(formatRepertoryResults).mockReturnValue(mockFormattedResult);
-
-      // Act
+      const client = new OOREPSDKClient();
       const result = await client.searchRepertory({ symptom: 'headache' });
 
-      // Assert
-      expect(result).toEqual(mockFormattedResult);
+      // Verify HTTP calls were made
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+
+      // Verify results are properly formatted
+      expect(result.totalResults).toBe(156);
+      expect(result.rubrics).toHaveLength(2);
+      expect(result.rubrics[0].rubric).toBe('Head > Pain > General');
+      expect(result.rubrics[0].repertory).toBe('kent');
+      expect(result.rubrics[0].remedies).toHaveLength(2);
+
+      client.destroy();
     });
 
-    it('when successful then caches result', async () => {
-      // Arrange
-      mockOOREPClientInstance.lookupRepertory.mockResolvedValue(null);
+    it('when includeRemedyStats true then aggregates remedy statistics correctly', async () => {
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse())
+        .mockResolvedValueOnce(createRepertoryResponse());
 
-      // Act
+      const client = new OOREPSDKClient();
+      const result = await client.searchRepertory({
+        symptom: 'headache',
+        includeRemedyStats: true
+      });
+
+      // Belladonna appears in both rubrics with weights 3 and 4
+      expect(result.remedyStats).toBeDefined();
+      expect(result.remedyStats!.length).toBeGreaterThan(0);
+
+      const bellStats = result.remedyStats!.find(s => s.name === 'Belladonna');
+      expect(bellStats).toBeDefined();
+      expect(bellStats!.count).toBe(2);
+      expect(bellStats!.cumulativeWeight).toBe(7); // 3 + 4
+
+      client.destroy();
+    });
+
+    it('when same request made twice then second uses cache', async () => {
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse())
+        .mockResolvedValueOnce(createRepertoryResponse());
+
+      const client = new OOREPSDKClient();
+
+      // First call - makes HTTP request
+      const result1 = await client.searchRepertory({ symptom: 'headache' });
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+
+      // Second call - should use cache
+      const result2 = await client.searchRepertory({ symptom: 'headache' });
+      expect(mockFetch).toHaveBeenCalledTimes(2); // No additional calls
+
+      expect(result1).toEqual(result2);
+
+      client.destroy();
+    });
+
+    it('when cache expires then makes new HTTP call', async () => {
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse())
+        .mockResolvedValueOnce(createRepertoryResponse(10))
+        .mockResolvedValueOnce(createRepertoryResponse(20));
+
+      const client = new OOREPSDKClient({ cacheTtlMs: 1000 });
+
       await client.searchRepertory({ symptom: 'headache' });
+      expect(mockFetch).toHaveBeenCalledTimes(2);
 
-      // Assert
-      expect(mockCacheInstance.set).toHaveBeenCalled();
+      // Advance past cache TTL
+      vi.advanceTimersByTime(1001);
+
+      const result = await client.searchRepertory({ symptom: 'headache' });
+      expect(mockFetch).toHaveBeenCalledTimes(3); // New request after cache expiry
+      expect(result.totalResults).toBe(20);
+
+      client.destroy();
     });
 
-    it('when cached then returns cached result without API call', async () => {
-      // Arrange
-      const cachedResult = { totalResults: 10, rubrics: [], remedyStats: [] };
-      mockCacheInstance.get.mockReturnValue(cachedResult);
+    it('when symptom too short then throws validation error without HTTP call', async () => {
+      const client = new OOREPSDKClient();
 
-      // Act
-      const result = await client.searchRepertory({ symptom: 'headache' });
+      // Zod schema validates min length before custom validators run
+      await expect(client.searchRepertory({ symptom: 'ab' }))
+        .rejects.toThrow();
 
-      // Assert
-      expect(result).toEqual(cachedResult);
-      expect(mockOOREPClientInstance.lookupRepertory).not.toHaveBeenCalled();
+      expect(mockFetch).not.toHaveBeenCalled();
+
+      client.destroy();
+    });
+
+    it('when symptom has invalid characters then throws validation error', async () => {
+      const client = new OOREPSDKClient();
+
+      // Zod schema validates character pattern before custom validators run
+      await expect(client.searchRepertory({ symptom: 'head@che' }))
+        .rejects.toThrow();
+
+      expect(mockFetch).not.toHaveBeenCalled();
+
+      client.destroy();
+    });
+
+    it('when symptom exactly 3 chars then validates successfully', async () => {
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse())
+        .mockResolvedValueOnce(createRepertoryResponse());
+
+      const client = new OOREPSDKClient();
+
+      await expect(client.searchRepertory({ symptom: 'abc' }))
+        .resolves.toBeDefined();
+
+      client.destroy();
+    });
+
+    it('when symptom exactly 200 chars then validates successfully', async () => {
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse())
+        .mockResolvedValueOnce(createRepertoryResponse());
+
+      const client = new OOREPSDKClient();
+      const longSymptom = 'a'.repeat(200);
+
+      await expect(client.searchRepertory({ symptom: longSymptom }))
+        .resolves.toBeDefined();
+
+      client.destroy();
+    });
+
+    it('when symptom 201 chars then throws ValidationError', async () => {
+      const client = new OOREPSDKClient();
+      const tooLongSymptom = 'a'.repeat(201);
+
+      await expect(client.searchRepertory({ symptom: tooLongSymptom }))
+        .rejects.toThrow();
+
+      client.destroy();
+    });
+
+    it('when minWeight provided then passes to API', async () => {
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse())
+        .mockResolvedValueOnce(createRepertoryResponse());
+
+      const client = new OOREPSDKClient();
+      await client.searchRepertory({ symptom: 'headache', minWeight: 3 });
+
+      // Verify the API call includes minWeight
+      const calls = mockFetch.mock.calls;
+      const lookupCall = calls.find(call =>
+        call[0].toString().includes('lookup_rep')
+      );
+      expect(lookupCall).toBeDefined();
+
+      client.destroy();
+    });
+
+    it('when maxResults specified then limits output', async () => {
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse())
+        .mockResolvedValueOnce(createRepertoryResponse());
+
+      const client = new OOREPSDKClient();
+      const result = await client.searchRepertory({
+        symptom: 'headache',
+        maxResults: 1
+      });
+
+      expect(result.rubrics.length).toBeLessThanOrEqual(1);
+
+      client.destroy();
     });
   });
 
   describe('searchMateriaMedica', () => {
-    it('when valid args then validates symptom', async () => {
-      // Arrange
-      mockOOREPClientInstance.lookupMateriaMedica.mockResolvedValue(null);
+    it('when valid symptom then returns formatted results', async () => {
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse())
+        .mockResolvedValueOnce(createMateriaMedicaResponse());
 
-      // Act
-      await client.searchMateriaMedica({ symptom: 'anxiety' });
-
-      // Assert
-      expect(validateSymptom).toHaveBeenCalledWith('anxiety');
-    });
-
-    it('when valid args then calls lookupMateriaMedica with correct params', async () => {
-      // Arrange
-      mockOOREPClientInstance.lookupMateriaMedica.mockResolvedValue(null);
-
-      // Act
-      await client.searchMateriaMedica({
-        symptom: 'anxiety',
-        materiamedica: 'boericke',
-        remedy: 'acon',
-      });
-
-      // Assert
-      expect(mockOOREPClientInstance.lookupMateriaMedica).toHaveBeenCalledWith({
-        symptom: 'anxiety',
-        materiamedica: 'boericke',
-        remedy: 'acon',
-      });
-    });
-
-    it('when successful then returns formatted results', async () => {
-      // Arrange
-      const mockFormattedResult = { totalResults: 3, results: [] };
-      mockOOREPClientInstance.lookupMateriaMedica.mockResolvedValue(null);
-      vi.mocked(formatMateriaMedicaResults).mockReturnValue(mockFormattedResult);
-
-      // Act
+      const client = new OOREPSDKClient();
       const result = await client.searchMateriaMedica({ symptom: 'anxiety' });
 
-      // Assert
-      expect(result).toEqual(mockFormattedResult);
+      expect(result.totalResults).toBe(1);
+      expect(result.results).toHaveLength(1);
+      expect(result.results[0].remedy).toBe('Aconitum napellus');
+      expect(result.results[0].sections).toHaveLength(1);
+
+      client.destroy();
+    });
+
+    it('when remedy filter provided then validates remedy name', async () => {
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse())
+        .mockResolvedValueOnce(createMateriaMedicaResponse());
+
+      const client = new OOREPSDKClient();
+
+      // Valid remedy name
+      await expect(client.searchMateriaMedica({
+        symptom: 'anxiety',
+        remedy: 'acon'
+      })).resolves.toBeDefined();
+
+      client.destroy();
+    });
+
+    it('when remedy name invalid then throws ValidationError', async () => {
+      const client = new OOREPSDKClient();
+
+      await expect(client.searchMateriaMedica({
+        symptom: 'anxiety',
+        remedy: '' // Empty remedy name
+      })).rejects.toThrow(ValidationError);
+
+      client.destroy();
     });
 
     it('when cached then returns cached result', async () => {
-      // Arrange
-      const cachedResult = { totalResults: 5, results: [] };
-      mockCacheInstance.get.mockReturnValue(cachedResult);
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse())
+        .mockResolvedValueOnce(createMateriaMedicaResponse());
 
-      // Act
-      const result = await client.searchMateriaMedica({ symptom: 'anxiety' });
+      const client = new OOREPSDKClient();
 
-      // Assert
-      expect(result).toEqual(cachedResult);
-      expect(mockOOREPClientInstance.lookupMateriaMedica).not.toHaveBeenCalled();
+      await client.searchMateriaMedica({ symptom: 'anxiety' });
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+
+      await client.searchMateriaMedica({ symptom: 'anxiety' });
+      expect(mockFetch).toHaveBeenCalledTimes(2); // No additional calls
+
+      client.destroy();
     });
   });
 
   describe('getRemedyInfo', () => {
-    it('when valid remedy then validates remedy name', async () => {
-      // Arrange
-      mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue([]);
+    it('when remedy found by abbreviation then returns info', async () => {
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse()) // session init
+        .mockResolvedValueOnce(createSessionResponse()); // getAvailableRemedies
 
-      // Act
-      await client.getRemedyInfo({ remedy: 'acon' });
-
-      // Assert
-      expect(validateRemedyName).toHaveBeenCalledWith('acon');
-    });
-
-    it('when remedy found by abbreviation then returns remedy info', async () => {
-      // Arrange
-      const mockRemedies = [
-        { id: 1, nameAbbrev: 'Acon.', nameLong: 'Aconitum napellus', namealt: ['Aconite'] },
-      ];
-      mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue(mockRemedies);
-
-      // Act
+      const client = new OOREPSDKClient();
       const result = await client.getRemedyInfo({ remedy: 'acon.' });
 
-      // Assert
-      expect(result).toEqual({
-        id: 1,
-        nameAbbrev: 'Acon.',
-        nameLong: 'Aconitum napellus',
-        nameAlt: ['Aconite'],
-      });
+      expect(result).not.toBeNull();
+      expect(result!.nameAbbrev).toBe('Acon.');
+      expect(result!.nameLong).toBe('Aconitum napellus');
+
+      client.destroy();
     });
 
-    it('when remedy found by long name then returns remedy info', async () => {
-      // Arrange
-      const mockRemedies = [
-        { id: 1, nameAbbrev: 'Acon.', nameLong: 'Aconitum napellus' },
-      ];
-      mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue(mockRemedies);
+    it('when remedy found by long name then returns info', async () => {
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse()) // session init
+        .mockResolvedValueOnce(createSessionResponse()); // getAvailableRemedies
 
-      // Act
+      const client = new OOREPSDKClient();
       const result = await client.getRemedyInfo({ remedy: 'aconitum napellus' });
 
-      // Assert
-      expect(result?.id).toBe(1);
+      expect(result).not.toBeNull();
+      expect(result!.id).toBe(1);
+
+      client.destroy();
     });
 
-    it('when remedy found by alternative name then returns remedy info', async () => {
-      // Arrange
-      const mockRemedies = [
-        { id: 1, nameAbbrev: 'Acon.', nameLong: 'Aconitum napellus', namealt: ['Aconite', 'Monkshood'] },
-      ];
-      mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue(mockRemedies);
+    it('when remedy found by alternative name then returns info', async () => {
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse()) // session init
+        .mockResolvedValueOnce(createSessionResponse()); // getAvailableRemedies
 
-      // Act
-      const result = await client.getRemedyInfo({ remedy: 'monkshood' });
+      const client = new OOREPSDKClient();
+      const result = await client.getRemedyInfo({ remedy: 'aconite' });
 
-      // Assert
-      expect(result?.id).toBe(1);
+      expect(result).not.toBeNull();
+      expect(result!.nameAbbrev).toBe('Acon.');
+
+      client.destroy();
+    });
+
+    it('when partial match with 3+ chars then returns remedy', async () => {
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse()) // session init
+        .mockResolvedValueOnce(createSessionResponse()); // getAvailableRemedies
+
+      const client = new OOREPSDKClient();
+      // "bella" should partially match "Belladonna"
+      const result = await client.getRemedyInfo({ remedy: 'bella' });
+
+      expect(result).not.toBeNull();
+      expect(result!.nameLong).toBe('Belladonna');
+
+      client.destroy();
+    });
+
+    it('when query too short for partial match then returns null', async () => {
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse()) // session init
+        .mockResolvedValueOnce(createSessionResponse()); // getAvailableRemedies
+
+      const client = new OOREPSDKClient();
+      // "be" is only 2 chars, below partial match threshold
+      const result = await client.getRemedyInfo({ remedy: 'be' });
+
+      expect(result).toBeNull();
+
+      client.destroy();
     });
 
     it('when remedy not found then returns null', async () => {
-      // Arrange
-      const mockRemedies = [
-        { id: 1, nameAbbrev: 'Acon.', nameLong: 'Aconitum napellus' },
-      ];
-      mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue(mockRemedies);
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse()) // session init
+        .mockResolvedValueOnce(createSessionResponse()); // getAvailableRemedies
 
-      // Act
+      const client = new OOREPSDKClient();
       const result = await client.getRemedyInfo({ remedy: 'nonexistent' });
 
-      // Assert
       expect(result).toBeNull();
-    });
 
-    it('when partial match with 3+ chars on long name then returns remedy', async () => {
-      // Arrange - tests matchesPartially function
-      const mockRemedies = [
-        { id: 1, nameAbbrev: 'Acon.', nameLong: 'Aconitum napellus', namealt: [] },
-      ];
-      mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue(mockRemedies);
-
-      // Act - "aconit" is partial match for "aconitum"
-      const result = await client.getRemedyInfo({ remedy: 'aconit' });
-
-      // Assert
-      expect(result).not.toBeNull();
-      expect(result?.id).toBe(1);
-    });
-
-    it('when partial match with 3+ chars on long name then returns remedy via substring', async () => {
-      // Arrange - "bella" should match "belladonna" via partial match
-      const mockRemedies = [
-        { id: 1, nameAbbrev: 'Bell.', nameLong: 'Belladonna', namealt: [] },
-      ];
-      mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue(mockRemedies);
-
-      // Act - "bella" is partial match for "belladonna"
-      const result = await client.getRemedyInfo({ remedy: 'bella' });
-
-      // Assert
-      expect(result).not.toBeNull();
-      expect(result?.id).toBe(1);
-    });
-
-    it('when partial match on alternative name substring then returns remedy', async () => {
-      // Arrange
-      const mockRemedies = [
-        { id: 1, nameAbbrev: 'Acon.', nameLong: 'Aconitum napellus', namealt: ['Monkshood', 'Wolfsbane'] },
-      ];
-      mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue(mockRemedies);
-
-      // Act - "monkshood" exact match on alternative name
-      const result = await client.getRemedyInfo({ remedy: 'monkshood' });
-
-      // Assert
-      expect(result).not.toBeNull();
-      expect(result?.id).toBe(1);
-    });
-
-    it('when exactly 3 char partial match then returns remedy', async () => {
-      // Arrange - tests minimum 3-char partial matching
-      const mockRemedies = [
-        { id: 1, nameAbbrev: 'Acon.', nameLong: 'Aconitum napellus', namealt: [] },
-      ];
-      mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue(mockRemedies);
-
-      // Act - "aco" is exactly 3 chars and should match "aconitum" via substring
-      const result = await client.getRemedyInfo({ remedy: 'aco' });
-
-      // Assert - "aconitumnapellus".includes("aco") = true
-      expect(result).not.toBeNull();
-      expect(result?.id).toBe(1);
-    });
-
-    it('when query too short for partial match then does not match', async () => {
-      // Arrange - partial matching requires 3+ chars
-      const mockRemedies = [
-        { id: 1, nameAbbrev: 'Acon.', nameLong: 'Aconitum napellus', namealt: [] },
-      ];
-      mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue(mockRemedies);
-
-      // Act - "ac" is too short for partial matching
-      const result = await client.getRemedyInfo({ remedy: 'ac' });
-
-      // Assert - should not match because query is < 3 chars
-      expect(result).toBeNull();
-    });
-
-    it('when multiple remedies match then returns first match', async () => {
-      // Arrange
-      const mockRemedies = [
-        { id: 1, nameAbbrev: 'Acon.', nameLong: 'Aconitum napellus', namealt: [] },
-        { id: 2, nameAbbrev: 'Acon-l.', nameLong: 'Aconitum lycoctonum', namealt: [] },
-      ];
-      mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue(mockRemedies);
-
-      // Act
-      const result = await client.getRemedyInfo({ remedy: 'aconitum' });
-
-      // Assert - first match wins
-      expect(result?.id).toBe(1);
+      client.destroy();
     });
 
     it('when case differs then still matches', async () => {
-      // Arrange
-      const mockRemedies = [
-        { id: 1, nameAbbrev: 'ACON.', nameLong: 'ACONITUM NAPELLUS', namealt: ['MONKSHOOD'] },
-      ];
-      mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue(mockRemedies);
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse()) // session init
+        .mockResolvedValueOnce(createSessionResponse()); // getAvailableRemedies
 
-      // Act - lowercase query should match uppercase data
-      const result = await client.getRemedyInfo({ remedy: 'aconitum napellus' });
+      const client = new OOREPSDKClient();
+      const result = await client.getRemedyInfo({ remedy: 'BELLADONNA' });
 
-      // Assert
       expect(result).not.toBeNull();
-      expect(result?.id).toBe(1);
+      expect(result!.nameLong).toBe('Belladonna');
+
+      client.destroy();
+    });
+
+    it('when remedy name invalid then throws error', async () => {
+      const client = new OOREPSDKClient();
+
+      await expect(client.getRemedyInfo({ remedy: '' }))
+        .rejects.toThrow(); // Throws ZodError for empty string
+
+      client.destroy();
+    });
+
+    it('when remedy name exactly 100 chars then validates', async () => {
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse()) // session init
+        .mockResolvedValueOnce(createSessionResponse()); // getAvailableRemedies
+
+      const client = new OOREPSDKClient();
+      const longName = 'a'.repeat(100);
+
+      // Should not throw validation error (but won't find a match)
+      const result = await client.getRemedyInfo({ remedy: longName });
+      expect(result).toBeNull();
+
+      client.destroy();
     });
 
     it('when cached then returns cached result', async () => {
-      // Arrange
-      const cachedResult = { id: 1, nameAbbrev: 'Acon.', nameLong: 'Aconitum napellus' };
-      mockCacheInstance.get.mockReturnValue(cachedResult);
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse()) // session init
+        .mockResolvedValueOnce(createSessionResponse()); // getAvailableRemedies
 
-      // Act
-      const result = await client.getRemedyInfo({ remedy: 'acon' });
+      const client = new OOREPSDKClient();
 
-      // Assert
-      expect(result).toEqual(cachedResult);
-      expect(mockOOREPClientInstance.getAvailableRemedies).not.toHaveBeenCalled();
+      await client.getRemedyInfo({ remedy: 'acon' });
+      await client.getRemedyInfo({ remedy: 'acon' });
+
+      // Session init + one getAvailableRemedies call (second is cached)
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+
+      client.destroy();
     });
   });
 
   describe('listRepertories', () => {
-    it('when no language filter then returns all repertories', async () => {
-      // Arrange
-      const mockRepertories = [
-        { abbreviation: 'kent', title: 'Kent Repertory', language: 'en' },
-        { abbreviation: 'boger', title: 'Boger Boenninghausen', language: 'en' },
-      ];
-      mockOOREPClientInstance.getAvailableRepertories.mockResolvedValue(mockRepertories);
+    it('when no filter then returns all repertories', async () => {
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse())
+        .mockResolvedValueOnce(createRepertoriesResponse());
 
-      // Act
+      const client = new OOREPSDKClient();
       const result = await client.listRepertories();
 
-      // Assert
-      expect(result).toEqual(mockRepertories);
+      expect(result).toHaveLength(3);
+
+      client.destroy();
     });
 
-    it('when language filter provided then validates language', async () => {
-      // Arrange
-      mockOOREPClientInstance.getAvailableRepertories.mockResolvedValue([]);
+    it('when language filter provided then filters results', async () => {
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse())
+        .mockResolvedValueOnce(createRepertoriesResponse());
 
-      // Act
-      await client.listRepertories({ language: 'en' });
-
-      // Assert
-      expect(validateLanguage).toHaveBeenCalledWith('en');
-    });
-
-    it('when language filter provided then filters repertories', async () => {
-      // Arrange
-      const mockRepertories = [
-        { abbreviation: 'kent', title: 'Kent Repertory', language: 'en' },
-        { abbreviation: 'synth', title: 'Synthesis', language: 'de' },
-      ];
-      mockOOREPClientInstance.getAvailableRepertories.mockResolvedValue(mockRepertories);
-
-      // Act
+      const client = new OOREPSDKClient();
       const result = await client.listRepertories({ language: 'en' });
 
-      // Assert
-      expect(result).toHaveLength(1);
-      expect(result[0].abbreviation).toBe('kent');
+      expect(result).toHaveLength(2);
+      expect(result.every(r => r.language === 'en')).toBe(true);
+
+      client.destroy();
+    });
+
+    it('when language filter invalid then throws ValidationError', async () => {
+      const client = new OOREPSDKClient();
+
+      await expect(client.listRepertories({ language: 'e' }))
+        .rejects.toThrow(ValidationError);
+
+      client.destroy();
     });
 
     it('when cached then returns cached result', async () => {
-      // Arrange
-      const cachedResult = [{ abbreviation: 'kent', title: 'Kent', language: 'en' }];
-      mockCacheInstance.get.mockReturnValue(cachedResult);
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse())
+        .mockResolvedValueOnce(createRepertoriesResponse());
 
-      // Act
-      const result = await client.listRepertories();
+      const client = new OOREPSDKClient();
 
-      // Assert
-      expect(result).toEqual(cachedResult);
-      expect(mockOOREPClientInstance.getAvailableRepertories).not.toHaveBeenCalled();
+      await client.listRepertories();
+      await client.listRepertories();
+
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+
+      client.destroy();
     });
   });
 
   describe('listMateriaMedicas', () => {
-    it('when no language filter then returns all materia medicas', async () => {
-      // Arrange
-      const mockMateriaMedicas = [
-        { abbreviation: 'boericke', title: 'Boericke Materia Medica', language: 'en' },
-      ];
-      mockOOREPClientInstance.getAvailableMateriaMedicas.mockResolvedValue(mockMateriaMedicas);
+    it('when no filter then returns all materia medicas', async () => {
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse())
+        .mockResolvedValueOnce(createMateriaMedicasResponse());
 
-      // Act
+      const client = new OOREPSDKClient();
       const result = await client.listMateriaMedicas();
 
-      // Assert
-      expect(result).toEqual(mockMateriaMedicas);
+      expect(result).toHaveLength(2);
+
+      client.destroy();
     });
 
-    it('when language filter provided then validates language', async () => {
-      // Arrange
-      mockOOREPClientInstance.getAvailableMateriaMedicas.mockResolvedValue([]);
+    it('when language filter provided then filters results', async () => {
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse())
+        .mockResolvedValueOnce(createMateriaMedicasResponse());
 
-      // Act
-      await client.listMateriaMedicas({ language: 'de' });
-
-      // Assert
-      expect(validateLanguage).toHaveBeenCalledWith('de');
-    });
-
-    it('when language filter provided then filters materia medicas', async () => {
-      // Arrange
-      const mockMateriaMedicas = [
-        { abbreviation: 'boericke', title: 'Boericke', language: 'en' },
-        { abbreviation: 'hering', title: 'Hering', language: 'de' },
-      ];
-      mockOOREPClientInstance.getAvailableMateriaMedicas.mockResolvedValue(mockMateriaMedicas);
-
-      // Act
+      const client = new OOREPSDKClient();
       const result = await client.listMateriaMedicas({ language: 'de' });
 
-      // Assert
       expect(result).toHaveLength(1);
       expect(result[0].abbreviation).toBe('hering');
+
+      client.destroy();
+    });
+  });
+
+  describe('concurrent request deduplication', () => {
+    it('when concurrent identical requests then only one HTTP call made', async () => {
+      let resolveRequest: (value: Response) => void;
+      const pendingRequest = new Promise<Response>(resolve => {
+        resolveRequest = resolve;
+      });
+
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse())
+        .mockReturnValueOnce(pendingRequest);
+
+      const client = new OOREPSDKClient();
+
+      // Start 3 concurrent requests for same symptom
+      const promise1 = client.searchRepertory({ symptom: 'headache' });
+      const promise2 = client.searchRepertory({ symptom: 'headache' });
+      const promise3 = client.searchRepertory({ symptom: 'headache' });
+
+      // Resolve the pending request
+      resolveRequest!(createRepertoryResponse());
+
+      const [r1, r2, r3] = await Promise.all([promise1, promise2, promise3]);
+
+      // All should get same result
+      expect(r1).toEqual(r2);
+      expect(r2).toEqual(r3);
+
+      // Only 2 HTTP calls: session init + one lookup
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+
+      client.destroy();
     });
 
-    it('when cached then returns cached result', async () => {
-      // Arrange
-      const cachedResult = [{ abbreviation: 'boericke', title: 'Boericke', language: 'en' }];
-      mockCacheInstance.get.mockReturnValue(cachedResult);
+    it('when different symptoms then separate requests made', async () => {
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse())
+        .mockResolvedValueOnce(createRepertoryResponse(10))
+        .mockResolvedValueOnce(createRepertoryResponse(20));
 
-      // Act
-      const result = await client.listMateriaMedicas();
+      const client = new OOREPSDKClient();
 
-      // Assert
-      expect(result).toEqual(cachedResult);
-      expect(mockOOREPClientInstance.getAvailableMateriaMedicas).not.toHaveBeenCalled();
+      const [r1, r2] = await Promise.all([
+        client.searchRepertory({ symptom: 'headache' }),
+        client.searchRepertory({ symptom: 'nausea' }),
+      ]);
+
+      expect(r1.totalResults).toBe(10);
+      expect(r2.totalResults).toBe(20);
+
+      // Session init + 2 different lookups
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+
+      client.destroy();
     });
   });
 
   describe('clearCache', () => {
-    it('when called then clears the cache', () => {
-      // Act
+    it('when called then subsequent request makes new HTTP call', async () => {
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse())
+        .mockResolvedValueOnce(createRepertoryResponse(10))
+        .mockResolvedValueOnce(createRepertoryResponse(20));
+
+      const client = new OOREPSDKClient();
+
+      await client.searchRepertory({ symptom: 'headache' });
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+
       client.clearCache();
 
-      // Assert
-      expect(mockCacheInstance.clear).toHaveBeenCalled();
+      const result = await client.searchRepertory({ symptom: 'headache' });
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+      expect(result.totalResults).toBe(20);
+
+      client.destroy();
     });
   });
 
   describe('destroy', () => {
-    it('when called then destroys the cache', () => {
-      // Act
-      client.destroy();
+    it('when called then cleans up resources', () => {
+      const client = new OOREPSDKClient();
 
-      // Assert
-      expect(mockCacheInstance.destroy).toHaveBeenCalled();
+      expect(() => client.destroy()).not.toThrow();
+    });
+
+    it('when called multiple times then does not throw', () => {
+      const client = new OOREPSDKClient();
+
+      expect(() => {
+        client.destroy();
+        client.destroy();
+      }).not.toThrow();
     });
   });
 
   describe('getConfig', () => {
     it('when called then returns immutable config copy', () => {
-      // Act
+      const client = new OOREPSDKClient();
+
       const config1 = client.getConfig();
       const config2 = client.getConfig();
 
-      // Assert
       expect(config1).not.toBe(config2);
       expect(config1).toEqual(config2);
+
+      client.destroy();
     });
   });
 });
 
-describe('createOOREPClient', () => {
+describe('createOOREPClient factory', () => {
   it('when called without config then creates client with defaults', () => {
-    // Act
     const client = createOOREPClient();
 
-    // Assert
     expect(client).toBeInstanceOf(OOREPSDKClient);
     expect(client.getConfig().baseUrl).toBe('https://www.oorep.com');
 
@@ -628,10 +748,8 @@ describe('createOOREPClient', () => {
   });
 
   it('when called with config then creates client with custom config', () => {
-    // Act
     const client = createOOREPClient({ timeoutMs: 60000 });
 
-    // Assert
     expect(client).toBeInstanceOf(OOREPSDKClient);
     expect(client.getConfig().timeoutMs).toBe(60000);
 

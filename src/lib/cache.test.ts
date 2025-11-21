@@ -2,7 +2,7 @@
  * Unit tests for cache and request deduplication
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Cache, RequestDeduplicator } from './cache.js';
 
 describe('Cache', () => {
@@ -233,6 +233,7 @@ describe('Cache', () => {
       const result = cache.get('key');
 
       expect(result).toBe(42);
+      cache.destroy();
     });
 
     it('Cache when typed as object then stores and retrieves objects', () => {
@@ -243,6 +244,117 @@ describe('Cache', () => {
       const result = cache.get('key');
 
       expect(result).toEqual(mockObj);
+      cache.destroy();
+    });
+  });
+
+  describe('cleanup timer', () => {
+    it('constructor when ttl less than hour then uses ttl as cleanup interval', () => {
+      const setIntervalSpy = vi.spyOn(global, 'setInterval');
+      const cache = new Cache<string>(5000);
+
+      expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 5000);
+      cache.destroy();
+      setIntervalSpy.mockRestore();
+    });
+
+    it('constructor when ttl greater than hour then caps cleanup interval at 1 hour', () => {
+      const setIntervalSpy = vi.spyOn(global, 'setInterval');
+      const cache = new Cache<string>(7200000); // 2 hours
+
+      expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 3600000); // 1 hour
+      cache.destroy();
+      setIntervalSpy.mockRestore();
+    });
+
+    it('cleanup timer when interval fires then removes expired entries', () => {
+      const cache = new Cache<string>(1000);
+      cache.set('key1', 'value1');
+      cache.set('key2', 'value2');
+
+      // Expire entries
+      vi.advanceTimersByTime(1001);
+
+      // Add new entry after expiration
+      cache.set('key3', 'value3');
+
+      // Trigger cleanup timer (set to run at TTL interval)
+      // Use 999ms to avoid expiring key3 (which would be exactly at TTL boundary)
+      vi.advanceTimersByTime(999);
+
+      // Only key3 should remain (key1 and key2 expired and cleaned)
+      expect(cache.getStats().size).toBe(1);
+      expect(cache.get('key3')).toBe('value3');
+      cache.destroy();
+    });
+
+    it('cleanup timer when multiple intervals pass then cleans up periodically', () => {
+      const cache = new Cache<string>(500);
+
+      // First batch
+      cache.set('key1', 'value1');
+      vi.advanceTimersByTime(600); // Expire first batch
+
+      // Second batch
+      cache.set('key2', 'value2');
+      vi.advanceTimersByTime(600); // Expire second batch, triggers cleanup
+
+      // After cleanup, expired entries should be removed
+      expect(cache.getStats().size).toBeLessThanOrEqual(1);
+      cache.destroy();
+    });
+  });
+
+  describe('destroy', () => {
+    it('destroy when called then clears cleanup timer', () => {
+      const clearIntervalSpy = vi.spyOn(global, 'clearInterval');
+      const cache = new Cache<string>(1000);
+
+      cache.destroy();
+
+      expect(clearIntervalSpy).toHaveBeenCalled();
+      clearIntervalSpy.mockRestore();
+    });
+
+    it('destroy when called then clears all entries', () => {
+      const cache = new Cache<string>(1000);
+      cache.set('key1', 'value1');
+      cache.set('key2', 'value2');
+
+      cache.destroy();
+
+      expect(cache.getStats().size).toBe(0);
+    });
+
+    it('destroy when called multiple times then does not throw', () => {
+      const cache = new Cache<string>(1000);
+
+      expect(() => {
+        cache.destroy();
+        cache.destroy();
+        cache.destroy();
+      }).not.toThrow();
+    });
+
+    it('destroy when called then subsequent cleanup timer fires do not throw', () => {
+      const cache = new Cache<string>(1000);
+      cache.set('key', 'value');
+
+      cache.destroy();
+
+      // This would throw if timer wasn't properly cleared
+      expect(() => vi.advanceTimersByTime(2000)).not.toThrow();
+    });
+
+    it('memory leak prevention: destroy cleans up timer reference', () => {
+      const cache = new Cache<string>(1000);
+      cache.set('key', 'value');
+
+      // Force garbage collection consideration by destroying
+      cache.destroy();
+
+      // Verify cache can be garbage collected (no more references)
+      expect(cache.getStats().size).toBe(0);
     });
   });
 });
@@ -392,6 +504,114 @@ describe('RequestDeduplicator', () => {
       const result = await mockDeduplicator.deduplicate('key', mockFn);
 
       expect(result).toEqual(mockObj);
+    });
+  });
+
+  describe('timeout handling', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('deduplicate when request exceeds timeout then rejects with timeout error', async () => {
+      const slowFn = vi.fn(() => new Promise<string>((resolve) => {
+        setTimeout(() => resolve('result'), 70000); // Takes 70 seconds
+      }));
+
+      const promise = mockDeduplicator.deduplicate('key', slowFn, 5000); // 5 second timeout
+
+      // Advance past timeout
+      vi.advanceTimersByTime(5001);
+
+      await expect(promise).rejects.toThrow('Request timeout after 5000ms');
+    });
+
+    it('deduplicate when request times out then clears from pending', async () => {
+      const slowFn = vi.fn(() => new Promise<string>((resolve) => {
+        setTimeout(() => resolve('result'), 70000);
+      }));
+
+      const promise = mockDeduplicator.deduplicate('key', slowFn, 1000);
+      expect(mockDeduplicator.getPendingCount()).toBe(1);
+
+      vi.advanceTimersByTime(1001);
+
+      try {
+        await promise;
+      } catch {
+        // Expected to throw
+      }
+
+      expect(mockDeduplicator.getPendingCount()).toBe(0);
+    });
+
+    it('deduplicate when request completes before timeout then resolves successfully', async () => {
+      const fastFn = vi.fn(() => new Promise<string>((resolve) => {
+        setTimeout(() => resolve('result'), 100);
+      }));
+
+      const promise = mockDeduplicator.deduplicate('key', fastFn, 5000);
+
+      vi.advanceTimersByTime(100);
+
+      const result = await promise;
+      expect(result).toBe('result');
+    });
+
+    it('deduplicate when custom timeout specified then uses custom value', async () => {
+      const slowFn = vi.fn(() => new Promise<string>((resolve) => {
+        setTimeout(() => resolve('result'), 10000);
+      }));
+
+      const promise = mockDeduplicator.deduplicate('key', slowFn, 2000);
+
+      vi.advanceTimersByTime(2001);
+
+      await expect(promise).rejects.toThrow('Request timeout after 2000ms');
+    });
+
+    it('deduplicate when concurrent requests and one times out then all fail', async () => {
+      const slowFn = vi.fn(() => new Promise<string>((resolve) => {
+        setTimeout(() => resolve('result'), 10000);
+      }));
+
+      const promise1 = mockDeduplicator.deduplicate('key', slowFn, 1000);
+      const promise2 = mockDeduplicator.deduplicate('key', slowFn, 1000);
+
+      vi.advanceTimersByTime(1001);
+
+      await expect(promise1).rejects.toThrow('Request timeout');
+      await expect(promise2).rejects.toThrow('Request timeout');
+    });
+
+    it('deduplicate with default timeout uses 60 seconds', async () => {
+      const slowFn = vi.fn(() => new Promise<string>((resolve) => {
+        setTimeout(() => resolve('result'), 70000);
+      }));
+
+      const promise = mockDeduplicator.deduplicate('key', slowFn);
+
+      // Advance to just before default timeout (60 seconds)
+      vi.advanceTimersByTime(59999);
+      expect(mockDeduplicator.getPendingCount()).toBe(1);
+
+      // Advance past default timeout
+      vi.advanceTimersByTime(2);
+
+      await expect(promise).rejects.toThrow('Request timeout after 60000ms');
+    });
+
+    it('deduplicate when request completes then clears timeout timer', async () => {
+      const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
+      const fastFn = vi.fn(() => Promise.resolve('result'));
+
+      await mockDeduplicator.deduplicate('key', fastFn, 5000);
+
+      expect(clearTimeoutSpy).toHaveBeenCalled();
+      clearTimeoutSpy.mockRestore();
     });
   });
 });

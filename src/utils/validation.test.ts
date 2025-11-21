@@ -196,3 +196,124 @@ describe('validateLanguage', () => {
     });
   });
 });
+
+describe('Security Tests', () => {
+  describe('null byte handling', () => {
+    it('validateSymptom when contains null byte then throws ValidationError', () => {
+      const maliciousInput = 'head\x00ache';
+      expect(() => validateSymptom(maliciousInput)).toThrow(ValidationError);
+    });
+
+    it('validateRemedyName when contains null byte then throws ValidationError', () => {
+      const maliciousInput = 'Acon\x00ite';
+      expect(() => validateRemedyName(maliciousInput)).toThrow(ValidationError);
+    });
+
+    it('validateLanguage when contains null byte then throws ValidationError', () => {
+      const maliciousInput = 'en\x00';
+      expect(() => validateLanguage(maliciousInput)).toThrow(ValidationError);
+    });
+  });
+
+  describe('control character handling', () => {
+    it.each([
+      ['\x01', 'SOH control character'],
+      ['\x02', 'STX control character'],
+      ['\x03', 'ETX control character'],
+      ['\x07', 'BEL control character'],
+      ['\x08', 'backspace'],
+      ['\x1B', 'escape'],
+      ['\x7F', 'DEL control character'],
+    ])('validateSymptom when contains %s then throws ValidationError', (char: string) => {
+      const input = `head${char}ache`;
+      expect(() => validateSymptom(input)).toThrow(ValidationError);
+    });
+
+    // These whitespace control characters are allowed by \s in regex
+    it.each([
+      ['\x0B', 'vertical tab'],
+      ['\x0C', 'form feed'],
+      ['\r', 'carriage return'],
+    ])('validateSymptom when contains %s then allows (matched by \\s)', (char: string) => {
+      const input = `head${char}ache`;
+      // These are valid whitespace characters matched by \s
+      expect(() => validateSymptom(input)).not.toThrow();
+    });
+  });
+
+  describe('unicode normalization', () => {
+    it('validateSymptom when contains combining characters then still validates', () => {
+      // "café" with combining acute accent
+      const input = 'cafe\u0301';
+      // This contains special unicode, should be rejected by invalid char check
+      expect(() => validateSymptom(input)).toThrow(ValidationError);
+    });
+
+    it('validateSymptom when contains zero-width characters then throws', () => {
+      const input = 'head\u200Bache'; // zero-width space
+      expect(() => validateSymptom(input)).toThrow(ValidationError);
+    });
+
+    it('validateSymptom when contains right-to-left override then throws', () => {
+      const input = 'head\u202Eache'; // right-to-left override
+      expect(() => validateSymptom(input)).toThrow(ValidationError);
+    });
+  });
+
+  describe('injection prevention', () => {
+    it.each([
+      ['<script>alert(1)</script>', 'XSS script tag'],
+      ['javascript:alert(1)', 'javascript protocol'],
+      ["'; DROP TABLE users; --", 'SQL injection'],
+      ['{{constructor.constructor}}', 'prototype pollution'],
+      ['${process.env.SECRET}', 'template injection'],
+      ['$(command)', 'command substitution'],
+      ['`command`', 'backtick command'],
+    ])('validateSymptom when %s then throws ValidationError', (input: string) => {
+      expect(() => validateSymptom(input)).toThrow(ValidationError);
+    });
+
+    it.each([
+      ['../../../etc/passwd', 'path traversal'],
+      ['..\\..\\..\\windows\\system32', 'windows path traversal'],
+      ['file:///etc/passwd', 'file protocol'],
+    ])('validateRemedyName when %s then throws ValidationError', (input: string) => {
+      expect(() => validateRemedyName(input)).toThrow(ValidationError);
+    });
+  });
+
+  describe('length-based attacks', () => {
+    it('validateSymptom when very long repeating pattern then throws at max length', () => {
+      const longInput = 'abcdefghij'.repeat(21); // 210 characters
+      expect(() => validateSymptom(longInput)).toThrow(ValidationError);
+    });
+
+    it('validateSymptom when max length boundary then passes', () => {
+      const maxInput = 'a'.repeat(200);
+      expect(() => validateSymptom(maxInput)).not.toThrow();
+    });
+
+    it('validateRemedyName when max length boundary then passes', () => {
+      const maxInput = 'a'.repeat(100);
+      expect(() => validateRemedyName(maxInput)).not.toThrow();
+    });
+  });
+
+  describe('whitespace edge cases', () => {
+    it('validateSymptom when only non-breaking spaces then throws', () => {
+      const input = '\u00A0\u00A0\u00A0'; // non-breaking spaces
+      expect(() => validateSymptom(input)).toThrow(ValidationError);
+    });
+
+    it('validateSymptom when normal newline then allows', () => {
+      const input = 'head\nache';
+      // Newlines are valid whitespace matched by \s
+      expect(() => validateSymptom(input)).not.toThrow();
+    });
+
+    it('validateSymptom when multiple spaces then allows', () => {
+      const input = 'head   ache';
+      expect(() => validateSymptom(input)).not.toThrow();
+    });
+  });
+});

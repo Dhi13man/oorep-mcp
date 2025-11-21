@@ -398,6 +398,186 @@ describe('OOREPClient', () => {
     });
   });
 
+  describe('additional error paths', () => {
+    it('lookupRepertory when connection refused then throws NetworkError', async () => {
+      const connectionError = new Error('ECONNREFUSED');
+      (connectionError as NodeJS.ErrnoException).code = 'ECONNREFUSED';
+      mockFetch.mockRejectedValue(connectionError);
+
+      await expect(mockClient.lookupRepertory({ symptom: 'test' })).rejects.toThrow();
+    });
+
+    it('lookupRepertory when DNS lookup fails then throws NetworkError', async () => {
+      const dnsError = new Error('ENOTFOUND');
+      (dnsError as NodeJS.ErrnoException).code = 'ENOTFOUND';
+      mockFetch.mockRejectedValue(dnsError);
+
+      await expect(mockClient.lookupRepertory({ symptom: 'test' })).rejects.toThrow();
+    });
+
+    it('lookupRepertory when 502 Bad Gateway then throws NetworkError', async () => {
+      const freshClient = new OOREPClient(mockConfig);
+      const mockSessionResponse = {
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        text: () => Promise.resolve('[]'),
+      };
+      const mock502Response = {
+        ok: false,
+        status: 502,
+        headers: new Headers(),
+        statusText: 'Bad Gateway',
+        text: () => Promise.resolve('Bad Gateway'),
+      };
+      mockFetch.mockClear()
+        .mockResolvedValueOnce(mockSessionResponse)
+        .mockResolvedValue(mock502Response);
+
+      await expect(freshClient.lookupRepertory({ symptom: 'test' })).rejects.toThrow(NetworkError);
+    });
+
+    it('lookupRepertory when 503 Service Unavailable then throws NetworkError', async () => {
+      const freshClient = new OOREPClient(mockConfig);
+      const mockSessionResponse = {
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        text: () => Promise.resolve('[]'),
+      };
+      const mock503Response = {
+        ok: false,
+        status: 503,
+        headers: new Headers(),
+        statusText: 'Service Unavailable',
+        text: () => Promise.resolve('Service Unavailable'),
+      };
+      mockFetch.mockClear()
+        .mockResolvedValueOnce(mockSessionResponse)
+        .mockResolvedValue(mock503Response);
+
+      await expect(freshClient.lookupRepertory({ symptom: 'test' })).rejects.toThrow(NetworkError);
+    });
+
+    it('lookupRepertory when 504 Gateway Timeout then throws NetworkError', async () => {
+      const freshClient = new OOREPClient(mockConfig);
+      const mockSessionResponse = {
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        text: () => Promise.resolve('[]'),
+      };
+      const mock504Response = {
+        ok: false,
+        status: 504,
+        headers: new Headers(),
+        statusText: 'Gateway Timeout',
+        text: () => Promise.resolve('Gateway Timeout'),
+      };
+      mockFetch.mockClear()
+        .mockResolvedValueOnce(mockSessionResponse)
+        .mockResolvedValue(mock504Response);
+
+      await expect(freshClient.lookupRepertory({ symptom: 'test' })).rejects.toThrow(NetworkError);
+    });
+
+    it('lookupRepertory when response is valid JSON but wrong structure then throws TypeError', async () => {
+      vi.useFakeTimers();
+      try {
+        const freshClient = new OOREPClient(mockConfig);
+        const mockSessionResponse = {
+          ok: true,
+          status: 200,
+          headers: new Headers(),
+          text: () => Promise.resolve('[]'),
+        };
+        // Response is valid JSON but not the expected array structure
+        const mockMalformedResponse = {
+          ok: true,
+          status: 200,
+          headers: new Headers(),
+          text: () => Promise.resolve(JSON.stringify({ unexpected: 'structure' })),
+        };
+        mockFetch.mockClear()
+          .mockResolvedValueOnce(mockSessionResponse)
+          .mockResolvedValue(mockMalformedResponse);
+
+        // Should throw because response is not iterable
+        const promise = expect(freshClient.lookupRepertory({ symptom: 'test' })).rejects.toThrow(TypeError);
+        await vi.runAllTimersAsync();
+        await promise;
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('lookupRepertory when 400 Bad Request then throws NetworkError', async () => {
+      const freshClient = new OOREPClient(mockConfig);
+      const mockSessionResponse = {
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        text: () => Promise.resolve('[]'),
+      };
+      const mock400Response = {
+        ok: false,
+        status: 400,
+        headers: new Headers(),
+        statusText: 'Bad Request',
+        text: () => Promise.resolve('Invalid parameters'),
+      };
+      mockFetch.mockClear()
+        .mockResolvedValueOnce(mockSessionResponse)
+        .mockResolvedValue(mock400Response);
+
+      await expect(freshClient.lookupRepertory({ symptom: 'test' })).rejects.toThrow(NetworkError);
+    });
+
+    it('lookupRepertory when 403 Forbidden then throws NetworkError', async () => {
+      const freshClient = new OOREPClient(mockConfig);
+      const mockSessionResponse = {
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        text: () => Promise.resolve('[]'),
+      };
+      const mock403Response = {
+        ok: false,
+        status: 403,
+        headers: new Headers(),
+        statusText: 'Forbidden',
+        text: () => Promise.resolve('Access denied'),
+      };
+      mockFetch.mockClear()
+        .mockResolvedValueOnce(mockSessionResponse)
+        .mockResolvedValue(mock403Response);
+
+      await expect(freshClient.lookupRepertory({ symptom: 'test' })).rejects.toThrow(NetworkError);
+    });
+
+    it('lookupRepertory when 404 Not Found then throws NetworkError', async () => {
+      const freshClient = new OOREPClient(mockConfig);
+      const mockSessionResponse = {
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        text: () => Promise.resolve('[]'),
+      };
+      const mock404Response = {
+        ok: false,
+        status: 404,
+        headers: new Headers(),
+        statusText: 'Not Found',
+        text: () => Promise.resolve('Not found'),
+      };
+      mockFetch.mockClear()
+        .mockResolvedValueOnce(mockSessionResponse)
+        .mockResolvedValue(mock404Response);
+
+      await expect(freshClient.lookupRepertory({ symptom: 'test' })).rejects.toThrow(NetworkError);
+    });
+  });
+
   describe('retry logic', () => {
     beforeEach(async () => {
       // Properly initialize session
