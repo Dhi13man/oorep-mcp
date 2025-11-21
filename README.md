@@ -602,7 +602,7 @@ const oorep = createOOREPClient();
 try {
   // Initial request with tools
   const response = await openai.chat.completions.create({
-    model: 'gpt-4-turbo',
+    model: 'gpt-5',
     messages: [{ role: 'user', content: 'Find remedies for throbbing headache' }],
     tools: openAITools,
   });
@@ -616,7 +616,7 @@ try {
   // Continue conversation with tool results
   if (toolMessages.length > 0) {
     const finalResponse = await openai.chat.completions.create({
-      model: 'gpt-4-turbo',
+      model: 'gpt-5',
       messages: [
         { role: 'user', content: 'Find remedies for throbbing headache' },
         response.choices[0].message,
