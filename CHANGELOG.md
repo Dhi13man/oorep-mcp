@@ -7,13 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.9] - 2025-11-21
+
+### Changed
+
+- **Zod Import Architecture**: Centralized Zod imports through `schemas.ts` for consistency
+  - All files now import `z` from `./utils/schemas` instead of directly from `zod`
+  - Uses native `z.toJSONSchema()` method from Zod v4 path (`zod/v4`)
+  - Eliminates dependency on external `zod-to-json-schema` package
+  - Single source of truth for Zod usage across codebase
+
+### Removed
+
+- **Documentation Cleanup**: Removed `IMPLEMENTATION_PLAN.md` (1817 lines) - technical design details now in code
+- **Security Documentation**: Removed `SECURITY.md` - consolidated into README
+
+### Documentation
+
+- Added cache TTL configuration example to README
+- Consolidated security information in README (input validation, error sanitization)
+
 ## [0.0.8] - 2025-11-21
 
 ### Fixed
 
 - **Build Error**: Fixed `z.toJSONSchema` TypeScript error in `zodToOutputSchema` function
-  - Replaced non-existent `z.toJSONSchema` with `zodToJsonSchema` from `zod-to-json-schema` library
-  - Corrected documentation references from "Zod 4" to "zod-to-json-schema library"
+  - Initial fix using `zodToJsonSchema` from `zod-to-json-schema` library
+  - Superseded by v0.0.9 with native Zod approach
 
 ## [0.0.7] - 2025-11-21
 
@@ -150,7 +170,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - For full functionality, users should run a local OOREP instance or configure authentication
 - Public metadata endpoints work without authentication (remedies list, repertories list, materia medicas list)
 
-[Unreleased]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.8...HEAD
+[Unreleased]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.9...HEAD
+[0.0.9]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.8...v0.0.9
 [0.0.8]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.7...v0.0.8
 [0.0.7]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.6...v0.0.7
 [0.0.6]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.5...v0.0.6
