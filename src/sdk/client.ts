@@ -108,9 +108,12 @@ export class OOREPSDKClient {
     const validated = SearchRepertoryArgsSchema.parse(args);
     validateSymptom(validated.symptom);
 
+    // Apply default repertory consistently for cache key and API call
+    const repertory = validated.repertory ?? this.config.defaultRepertory;
+
     const cacheKey = generateCacheKey('repertory', {
       symptom: validated.symptom,
-      repertory: validated.repertory ?? this.config.defaultRepertory,
+      repertory,
       minWeight: validated.minWeight,
       maxResults: validated.maxResults,
       includeRemedyStats: validated.includeRemedyStats,
@@ -122,7 +125,7 @@ export class OOREPSDKClient {
     return this.deduplicator.deduplicate(cacheKey, async () => {
       const apiResponse = await this.client.lookupRepertory({
         symptom: validated.symptom,
-        repertory: validated.repertory,
+        repertory,
         minWeight: validated.minWeight,
         includeRemedyStats: validated.includeRemedyStats,
       });
@@ -152,9 +155,12 @@ export class OOREPSDKClient {
       validateRemedyName(validated.remedy);
     }
 
+    // Apply default materia medica consistently for cache key and API call
+    const materiamedica = validated.materiamedica ?? this.config.defaultMateriaMedica;
+
     const cacheKey = generateCacheKey('mm', {
       symptom: validated.symptom,
-      materiamedica: validated.materiamedica ?? this.config.defaultMateriaMedica,
+      materiamedica,
       remedy: validated.remedy,
       maxResults: validated.maxResults,
     });
@@ -165,7 +171,7 @@ export class OOREPSDKClient {
     return this.deduplicator.deduplicate(cacheKey, async () => {
       const apiResponse = await this.client.lookupMateriaMedica({
         symptom: validated.symptom,
-        materiamedica: validated.materiamedica,
+        materiamedica,
         remedy: validated.remedy,
       });
 
