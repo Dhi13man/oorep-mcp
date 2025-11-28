@@ -67,4 +67,3 @@ export class MapRequestDeduplicator implements IRequestDeduplicator {
     return this.pending.size;
   }
 }
-

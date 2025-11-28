@@ -3,11 +3,7 @@
  * Implements IHttpClient interface for dependency injection
  */
 
-import type {
-  IHttpClient,
-  HttpRequestOptions,
-  HttpResponse,
-} from '../interfaces/IHttpClient.js';
+import type { IHttpClient, HttpRequestOptions, HttpResponse } from '../interfaces/IHttpClient.js';
 import { HttpError } from '../interfaces/IHttpClient.js';
 import type { ILogger } from '../interfaces/ILogger.js';
 

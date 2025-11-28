@@ -117,15 +117,17 @@ export class OOREPSDKClient {
     this.deduplicator = config.deduplicator ?? new MapRequestDeduplicator(this.logger);
 
     // Create or use provided OOREP client
-    this.client = config.client ?? new OOREPClient({
-      baseUrl: this.config.baseUrl,
-      timeoutMs: this.config.timeoutMs,
-      cacheTtlMs: this.config.cacheTtlMs,
-      maxResults: 100,
-      logLevel: 'warn',
-      defaultRepertory: this.config.defaultRepertory,
-      defaultMateriaMedica: this.config.defaultMateriaMedica,
-    });
+    this.client =
+      config.client ??
+      new OOREPClient({
+        baseUrl: this.config.baseUrl,
+        timeoutMs: this.config.timeoutMs,
+        cacheTtlMs: this.config.cacheTtlMs,
+        maxResults: 100,
+        logLevel: 'warn',
+        defaultRepertory: this.config.defaultRepertory,
+        defaultMateriaMedica: this.config.defaultMateriaMedica,
+      });
   }
 
   /**
@@ -326,7 +328,9 @@ export class OOREPSDKClient {
   /**
    * Get the current configuration
    */
-  getConfig(): Readonly<Required<Omit<OOREPSDKConfig, 'cache' | 'deduplicator' | 'logger' | 'client'>>> {
+  getConfig(): Readonly<
+    Required<Omit<OOREPSDKConfig, 'cache' | 'deduplicator' | 'logger' | 'client'>>
+  > {
     return { ...this.config };
   }
 }
