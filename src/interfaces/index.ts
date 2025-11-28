@@ -24,3 +24,7 @@ export { NoOpDeduplicator } from './IRequestDeduplicator.js';
 
 // Export error classes
 export { HttpError } from './IHttpClient.js';
+
+// Export HTTP Agent for connection pooling
+export type { IHttpAgent } from './IHttpAgent.js';
+export { createDefaultAgent, createHttpAgent } from './IHttpAgent.js';
