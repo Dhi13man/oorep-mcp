@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Dependency Injection Architecture**: Full DI support for customizable implementations
+  - `ICache` interface for custom caching strategies (Redis, Memcached, DynamoDB, etc.)
+  - `ILogger` interface for custom logging frameworks (Winston, Pino, etc.)
+  - `IHttpClient` interface for HTTP client abstraction (Axios, Got, native fetch, etc.)
+  - `IRequestDeduplicator` interface for request deduplication strategies
+  - `ISessionManager` interface for session management customization
+  - `NoOpCache`, `NoOpLogger`, `NoOpDeduplicator` implementations for disabling features
+  - `InMemoryCache`, `MapRequestDeduplicator`, `ConsoleLogger` as default implementations
+  - Constructor injection pattern for all SDK components
+
+### Changed
+
+- **Async Cache Interface**: All cache methods now return Promises to support distributed caching
+  - `get()`, `set()`, `has()`, `delete()`, `clear()`, `destroy()` are all async
+  - Enables Redis, Memcached, and other remote cache integrations
+- **Logger Integration**: All internal caches now accept optional logger for debug visibility
+- **Zero Breaking Changes**: Existing code continues to work with default implementations
+
+### Removed
+
+- **Backward Compatibility Exports**: Removed deprecated type aliases
+  - `Cache` → use `InMemoryCache` directly
+  - `RequestDeduplicator` → use `MapRequestDeduplicator` directly
+  - `Logger` → use `ConsoleLogger` directly
+
 ## [0.0.9] - 2025-11-21
 
 ### Changed
