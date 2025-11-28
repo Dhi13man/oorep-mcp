@@ -24,7 +24,7 @@ export function createDefaultAgent(): IHttpAgent {
   // Node.js 18+ has fetch built-in, but we can still configure agents
   // For fetch, we use undici under the hood which has its own connection pooling
   return {
-    http: undefined,  // fetch handles this
+    http: undefined, // fetch handles this
     https: undefined, // fetch handles this
   };
 }

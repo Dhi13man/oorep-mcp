@@ -158,7 +158,9 @@ export class HttpCacheControlCache<T = unknown> implements ICache<T> {
       expiresAt,
     });
 
-    this.logger?.debug(`Cache set: ${key} (TTL: ${ttl}ms, expires: ${new Date(expiresAt).toISOString()})`);
+    this.logger?.debug(
+      `Cache set: ${key} (TTL: ${ttl}ms, expires: ${new Date(expiresAt).toISOString()})`
+    );
   }
 
   async has(key: string): Promise<boolean> {
