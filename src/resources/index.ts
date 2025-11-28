@@ -3,7 +3,7 @@
  */
 
 import { OOREPClient } from '../lib/oorep-client.js';
-import { Cache } from '../lib/cache.js';
+import { InMemoryCache } from '../lib/cache.js';
 import type { OOREPConfig } from '../config.js';
 import { logger } from '../utils/logger.js';
 import { sanitizeError, ValidationError } from '../utils/errors.js';
@@ -17,17 +17,17 @@ export interface ResourceDefinition {
 
 export class ResourceRegistry {
   private client: OOREPClient;
-  private remediesCache: Cache<unknown>;
-  private repertoriesCache: Cache<unknown>;
-  private materiaMedicasCache: Cache<unknown>;
+  private remediesCache: InMemoryCache<unknown>;
+  private repertoriesCache: InMemoryCache<unknown>;
+  private materiaMedicasCache: InMemoryCache<unknown>;
 
   constructor(config: OOREPConfig) {
     this.client = new OOREPClient(config);
     // Cache for 1 hour (remedies list is stable)
-    this.remediesCache = new Cache(3600000);
+    this.remediesCache = new InMemoryCache(3600000);
     // Cache for 5 minutes (metadata)
-    this.repertoriesCache = new Cache(300000);
-    this.materiaMedicasCache = new Cache(300000);
+    this.repertoriesCache = new InMemoryCache(300000);
+    this.materiaMedicasCache = new InMemoryCache(300000);
   }
 
   getDefinitions(): ResourceDefinition[] {

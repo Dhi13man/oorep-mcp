@@ -3,10 +3,20 @@
  *
  * A simplified client wrapper for programmatic use with AI SDKs.
  * This client provides a clean API without the MCP server overhead.
+ *
+ * Fully supports dependency injection for extensibility.
  */
 
 import { OOREPClient } from '../lib/oorep-client.js';
-import { Cache, RequestDeduplicator } from '../lib/cache.js';
+import { InMemoryCache } from '../lib/cache.js';
+import { MapRequestDeduplicator } from '../lib/deduplicator.js';
+import { ConsoleLogger } from '../utils/logger.js';
+import { SafeLoggerWrapper } from '../lib/wrappers/SafeLoggerWrapper.js';
+import { SafeCacheWrapper } from '../lib/wrappers/SafeCacheWrapper.js';
+import type { ICache } from '../interfaces/ICache.js';
+import type { IRequestDeduplicator } from '../interfaces/IRequestDeduplicator.js';
+import type { ILogger } from '../interfaces/ILogger.js';
+import { NoOpCache } from '../interfaces/ICache.js';
 import {
   formatRepertoryResults,
   formatMateriaMedicaResults,
@@ -65,16 +75,28 @@ export interface OOREPSDKConfig {
   defaultRepertory?: string;
   /** Default materia medica abbreviation (default: boericke) */
   defaultMateriaMedica?: string;
+
+  // Dependency injection options
+  /** Custom cache implementation (supports Redis, Memcached, etc.) */
+  cache?: ICache;
+  /** Custom request deduplicator */
+  deduplicator?: IRequestDeduplicator;
+  /** Custom logger implementation */
+  logger?: ILogger;
+  /** Custom OOREP client (advanced usage) */
+  client?: OOREPClient;
 }
 
 /**
  * OOREP SDK Client for programmatic access to homeopathic data
+ * Supports full dependency injection for cache, logger, deduplicator, and HTTP client
  */
 export class OOREPSDKClient {
   private client: OOREPClient;
-  private cache: Cache<unknown>;
-  private deduplicator: RequestDeduplicator;
-  private config: Required<OOREPSDKConfig>;
+  private cache: ICache;
+  private deduplicator: IRequestDeduplicator;
+  private logger: ILogger;
+  private config: Required<Omit<OOREPSDKConfig, 'cache' | 'deduplicator' | 'logger' | 'client'>>;
 
   private normalizeOverride(value: string | undefined, fallback: string): string {
     const trimmed = value?.trim();
@@ -82,6 +104,7 @@ export class OOREPSDKClient {
   }
 
   constructor(config: OOREPSDKConfig = {}) {
+    // Set up core configuration
     this.config = {
       baseUrl: config.baseUrl ?? 'https://www.oorep.com',
       timeoutMs: config.timeoutMs ?? 30000,
@@ -90,7 +113,18 @@ export class OOREPSDKClient {
       defaultMateriaMedica: config.defaultMateriaMedica ?? 'boericke',
     };
 
-    this.client = new OOREPClient({
+    // Set up injectable dependencies with sensible defaults
+    const rawLogger = config.logger ?? new ConsoleLogger('warn');
+    this.logger = new SafeLoggerWrapper(rawLogger);
+
+    const rawCache = config.cache ?? new InMemoryCache(this.config.cacheTtlMs, this.logger);
+    const fallbackCache = new NoOpCache();
+    this.cache = new SafeCacheWrapper(rawCache, fallbackCache, this.logger);
+
+    this.deduplicator = config.deduplicator ?? new MapRequestDeduplicator(this.logger);
+
+    // Create or use provided OOREP client
+    this.client = config.client ?? new OOREPClient({
       baseUrl: this.config.baseUrl,
       timeoutMs: this.config.timeoutMs,
       cacheTtlMs: this.config.cacheTtlMs,
@@ -99,9 +133,6 @@ export class OOREPSDKClient {
       defaultRepertory: this.config.defaultRepertory,
       defaultMateriaMedica: this.config.defaultMateriaMedica,
     });
-
-    this.cache = new Cache(this.config.cacheTtlMs);
-    this.deduplicator = new RequestDeduplicator();
   }
 
   /**
@@ -128,7 +159,7 @@ export class OOREPSDKClient {
       includeRemedyStats: validated.includeRemedyStats,
     });
 
-    const cached = this.cache.get(cacheKey) as RepertorySearchResult | null;
+    const cached = (await this.cache.get(cacheKey)) as RepertorySearchResult | null;
     if (cached) return cached;
 
     return this.deduplicator.deduplicate(cacheKey, async () => {
@@ -144,7 +175,7 @@ export class OOREPSDKClient {
         maxResults: validated.maxResults,
       });
 
-      this.cache.set(cacheKey, result);
+      await this.cache.set(cacheKey, result);
       return result;
     });
   }
@@ -177,7 +208,7 @@ export class OOREPSDKClient {
       maxResults: validated.maxResults,
     });
 
-    const cached = this.cache.get(cacheKey) as MateriaMedicaSearchResult | null;
+    const cached = (await this.cache.get(cacheKey)) as MateriaMedicaSearchResult | null;
     if (cached) return cached;
 
     return this.deduplicator.deduplicate(cacheKey, async () => {
@@ -189,7 +220,7 @@ export class OOREPSDKClient {
 
       const result = formatMateriaMedicaResults(apiResponse, validated.maxResults);
 
-      this.cache.set(cacheKey, result);
+      await this.cache.set(cacheKey, result);
       return result;
     });
   }
@@ -202,7 +233,7 @@ export class OOREPSDKClient {
     validateRemedyName(validated.remedy);
 
     const cacheKey = generateCacheKey('remedy', { name: validated.remedy.toLowerCase() });
-    const cached = this.cache.get(cacheKey) as RemedyInfo | null;
+    const cached = (await this.cache.get(cacheKey)) as RemedyInfo | null;
     if (cached) return cached;
 
     return this.deduplicator.deduplicate(cacheKey, async () => {
@@ -228,7 +259,7 @@ export class OOREPSDKClient {
         nameAlt: remedy.namealt,
       };
 
-      this.cache.set(cacheKey, result);
+      await this.cache.set(cacheKey, result);
       return result;
     });
   }
@@ -243,7 +274,7 @@ export class OOREPSDKClient {
     }
 
     const cacheKey = generateCacheKey('repertories', { language: validated.language });
-    const cached = this.cache.get(cacheKey) as RepertoryMetadata[] | null;
+    const cached = (await this.cache.get(cacheKey)) as RepertoryMetadata[] | null;
     if (cached) return cached;
 
     return this.deduplicator.deduplicate(cacheKey, async () => {
@@ -254,7 +285,7 @@ export class OOREPSDKClient {
         repertories = repertories.filter((r) => r.language?.toLowerCase() === lang);
       }
 
-      this.cache.set(cacheKey, repertories);
+      await this.cache.set(cacheKey, repertories);
       return repertories;
     });
   }
@@ -269,7 +300,7 @@ export class OOREPSDKClient {
     }
 
     const cacheKey = generateCacheKey('materiamedicas', { language: validated.language });
-    const cached = this.cache.get(cacheKey) as MateriaMedicaMetadata[] | null;
+    const cached = (await this.cache.get(cacheKey)) as MateriaMedicaMetadata[] | null;
     if (cached) return cached;
 
     return this.deduplicator.deduplicate(cacheKey, async () => {
@@ -280,7 +311,7 @@ export class OOREPSDKClient {
         materiaMedicas = materiaMedicas.filter((mm) => mm.language?.toLowerCase() === lang);
       }
 
-      this.cache.set(cacheKey, materiaMedicas);
+      await this.cache.set(cacheKey, materiaMedicas);
       return materiaMedicas;
     });
   }
@@ -288,21 +319,21 @@ export class OOREPSDKClient {
   /**
    * Clear the cache
    */
-  clearCache(): void {
-    this.cache.clear();
+  async clearCache(): Promise<void> {
+    await this.cache.clear();
   }
 
   /**
    * Destroy the client and release resources
    */
-  destroy(): void {
-    this.cache.destroy();
+  async destroy(): Promise<void> {
+    await this.cache.destroy?.();
   }
 
   /**
    * Get the current configuration
    */
-  getConfig(): Readonly<Required<OOREPSDKConfig>> {
+  getConfig(): Readonly<Required<Omit<OOREPSDKConfig, 'cache' | 'deduplicator' | 'logger' | 'client'>>> {
     return { ...this.config };
   }
 }
@@ -314,6 +345,27 @@ export class OOREPSDKClient {
  * ```typescript
  * const client = createOOREPClient();
  * const results = await client.searchRepertory({ symptom: 'headache' });
+ * ```
+ *
+ * @example With custom cache (Redis)
+ * ```typescript
+ * import Redis from 'ioredis';
+ * import { createOOREPClient, type ICache } from 'oorep-mcp/sdk';
+ *
+ * class RedisCache implements ICache {
+ *   constructor(private redis: Redis) {}
+ *   async get(key: string) {
+ *     const val = await this.redis.get(key);
+ *     return val ? JSON.parse(val) : null;
+ *   }
+ *   async set(key: string, value: unknown) {
+ *     await this.redis.set(key, JSON.stringify(value), 'EX', 300);
+ *   }
+ *   // ... other methods
+ * }
+ *
+ * const redis = new Redis();
+ * const client = createOOREPClient({ cache: new RedisCache(redis) });
  * ```
  */
 export function createOOREPClient(config?: OOREPSDKConfig): OOREPSDKClient {

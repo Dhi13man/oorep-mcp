@@ -1,21 +1,30 @@
 /**
- * Simple in-memory cache with TTL support
+ * In-memory cache implementation with TTL support
+ * Implements ICache interface for dependency injection
  */
 
-import { logger } from '../utils/logger.js';
+import type { ICache } from '../interfaces/ICache.js';
+import type { ILogger } from '../interfaces/ILogger.js';
 
 interface CacheEntry<T> {
   data: T;
   timestamp: number;
 }
 
-export class Cache<T> {
+/**
+ * In-memory cache with TTL support
+ * All methods are async to comply with ICache interface
+ */
+export class InMemoryCache<T = unknown> implements ICache<T> {
   private store = new Map<string, CacheEntry<T>>();
   private ttl: number;
   private cleanupTimer?: NodeJS.Timeout;
+  private logger?: ILogger;
 
-  constructor(ttlMs: number) {
+  constructor(ttlMs: number, logger?: ILogger) {
     this.ttl = ttlMs;
+    this.logger = logger;
+
     // Set up periodic cleanup every hour or when TTL expires (whichever is smaller)
     const cleanupInterval = Math.min(ttlMs, 3600000); // Max 1 hour
     this.cleanupTimer = setInterval(() => {
@@ -32,63 +41,64 @@ export class Cache<T> {
    * Get value from cache
    * Returns null if not found or expired
    */
-  get(key: string): T | null {
+  async get(key: string): Promise<T | null> {
     const entry = this.store.get(key);
     if (!entry) {
-      logger.debug(`Cache miss: ${key}`);
+      this.logger?.debug(`Cache miss: ${key}`);
       return null;
     }
 
     const age = Date.now() - entry.timestamp;
     if (age >= this.ttl) {
-      logger.debug(`Cache expired: ${key} (age: ${age}ms, ttl: ${this.ttl}ms)`);
+      this.logger?.debug(`Cache expired: ${key} (age: ${age}ms, ttl: ${this.ttl}ms)`);
       this.store.delete(key);
       return null;
     }
 
-    logger.debug(`Cache hit: ${key}`);
+    this.logger?.debug(`Cache hit: ${key}`);
     return entry.data;
   }
 
   /**
    * Set value in cache
    */
-  set(key: string, data: T): void {
+  async set(key: string, data: T): Promise<void> {
     this.store.set(key, {
       data,
       timestamp: Date.now(),
     });
-    logger.debug(`Cache set: ${key}`);
+    this.logger?.debug(`Cache set: ${key}`);
   }
 
   /**
    * Check if key exists and is not expired
    */
-  has(key: string): boolean {
-    return this.get(key) !== null;
+  async has(key: string): Promise<boolean> {
+    const value = await this.get(key);
+    return value !== null;
   }
 
   /**
    * Delete specific key
    */
-  delete(key: string): void {
+  async delete(key: string): Promise<void> {
     this.store.delete(key);
-    logger.debug(`Cache deleted: ${key}`);
+    this.logger?.debug(`Cache deleted: ${key}`);
   }
 
   /**
    * Clear all cache entries
    */
-  clear(): void {
+  async clear(): Promise<void> {
     const size = this.store.size;
     this.store.clear();
-    logger.debug(`Cache cleared: ${size} entries removed`);
+    this.logger?.debug(`Cache cleared: ${size} entries removed`);
   }
 
   /**
    * Get cache statistics
    */
-  getStats(): { size: number; ttl: number } {
+  async getStats(): Promise<{ size: number; ttl: number }> {
     return {
       size: this.store.size,
       ttl: this.ttl,
@@ -110,7 +120,7 @@ export class Cache<T> {
     }
 
     if (removed > 0) {
-      logger.debug(`Cache cleanup: ${removed} expired entries removed`);
+      this.logger?.debug(`Cache cleanup: ${removed} expired entries removed`);
     }
 
     return removed;
@@ -119,69 +129,24 @@ export class Cache<T> {
   /**
    * Destroy the cache and cleanup resources
    */
-  destroy(): void {
+  async destroy(): Promise<void> {
     if (this.cleanupTimer) {
       clearInterval(this.cleanupTimer);
       this.cleanupTimer = undefined;
     }
-    this.clear();
-    logger.debug('Cache destroyed');
+    await this.clear();
+    this.logger?.debug('Cache destroyed');
   }
 }
 
 /**
- * Request deduplication to prevent multiple concurrent identical requests
+ * Backward compatibility: export as Cache
+ * @deprecated Use InMemoryCache instead
  */
-export class RequestDeduplicator {
-  private pending = new Map<string, Promise<unknown>>();
+export const Cache = InMemoryCache;
 
-  /**
-   * Deduplicate requests by key
-   * If a request with the same key is already in flight, return the existing promise
-   * @param timeoutMs - Maximum time to wait for the request (default: 60 seconds)
-   */
-  async deduplicate<T>(key: string, fn: () => Promise<T>, timeoutMs = 60000): Promise<T> {
-    // If request already in flight, return existing promise
-    if (this.pending.has(key)) {
-      logger.debug(`Request deduplication: using existing request for ${key}`);
-      return this.pending.get(key) as Promise<T>;
-    }
-
-    // Store timeout timer so it can be cleared
-    let timeoutTimer: NodeJS.Timeout | undefined;
-
-    // Create a timeout promise that will cleanup if request hangs
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      timeoutTimer = setTimeout(() => {
-        this.pending.delete(key);
-        reject(new Error(`Request timeout after ${timeoutMs}ms`));
-      }, timeoutMs);
-
-      // Allow garbage collection if request completes before timeout
-      if (timeoutTimer.unref) {
-        timeoutTimer.unref();
-      }
-    });
-
-    // Start new request with automatic cleanup
-    const requestPromise = fn().finally(() => {
-      this.pending.delete(key);
-      // Clear the timeout if request completes
-      if (timeoutTimer) {
-        clearTimeout(timeoutTimer);
-      }
-    });
-
-    // Race between request and timeout
-    // Store promise immediately to prevent race condition with cleanup
-    this.pending.set(key, Promise.race([requestPromise, timeoutPromise]));
-    return this.pending.get(key) as Promise<T>;
-  }
-
-  /**
-   * Get count of pending requests
-   */
-  getPendingCount(): number {
-    return this.pending.size;
-  }
-}
+/**
+ * Re-export RequestDeduplicator for backward compatibility
+ * @deprecated Import from '../deduplicator.js' instead
+ */
+export { MapRequestDeduplicator as RequestDeduplicator } from './deduplicator.js';

@@ -3,9 +3,15 @@
  * All logs go to stderr to avoid interfering with stdout (MCP protocol)
  */
 
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+import type { ILogger, LogLevel } from '../interfaces/ILogger.js';
 
-export class Logger {
+export type { LogLevel } from '../interfaces/ILogger.js';
+
+/**
+ * Console logger implementation
+ * Implements ILogger interface for dependency injection
+ */
+export class ConsoleLogger implements ILogger {
   private level: LogLevel;
   private readonly levels: Record<LogLevel, number> = {
     debug: 0,
@@ -61,5 +67,14 @@ export class Logger {
   }
 }
 
-// Global logger instance
-export const logger = new Logger((process.env.OOREP_MCP_LOG_LEVEL as LogLevel) || 'info');
+/**
+ * Backward compatibility: Logger class alias
+ * @deprecated Use ConsoleLogger instead
+ */
+export const Logger = ConsoleLogger;
+
+/**
+ * Global logger instance for backward compatibility
+ * @deprecated Inject ILogger instead of using global logger
+ */
+export const logger = new ConsoleLogger((process.env.OOREP_MCP_LOG_LEVEL as LogLevel) || 'info');
