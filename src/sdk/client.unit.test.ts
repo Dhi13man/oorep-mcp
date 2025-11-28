@@ -20,10 +20,10 @@ const mockOOREPClientInstance = {
 };
 
 const mockCacheInstance = {
-  get: vi.fn().mockReturnValue(null),
-  set: vi.fn(),
-  clear: vi.fn(),
-  destroy: vi.fn(),
+  get: vi.fn().mockResolvedValue(null),
+  set: vi.fn().mockResolvedValue(undefined),
+  clear: vi.fn().mockResolvedValue(undefined),
+  destroy: vi.fn().mockResolvedValue(undefined),
 };
 
 const mockDeduplicatorInstance = {
@@ -37,22 +37,39 @@ vi.mock('../lib/oorep-client.js', () => ({
 }));
 
 vi.mock('../lib/cache.js', () => ({
+  InMemoryCache: vi.fn().mockImplementation(function () {
+    return mockCacheInstance;
+  }),
   Cache: vi.fn().mockImplementation(function () {
     return mockCacheInstance;
   }),
-  RequestDeduplicator: vi.fn().mockImplementation(function () {
+}));
+
+vi.mock('../lib/deduplicator.js', () => ({
+  MapRequestDeduplicator: vi.fn().mockImplementation(function () {
     return mockDeduplicatorInstance;
   }),
 }));
 
+vi.mock('../utils/logger.js', () => ({
+  ConsoleLogger: vi.fn().mockImplementation(function () {
+    return { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() };
+  }),
+  Logger: vi.fn().mockImplementation(function () {
+    return { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() };
+  }),
+}));
+
 import { OOREPClient } from '../lib/oorep-client.js';
-import { Cache, RequestDeduplicator } from '../lib/cache.js';
+import { InMemoryCache } from '../lib/cache.js';
+import { MapRequestDeduplicator } from '../lib/deduplicator.js';
+import { ConsoleLogger } from '../utils/logger.js';
 
 describe('OOREPSDKClient Unit Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Reset mock return values
-    mockCacheInstance.get.mockReturnValue(null);
+    mockCacheInstance.get.mockResolvedValue(null);
   });
 
   afterEach(() => {
@@ -77,7 +94,7 @@ describe('OOREPSDKClient Unit Tests', () => {
     it('initializes Cache with cacheTtlMs', () => {
       const client = new OOREPSDKClient({ cacheTtlMs: 600000 });
 
-      expect(Cache).toHaveBeenCalledWith(600000);
+      expect(InMemoryCache).toHaveBeenCalledWith(600000, expect.any(Object));
 
       client.destroy();
     });
@@ -85,7 +102,7 @@ describe('OOREPSDKClient Unit Tests', () => {
     it('initializes RequestDeduplicator', () => {
       const client = new OOREPSDKClient();
 
-      expect(RequestDeduplicator).toHaveBeenCalled();
+      expect(MapRequestDeduplicator).toHaveBeenCalledWith(expect.any(Object));
 
       client.destroy();
     });
@@ -139,7 +156,7 @@ describe('OOREPSDKClient Unit Tests', () => {
       const client = new OOREPSDKClient();
 
       const cachedResult = { totalResults: 5, rubrics: [], remedyStats: [] };
-      mockCacheInstance.get.mockReturnValue(cachedResult);
+      mockCacheInstance.get.mockResolvedValue(cachedResult);
 
       const result = await client.searchRepertory({ symptom: 'headache' });
 

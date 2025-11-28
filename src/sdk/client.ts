@@ -11,12 +11,9 @@ import { OOREPClient } from '../lib/oorep-client.js';
 import { InMemoryCache } from '../lib/cache.js';
 import { MapRequestDeduplicator } from '../lib/deduplicator.js';
 import { ConsoleLogger } from '../utils/logger.js';
-import { SafeLoggerWrapper } from '../lib/wrappers/SafeLoggerWrapper.js';
-import { SafeCacheWrapper } from '../lib/wrappers/SafeCacheWrapper.js';
 import type { ICache } from '../interfaces/ICache.js';
 import type { IRequestDeduplicator } from '../interfaces/IRequestDeduplicator.js';
 import type { ILogger } from '../interfaces/ILogger.js';
-import { NoOpCache } from '../interfaces/ICache.js';
 import {
   formatRepertoryResults,
   formatMateriaMedicaResults,
@@ -114,13 +111,9 @@ export class OOREPSDKClient {
     };
 
     // Set up injectable dependencies with sensible defaults
-    const rawLogger = config.logger ?? new ConsoleLogger('warn');
-    this.logger = new SafeLoggerWrapper(rawLogger);
-
-    const rawCache = config.cache ?? new InMemoryCache(this.config.cacheTtlMs, this.logger);
-    const fallbackCache = new NoOpCache();
-    this.cache = new SafeCacheWrapper(rawCache, fallbackCache, this.logger);
-
+    // User-provided implementations are responsible for their own error handling
+    this.logger = config.logger ?? new ConsoleLogger('warn');
+    this.cache = config.cache ?? new InMemoryCache(this.config.cacheTtlMs, this.logger);
     this.deduplicator = config.deduplicator ?? new MapRequestDeduplicator(this.logger);
 
     // Create or use provided OOREP client

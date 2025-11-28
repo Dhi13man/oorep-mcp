@@ -94,7 +94,7 @@ export class ResourceRegistry {
     contents: Array<{ uri: string; mimeType?: string; text: string }>;
   }> {
     const cacheKey = 'remedies-list';
-    const cached = this.remediesCache.get(cacheKey);
+    const cached = await this.remediesCache.get(cacheKey);
 
     if (cached) {
       logger.info('Returning cached remedies list');
@@ -110,7 +110,7 @@ export class ResourceRegistry {
     }
 
     const remedies = await this.client.getAvailableRemedies();
-    this.remediesCache.set(cacheKey, remedies);
+    await this.remediesCache.set(cacheKey, remedies);
 
     return {
       contents: [
@@ -127,7 +127,7 @@ export class ResourceRegistry {
     contents: Array<{ uri: string; mimeType?: string; text: string }>;
   }> {
     const cacheKey = 'repertories-list';
-    const cached = this.repertoriesCache.get(cacheKey);
+    const cached = await this.repertoriesCache.get(cacheKey);
 
     if (cached) {
       logger.info('Returning cached repertories list');
@@ -143,7 +143,7 @@ export class ResourceRegistry {
     }
 
     const repertories = await this.client.getAvailableRepertories();
-    this.repertoriesCache.set(cacheKey, repertories);
+    await this.repertoriesCache.set(cacheKey, repertories);
 
     return {
       contents: [
@@ -160,7 +160,7 @@ export class ResourceRegistry {
     contents: Array<{ uri: string; mimeType?: string; text: string }>;
   }> {
     const cacheKey = 'materia-medicas-list';
-    const cached = this.materiaMedicasCache.get(cacheKey);
+    const cached = await this.materiaMedicasCache.get(cacheKey);
 
     if (cached) {
       logger.info('Returning cached materia medicas list');
@@ -176,7 +176,7 @@ export class ResourceRegistry {
     }
 
     const materiaMedicas = await this.client.getAvailableMateriaMedicas();
-    this.materiaMedicasCache.set(cacheKey, materiaMedicas);
+    await this.materiaMedicasCache.set(cacheKey, materiaMedicas);
 
     return {
       contents: [

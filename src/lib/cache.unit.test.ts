@@ -19,203 +19,203 @@ describe('Cache', () => {
   });
 
   describe('constructor', () => {
-    it('Cache when created then stores ttl', () => {
+    it('Cache when created then stores ttl', async () => {
       const cache = new Cache<number>(5000);
-      const stats = cache.getStats();
+      const stats = await cache.getStats();
 
       expect(stats.ttl).toBe(5000);
     });
   });
 
   describe('set and get', () => {
-    it('set when called then stores value', () => {
+    it('set when called then stores value', async () => {
       const key = 'testKey';
       const value = 'testValue';
 
-      mockCache.set(key, value);
-      const result = mockCache.get(key);
+      await mockCache.set(key, value);
+      const result = await mockCache.get(key);
 
       expect(result).toBe(value);
     });
 
-    it('get when key does not exist then returns null', () => {
-      const result = mockCache.get('nonExistentKey');
+    it('get when key does not exist then returns null', async () => {
+      const result = await mockCache.get('nonExistentKey');
 
       expect(result).toBeNull();
     });
 
-    it('set when called multiple times then overwrites value', () => {
+    it('set when called multiple times then overwrites value', async () => {
       const key = 'key';
-      mockCache.set(key, 'value1');
-      mockCache.set(key, 'value2');
+      await mockCache.set(key, 'value1');
+      await mockCache.set(key, 'value2');
 
-      const result = mockCache.get(key);
+      const result = await mockCache.get(key);
 
       expect(result).toBe('value2');
     });
   });
 
   describe('expiration', () => {
-    it('get when entry is expired then returns null', () => {
+    it('get when entry is expired then returns null', async () => {
       const key = 'key';
       const value = 'value';
 
-      mockCache.set(key, value);
+      await mockCache.set(key, value);
       vi.advanceTimersByTime(mockTtl + 1);
 
-      const result = mockCache.get(key);
+      const result = await mockCache.get(key);
 
       expect(result).toBeNull();
     });
 
-    it('get when entry is expired then removes from cache', () => {
+    it('get when entry is expired then removes from cache', async () => {
       const key = 'key';
-      mockCache.set(key, 'value');
+      await mockCache.set(key, 'value');
 
       vi.advanceTimersByTime(mockTtl + 1);
-      mockCache.get(key);
+      await mockCache.get(key);
 
-      const stats = mockCache.getStats();
+      const stats = await mockCache.getStats();
       expect(stats.size).toBe(0);
     });
 
-    it('get when entry is not expired then returns value', () => {
+    it('get when entry is not expired then returns value', async () => {
       const key = 'key';
       const value = 'value';
 
-      mockCache.set(key, value);
+      await mockCache.set(key, value);
       vi.advanceTimersByTime(mockTtl - 1);
 
-      const result = mockCache.get(key);
+      const result = await mockCache.get(key);
 
       expect(result).toBe(value);
     });
 
-    it('get when exactly at TTL boundary then entry is expired', () => {
+    it('get when exactly at TTL boundary then entry is expired', async () => {
       const key = 'key';
-      mockCache.set(key, 'value');
+      await mockCache.set(key, 'value');
 
       vi.advanceTimersByTime(mockTtl);
 
-      const result = mockCache.get(key);
+      const result = await mockCache.get(key);
 
       expect(result).toBeNull();
     });
   });
 
   describe('has', () => {
-    it('has when key exists and not expired then returns true', () => {
-      mockCache.set('key', 'value');
+    it('has when key exists and not expired then returns true', async () => {
+      await mockCache.set('key', 'value');
 
-      expect(mockCache.has('key')).toBe(true);
+      expect(await mockCache.has('key')).toBe(true);
     });
 
-    it('has when key does not exist then returns false', () => {
-      expect(mockCache.has('nonExistent')).toBe(false);
+    it('has when key does not exist then returns false', async () => {
+      expect(await mockCache.has('nonExistent')).toBe(false);
     });
 
-    it('has when key is expired then returns false', () => {
-      mockCache.set('key', 'value');
+    it('has when key is expired then returns false', async () => {
+      await mockCache.set('key', 'value');
       vi.advanceTimersByTime(mockTtl + 1);
 
-      expect(mockCache.has('key')).toBe(false);
+      expect(await mockCache.has('key')).toBe(false);
     });
   });
 
   describe('delete', () => {
-    it('delete when key exists then removes it', () => {
+    it('delete when key exists then removes it', async () => {
       const key = 'key';
-      mockCache.set(key, 'value');
+      await mockCache.set(key, 'value');
 
-      mockCache.delete(key);
+      await mockCache.delete(key);
 
-      expect(mockCache.get(key)).toBeNull();
+      expect(await mockCache.get(key)).toBeNull();
     });
 
-    it('delete when key does not exist then does not throw', () => {
-      expect(() => mockCache.delete('nonExistent')).not.toThrow();
+    it('delete when key does not exist then does not throw', async () => {
+      await expect(async () => await mockCache.delete('nonExistent')).not.toThrow();
     });
   });
 
   describe('clear', () => {
-    it('clear when cache has entries then removes all', () => {
-      mockCache.set('key1', 'value1');
-      mockCache.set('key2', 'value2');
-      mockCache.set('key3', 'value3');
+    it('clear when cache has entries then removes all', async () => {
+      await mockCache.set('key1', 'value1');
+      await mockCache.set('key2', 'value2');
+      await mockCache.set('key3', 'value3');
 
-      mockCache.clear();
+      await mockCache.clear();
 
-      expect(mockCache.get('key1')).toBeNull();
-      expect(mockCache.get('key2')).toBeNull();
-      expect(mockCache.get('key3')).toBeNull();
-      expect(mockCache.getStats().size).toBe(0);
+      expect(await mockCache.get('key1')).toBeNull();
+      expect(await mockCache.get('key2')).toBeNull();
+      expect(await mockCache.get('key3')).toBeNull();
+      expect((await mockCache.getStats()).size).toBe(0);
     });
 
-    it('clear when cache is empty then does not throw', () => {
-      expect(() => mockCache.clear()).not.toThrow();
+    it('clear when cache is empty then does not throw', async () => {
+      await expect(async () => await mockCache.clear()).not.toThrow();
     });
   });
 
   describe('getStats', () => {
-    it('getStats when cache is empty then returns zero size', () => {
-      const stats = mockCache.getStats();
+    it('getStats when cache is empty then returns zero size', async () => {
+      const stats = await mockCache.getStats();
 
       expect(stats.size).toBe(0);
       expect(stats.ttl).toBe(mockTtl);
     });
 
-    it('getStats when cache has entries then returns correct size', () => {
-      mockCache.set('key1', 'value1');
-      mockCache.set('key2', 'value2');
+    it('getStats when cache has entries then returns correct size', async () => {
+      await mockCache.set('key1', 'value1');
+      await mockCache.set('key2', 'value2');
 
-      const stats = mockCache.getStats();
+      const stats = await mockCache.getStats();
 
       expect(stats.size).toBe(2);
     });
 
-    it('getStats when entry is expired but not yet cleaned then still counts it', () => {
-      mockCache.set('key1', 'value1');
+    it('getStats when entry is expired but not yet cleaned then still counts it', async () => {
+      await mockCache.set('key1', 'value1');
       vi.advanceTimersByTime(mockTtl + 1);
 
-      const stats = mockCache.getStats();
+      const stats = await mockCache.getStats();
 
       expect(stats.size).toBe(1);
     });
   });
 
   describe('cleanup', () => {
-    it('cleanup when no expired entries then returns zero', () => {
-      mockCache.set('key1', 'value1');
-      mockCache.set('key2', 'value2');
+    it('cleanup when no expired entries then returns zero', async () => {
+      await mockCache.set('key1', 'value1');
+      await mockCache.set('key2', 'value2');
 
       const removed = mockCache.cleanup();
 
       expect(removed).toBe(0);
-      expect(mockCache.getStats().size).toBe(2);
+      expect((await mockCache.getStats()).size).toBe(2);
     });
 
-    it('cleanup when has expired entries then removes and returns count', () => {
-      mockCache.set('key1', 'value1');
-      mockCache.set('key2', 'value2');
+    it('cleanup when has expired entries then removes and returns count', async () => {
+      await mockCache.set('key1', 'value1');
+      await mockCache.set('key2', 'value2');
       vi.advanceTimersByTime(mockTtl + 1);
-      mockCache.set('key3', 'value3');
+      await mockCache.set('key3', 'value3');
 
       const removed = mockCache.cleanup();
 
       expect(removed).toBe(2);
-      expect(mockCache.getStats().size).toBe(1);
-      expect(mockCache.get('key3')).toBe('value3');
+      expect((await mockCache.getStats()).size).toBe(1);
+      expect(await mockCache.get('key3')).toBe('value3');
     });
 
-    it('cleanup when all entries expired then removes all', () => {
-      mockCache.set('key1', 'value1');
-      mockCache.set('key2', 'value2');
+    it('cleanup when all entries expired then removes all', async () => {
+      await mockCache.set('key1', 'value1');
+      await mockCache.set('key2', 'value2');
       vi.advanceTimersByTime(mockTtl + 1);
 
       const removed = mockCache.cleanup();
 
       expect(removed).toBe(2);
-      expect(mockCache.getStats().size).toBe(0);
+      expect((await mockCache.getStats()).size).toBe(0);
     });
 
     it('cleanup when cache is empty then returns zero', () => {
@@ -226,135 +226,135 @@ describe('Cache', () => {
   });
 
   describe('type safety', () => {
-    it('Cache when typed as number then stores and retrieves numbers', () => {
+    it('Cache when typed as number then stores and retrieves numbers', async () => {
       const cache = new Cache<number>(1000);
-      cache.set('key', 42);
+      await cache.set('key', 42);
 
-      const result = cache.get('key');
+      const result = await cache.get('key');
 
       expect(result).toBe(42);
-      cache.destroy();
+      await cache.destroy();
     });
 
-    it('Cache when typed as object then stores and retrieves objects', () => {
+    it('Cache when typed as object then stores and retrieves objects', async () => {
       const cache = new Cache<{ name: string; age: number }>(1000);
       const mockObj = { name: 'Test', age: 30 };
 
-      cache.set('key', mockObj);
-      const result = cache.get('key');
+      await cache.set('key', mockObj);
+      const result = await cache.get('key');
 
       expect(result).toEqual(mockObj);
-      cache.destroy();
+      await cache.destroy();
     });
   });
 
   describe('cleanup timer', () => {
-    it('constructor when ttl less than hour then uses ttl as cleanup interval', () => {
+    it('constructor when ttl less than hour then uses ttl as cleanup interval', async () => {
       const setIntervalSpy = vi.spyOn(global, 'setInterval');
       const cache = new Cache<string>(5000);
 
       expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 5000);
-      cache.destroy();
+      await cache.destroy();
       setIntervalSpy.mockRestore();
     });
 
-    it('constructor when ttl greater than hour then caps cleanup interval at 1 hour', () => {
+    it('constructor when ttl greater than hour then caps cleanup interval at 1 hour', async () => {
       const setIntervalSpy = vi.spyOn(global, 'setInterval');
       const cache = new Cache<string>(7200000); // 2 hours
 
       expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 3600000); // 1 hour
-      cache.destroy();
+      await cache.destroy();
       setIntervalSpy.mockRestore();
     });
 
-    it('cleanup timer when interval fires then removes expired entries', () => {
+    it('cleanup timer when interval fires then removes expired entries', async () => {
       const cache = new Cache<string>(1000);
-      cache.set('key1', 'value1');
-      cache.set('key2', 'value2');
+      await cache.set('key1', 'value1');
+      await cache.set('key2', 'value2');
 
       // Expire entries
       vi.advanceTimersByTime(1001);
 
       // Add new entry after expiration
-      cache.set('key3', 'value3');
+      await cache.set('key3', 'value3');
 
       // Trigger cleanup timer (set to run at TTL interval)
       // Use 999ms to avoid expiring key3 (which would be exactly at TTL boundary)
       vi.advanceTimersByTime(999);
 
       // Only key3 should remain (key1 and key2 expired and cleaned)
-      expect(cache.getStats().size).toBe(1);
-      expect(cache.get('key3')).toBe('value3');
-      cache.destroy();
+      expect((await cache.getStats()).size).toBe(1);
+      expect(await cache.get('key3')).toBe('value3');
+      await cache.destroy();
     });
 
-    it('cleanup timer when multiple intervals pass then cleans up periodically', () => {
+    it('cleanup timer when multiple intervals pass then cleans up periodically', async () => {
       const cache = new Cache<string>(500);
 
       // First batch
-      cache.set('key1', 'value1');
+      await cache.set('key1', 'value1');
       vi.advanceTimersByTime(600); // Expire first batch
 
       // Second batch
-      cache.set('key2', 'value2');
+      await cache.set('key2', 'value2');
       vi.advanceTimersByTime(600); // Expire second batch, triggers cleanup
 
       // After cleanup, expired entries should be removed
-      expect(cache.getStats().size).toBeLessThanOrEqual(1);
-      cache.destroy();
+      expect((await cache.getStats()).size).toBeLessThanOrEqual(1);
+      await cache.destroy();
     });
   });
 
   describe('destroy', () => {
-    it('destroy when called then clears cleanup timer', () => {
+    it('destroy when called then clears cleanup timer', async () => {
       const clearIntervalSpy = vi.spyOn(global, 'clearInterval');
       const cache = new Cache<string>(1000);
 
-      cache.destroy();
+      await cache.destroy();
 
       expect(clearIntervalSpy).toHaveBeenCalled();
       clearIntervalSpy.mockRestore();
     });
 
-    it('destroy when called then clears all entries', () => {
+    it('destroy when called then clears all entries', async () => {
       const cache = new Cache<string>(1000);
-      cache.set('key1', 'value1');
-      cache.set('key2', 'value2');
+      await cache.set('key1', 'value1');
+      await cache.set('key2', 'value2');
 
-      cache.destroy();
+      await cache.destroy();
 
-      expect(cache.getStats().size).toBe(0);
+      expect((await cache.getStats()).size).toBe(0);
     });
 
-    it('destroy when called multiple times then does not throw', () => {
+    it('destroy when called multiple times then does not throw', async () => {
       const cache = new Cache<string>(1000);
 
-      expect(() => {
-        cache.destroy();
-        cache.destroy();
-        cache.destroy();
+      await expect(async () => {
+        await cache.destroy();
+        await cache.destroy();
+        await cache.destroy();
       }).not.toThrow();
     });
 
-    it('destroy when called then subsequent cleanup timer fires do not throw', () => {
+    it('destroy when called then subsequent cleanup timer fires do not throw', async () => {
       const cache = new Cache<string>(1000);
-      cache.set('key', 'value');
+      await cache.set('key', 'value');
 
-      cache.destroy();
+      await cache.destroy();
 
       // This would throw if timer wasn't properly cleared
       expect(() => vi.advanceTimersByTime(2000)).not.toThrow();
     });
 
-    it('memory leak prevention: destroy cleans up timer reference', () => {
+    it('memory leak prevention: destroy cleans up timer reference', async () => {
       const cache = new Cache<string>(1000);
-      cache.set('key', 'value');
+      await cache.set('key', 'value');
 
       // Force garbage collection consideration by destroying
-      cache.destroy();
+      await cache.destroy();
 
       // Verify cache can be garbage collected (no more references)
-      expect(cache.getStats().size).toBe(0);
+      expect((await cache.getStats()).size).toBe(0);
     });
   });
 });
