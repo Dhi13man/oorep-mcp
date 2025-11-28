@@ -3,9 +3,10 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { ConsoleLogger } from './logger.js';
 import { Logger, type LogLevel } from './logger.js';
 
-describe('Logger', () => {
+describe('ConsoleLogger', () => {
   let mockConsoleError: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
@@ -18,7 +19,7 @@ describe('Logger', () => {
 
   describe('constructor', () => {
     it('Logger when created without level then defaults to info', () => {
-      const logger = new Logger();
+      const logger = new ConsoleLogger();
 
       logger.info('test');
       expect(mockConsoleError).toHaveBeenCalled();
@@ -31,7 +32,7 @@ describe('Logger', () => {
     it.each<LogLevel>(['debug', 'info', 'warn', 'error'])(
       'Logger when created with %s level then sets level correctly',
       (level: LogLevel) => {
-        const logger = new Logger(level);
+        const logger = new ConsoleLogger(level);
 
         logger[level]('test');
         expect(mockConsoleError).toHaveBeenCalled();
@@ -41,7 +42,7 @@ describe('Logger', () => {
 
   describe('setLevel', () => {
     it('setLevel when called then updates log level', () => {
-      const logger = new Logger('error');
+      const logger = new ConsoleLogger('error');
 
       logger.info('test');
       expect(mockConsoleError).not.toHaveBeenCalled();
@@ -54,7 +55,7 @@ describe('Logger', () => {
 
   describe('debug', () => {
     it('debug when level is debug then logs message', () => {
-      const logger = new Logger('debug');
+      const logger = new ConsoleLogger('debug');
       const message = 'Debug message';
 
       logger.debug(message);
@@ -66,7 +67,7 @@ describe('Logger', () => {
     });
 
     it('debug when level is info then does not log', () => {
-      const logger = new Logger('info');
+      const logger = new ConsoleLogger('info');
 
       logger.debug('Debug message');
 
@@ -74,7 +75,7 @@ describe('Logger', () => {
     });
 
     it('debug when called with args then includes args in output', () => {
-      const logger = new Logger('debug');
+      const logger = new ConsoleLogger('debug');
       const mockArg = { key: 'value' };
 
       logger.debug('Message', mockArg);
@@ -86,7 +87,7 @@ describe('Logger', () => {
 
   describe('info', () => {
     it('info when level is info then logs message', () => {
-      const logger = new Logger('info');
+      const logger = new ConsoleLogger('info');
       const message = 'Info message';
 
       logger.info(message);
@@ -98,7 +99,7 @@ describe('Logger', () => {
     });
 
     it('info when level is warn then does not log', () => {
-      const logger = new Logger('warn');
+      const logger = new ConsoleLogger('warn');
 
       logger.info('Info message');
 
@@ -106,7 +107,7 @@ describe('Logger', () => {
     });
 
     it('info when called with multiple args then includes all args', () => {
-      const logger = new Logger('info');
+      const logger = new ConsoleLogger('info');
       const mockArg1 = 'arg1';
       const mockArg2 = { key: 'value' };
 
@@ -120,7 +121,7 @@ describe('Logger', () => {
 
   describe('warn', () => {
     it('warn when level is warn then logs message', () => {
-      const logger = new Logger('warn');
+      const logger = new ConsoleLogger('warn');
       const message = 'Warning message';
 
       logger.warn(message);
@@ -132,7 +133,7 @@ describe('Logger', () => {
     });
 
     it('warn when level is error then does not log', () => {
-      const logger = new Logger('error');
+      const logger = new ConsoleLogger('error');
 
       logger.warn('Warning message');
 
@@ -142,7 +143,7 @@ describe('Logger', () => {
 
   describe('error', () => {
     it('error when level is error then logs message', () => {
-      const logger = new Logger('error');
+      const logger = new ConsoleLogger('error');
       const message = 'Error message';
 
       logger.error(message);
@@ -154,7 +155,7 @@ describe('Logger', () => {
     });
 
     it('error when called with Error object then includes error details', () => {
-      const logger = new Logger('error');
+      const logger = new ConsoleLogger('error');
       const message = 'Error occurred';
       const mockError = new Error('Original error');
 
@@ -167,7 +168,7 @@ describe('Logger', () => {
     });
 
     it('error when called with non-Error object then includes object', () => {
-      const logger = new Logger('error');
+      const logger = new ConsoleLogger('error');
       const message = 'Error occurred';
       const mockErrorObj = { code: 500, details: 'Server error' };
 
@@ -180,7 +181,7 @@ describe('Logger', () => {
     });
 
     it('error when called with additional args then includes all args', () => {
-      const logger = new Logger('error');
+      const logger = new ConsoleLogger('error');
       const mockError = new Error('Test error');
       const mockExtra = { requestId: '123' };
 
@@ -197,7 +198,7 @@ describe('Logger', () => {
 
       levels.forEach((level) => {
         mockConsoleError.mockClear();
-        const logger = new Logger(level);
+        const logger = new ConsoleLogger(level);
 
         logger.error('Error message');
 
@@ -208,7 +209,7 @@ describe('Logger', () => {
 
   describe('message formatting', () => {
     it('formatMessage when called then includes timestamp', () => {
-      const logger = new Logger('info');
+      const logger = new ConsoleLogger('info');
 
       logger.info('Test message');
 
@@ -217,7 +218,7 @@ describe('Logger', () => {
     });
 
     it('formatMessage when called then includes log level in uppercase', () => {
-      const logger = new Logger('info');
+      const logger = new ConsoleLogger('info');
 
       logger.info('Test message');
 
@@ -226,7 +227,7 @@ describe('Logger', () => {
     });
 
     it('formatMessage when called with no args then only includes message', () => {
-      const logger = new Logger('info');
+      const logger = new ConsoleLogger('info');
       const message = 'Simple message';
 
       logger.info(message);
@@ -237,7 +238,7 @@ describe('Logger', () => {
     });
 
     it('formatMessage when called with args then separates args with space', () => {
-      const logger = new Logger('info');
+      const logger = new ConsoleLogger('info');
 
       logger.info('Message', 'arg1', 'arg2');
 
@@ -256,7 +257,7 @@ describe('Logger', () => {
     ] as Array<[LogLevel, LogLevel[]]>)(
       'Logger when level is %s then logs %s',
       (setLevel: LogLevel, expectedLevels: LogLevel[]) => {
-        const logger = new Logger(setLevel);
+        const logger = new ConsoleLogger(setLevel);
         const allLevels: LogLevel[] = ['debug', 'info', 'warn', 'error'];
 
         allLevels.forEach((level) => {

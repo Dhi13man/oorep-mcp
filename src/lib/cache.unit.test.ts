@@ -3,14 +3,15 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { Cache, RequestDeduplicator } from './cache.js';
+import { InMemoryCache } from './cache.js';
+import { MapRequestDeduplicator } from './deduplicator.js';
 
-describe('Cache', () => {
-  let mockCache: Cache<string>;
+describe('InMemoryCache', () => {
+  let mockCache: InMemoryCache<string>;
   const mockTtl = 1000;
 
   beforeEach(() => {
-    mockCache = new Cache<string>(mockTtl);
+    mockCache = new InMemoryCache<string>(mockTtl);
     vi.useFakeTimers();
   });
 
@@ -20,7 +21,7 @@ describe('Cache', () => {
 
   describe('constructor', () => {
     it('Cache when created then stores ttl', async () => {
-      const cache = new Cache<number>(5000);
+      const cache = new InMemoryCache<number>(5000);
       const stats = await cache.getStats();
 
       expect(stats.ttl).toBe(5000);
@@ -227,7 +228,7 @@ describe('Cache', () => {
 
   describe('type safety', () => {
     it('Cache when typed as number then stores and retrieves numbers', async () => {
-      const cache = new Cache<number>(1000);
+      const cache = new InMemoryCache<number>(1000);
       await cache.set('key', 42);
 
       const result = await cache.get('key');
@@ -237,7 +238,7 @@ describe('Cache', () => {
     });
 
     it('Cache when typed as object then stores and retrieves objects', async () => {
-      const cache = new Cache<{ name: string; age: number }>(1000);
+      const cache = new InMemoryCache<{ name: string; age: number }>(1000);
       const mockObj = { name: 'Test', age: 30 };
 
       await cache.set('key', mockObj);
@@ -251,7 +252,7 @@ describe('Cache', () => {
   describe('cleanup timer', () => {
     it('constructor when ttl less than hour then uses ttl as cleanup interval', async () => {
       const setIntervalSpy = vi.spyOn(global, 'setInterval');
-      const cache = new Cache<string>(5000);
+      const cache = new InMemoryCache<string>(5000);
 
       expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 5000);
       await cache.destroy();
@@ -260,7 +261,7 @@ describe('Cache', () => {
 
     it('constructor when ttl greater than hour then caps cleanup interval at 1 hour', async () => {
       const setIntervalSpy = vi.spyOn(global, 'setInterval');
-      const cache = new Cache<string>(7200000); // 2 hours
+      const cache = new InMemoryCache<string>(7200000); // 2 hours
 
       expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 3600000); // 1 hour
       await cache.destroy();
@@ -268,7 +269,7 @@ describe('Cache', () => {
     });
 
     it('cleanup timer when interval fires then removes expired entries', async () => {
-      const cache = new Cache<string>(1000);
+      const cache = new InMemoryCache<string>(1000);
       await cache.set('key1', 'value1');
       await cache.set('key2', 'value2');
 
@@ -289,7 +290,7 @@ describe('Cache', () => {
     });
 
     it('cleanup timer when multiple intervals pass then cleans up periodically', async () => {
-      const cache = new Cache<string>(500);
+      const cache = new InMemoryCache<string>(500);
 
       // First batch
       await cache.set('key1', 'value1');
@@ -308,7 +309,7 @@ describe('Cache', () => {
   describe('destroy', () => {
     it('destroy when called then clears cleanup timer', async () => {
       const clearIntervalSpy = vi.spyOn(global, 'clearInterval');
-      const cache = new Cache<string>(1000);
+      const cache = new InMemoryCache<string>(1000);
 
       await cache.destroy();
 
@@ -317,7 +318,7 @@ describe('Cache', () => {
     });
 
     it('destroy when called then clears all entries', async () => {
-      const cache = new Cache<string>(1000);
+      const cache = new InMemoryCache<string>(1000);
       await cache.set('key1', 'value1');
       await cache.set('key2', 'value2');
 
@@ -327,7 +328,7 @@ describe('Cache', () => {
     });
 
     it('destroy when called multiple times then does not throw', async () => {
-      const cache = new Cache<string>(1000);
+      const cache = new InMemoryCache<string>(1000);
 
       await expect(async () => {
         await cache.destroy();
@@ -337,7 +338,7 @@ describe('Cache', () => {
     });
 
     it('destroy when called then subsequent cleanup timer fires do not throw', async () => {
-      const cache = new Cache<string>(1000);
+      const cache = new InMemoryCache<string>(1000);
       await cache.set('key', 'value');
 
       await cache.destroy();
@@ -347,7 +348,7 @@ describe('Cache', () => {
     });
 
     it('memory leak prevention: destroy cleans up timer reference', async () => {
-      const cache = new Cache<string>(1000);
+      const cache = new InMemoryCache<string>(1000);
       await cache.set('key', 'value');
 
       // Force garbage collection consideration by destroying
@@ -359,11 +360,11 @@ describe('Cache', () => {
   });
 });
 
-describe('RequestDeduplicator', () => {
-  let mockDeduplicator: RequestDeduplicator;
+describe('MapRequestDeduplicator', () => {
+  let mockDeduplicator: MapRequestDeduplicator;
 
   beforeEach(() => {
-    mockDeduplicator = new RequestDeduplicator();
+    mockDeduplicator = new MapRequestDeduplicator();
   });
 
   describe('deduplicate', () => {

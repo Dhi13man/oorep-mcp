@@ -68,8 +68,3 @@ export class MapRequestDeduplicator implements IRequestDeduplicator {
   }
 }
 
-/**
- * Backward compatibility: export as RequestDeduplicator
- * @deprecated Use MapRequestDeduplicator instead
- */
-export const RequestDeduplicator = MapRequestDeduplicator;

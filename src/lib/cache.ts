@@ -139,14 +139,3 @@ export class InMemoryCache<T = unknown> implements ICache<T> {
   }
 }
 
-/**
- * Backward compatibility: export as Cache
- * @deprecated Use InMemoryCache instead
- */
-export const Cache = InMemoryCache;
-
-/**
- * Re-export RequestDeduplicator for backward compatibility
- * @deprecated Import from '../deduplicator.js' instead
- */
-export { MapRequestDeduplicator as RequestDeduplicator } from './deduplicator.js';

@@ -68,8 +68,20 @@ export {
   sanitizeError,
 } from '../utils/errors.js';
 
-// Re-export utility classes
-export { Cache, RequestDeduplicator } from '../lib/cache.js';
+// Re-export DI interfaces
+export type { ICache } from '../interfaces/ICache.js';
+export type { ILogger, LogLevel } from '../interfaces/ILogger.js';
+export type { IRequestDeduplicator } from '../interfaces/IRequestDeduplicator.js';
+
+// Re-export implementations
+export { InMemoryCache } from '../lib/cache.js';
+export { MapRequestDeduplicator } from '../lib/deduplicator.js';
+export { ConsoleLogger } from '../utils/logger.js';
+
+// Re-export helper classes
+export { NoOpCache } from '../interfaces/ICache.js';
+export { NoOpLogger } from '../interfaces/ILogger.js';
+export { NoOpDeduplicator } from '../interfaces/IRequestDeduplicator.js';
 
 // Re-export formatting utilities
 export {

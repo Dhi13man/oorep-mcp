@@ -68,13 +68,6 @@ export class ConsoleLogger implements ILogger {
 }
 
 /**
- * Backward compatibility: Logger class alias
- * @deprecated Use ConsoleLogger instead
- */
-export const Logger = ConsoleLogger;
-
-/**
- * Global logger instance for backward compatibility
- * @deprecated Inject ILogger instead of using global logger
+ * Global logger instance
  */
 export const logger = new ConsoleLogger((process.env.OOREP_MCP_LOG_LEVEL as LogLevel) || 'info');
