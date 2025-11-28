@@ -55,15 +55,11 @@ vi.mock('../utils/logger.js', () => ({
   ConsoleLogger: vi.fn().mockImplementation(function () {
     return { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() };
   }),
-  Logger: vi.fn().mockImplementation(function () {
-    return { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() };
-  }),
 }));
 
 import { OOREPClient } from '../lib/oorep-client.js';
 import { InMemoryCache } from '../lib/cache.js';
 import { MapRequestDeduplicator } from '../lib/deduplicator.js';
-import { ConsoleLogger } from '../utils/logger.js';
 
 describe('OOREPSDKClient Unit Tests', () => {
   beforeEach(() => {

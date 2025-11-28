@@ -24,10 +24,10 @@ export class ResourceRegistry {
   constructor(config: OOREPConfig) {
     this.client = new OOREPClient(config);
     // Cache for 1 hour (remedies list is stable)
-    this.remediesCache = new InMemoryCache(3600000);
+    this.remediesCache = new InMemoryCache(3600000, logger);
     // Cache for 5 minutes (metadata)
-    this.repertoriesCache = new InMemoryCache(300000);
-    this.materiaMedicasCache = new InMemoryCache(300000);
+    this.repertoriesCache = new InMemoryCache(300000, logger);
+    this.materiaMedicasCache = new InMemoryCache(300000, logger);
   }
 
   getDefinitions(): ResourceDefinition[] {
