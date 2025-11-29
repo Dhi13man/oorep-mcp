@@ -279,6 +279,48 @@ describe('OOREPSDKClient Unit Tests', () => {
       client.destroy();
     });
 
+    it('performs partial matching via alternative names', async () => {
+      const client = new OOREPSDKClient();
+
+      mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue([
+        {
+          id: 1,
+          nameAbbrev: 'Acon.',
+          nameLong: 'Aconitum napellus',
+          namealt: ['Monkshood', 'Wolfsbane'],
+        },
+      ]);
+
+      // Partial match on alternative name 'Wolfsbane'
+      const result = await client.getRemedyInfo({ remedy: 'wolfs' });
+
+      expect(result).not.toBeNull();
+      expect(result!.nameAbbrev).toBe('Acon.');
+
+      client.destroy();
+    });
+
+    it('matches when query contains alternative name', async () => {
+      const client = new OOREPSDKClient();
+
+      mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue([
+        {
+          id: 1,
+          nameAbbrev: 'Acon.',
+          nameLong: 'Aconitum napellus',
+          namealt: ['Monk'],
+        },
+      ]);
+
+      // Query 'monkfish' contains 'monk'
+      const result = await client.getRemedyInfo({ remedy: 'monkfish' });
+
+      expect(result).not.toBeNull();
+      expect(result!.nameAbbrev).toBe('Acon.');
+
+      client.destroy();
+    });
+
     it('does not partial match for queries < 3 chars', async () => {
       const client = new OOREPSDKClient();
 
@@ -354,6 +396,37 @@ describe('OOREPSDKClient Unit Tests', () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].abbreviation).toBe('hering');
+
+      client.destroy();
+    });
+
+    it('returns cached result without calling API', async () => {
+      const client = new OOREPSDKClient();
+
+      const cachedResult = [
+        { abbreviation: 'cached', title: 'Cached MM', language: 'en', author: 'Test' },
+      ];
+      mockCacheInstance.get.mockResolvedValue(cachedResult);
+
+      const result = await client.listMateriaMedicas();
+
+      expect(result).toBe(cachedResult);
+      expect(mockOOREPClientInstance.getAvailableMateriaMedicas).not.toHaveBeenCalled();
+
+      client.destroy();
+    });
+
+    it('returns all when no language filter', async () => {
+      const client = new OOREPSDKClient();
+
+      mockOOREPClientInstance.getAvailableMateriaMedicas.mockResolvedValue([
+        { abbreviation: 'boericke', title: 'Boericke', language: 'en', author: 'Boericke' },
+        { abbreviation: 'hering', title: 'Hering', language: 'de', author: 'Hering' },
+      ]);
+
+      const result = await client.listMateriaMedicas();
+
+      expect(result).toHaveLength(2);
 
       client.destroy();
     });
