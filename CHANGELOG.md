@@ -17,13 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `InMemoryCache`, `MapRequestDeduplicator`, `ConsoleLogger` as default implementations
   - Constructor injection pattern for all SDK components
 
-- **HTTP Cache-Control Respecting Cache**: `HttpCacheControlCache` automatically adjusts TTL based on HTTP headers
-  - Respects `Cache-Control: max-age=X` directive
-  - Honors `Cache-Control: no-cache` and `no-store` directives
-  - Falls back to `Expires` header when `Cache-Control` not present
-  - Prioritizes `Cache-Control` over `Expires` per HTTP spec
-  - Handles edge cases: negative max-age, invalid dates, zero TTL
-
 ### Changed
 
 - **Async Cache Interface**: All cache methods now return Promises to support distributed caching
@@ -44,6 +37,7 @@ The following classes have been renamed to better reflect their implementation:
 | `Logger` | `ConsoleLogger` | `import { ConsoleLogger } from 'oorep-mcp'` |
 
 **Before:**
+
 ```typescript
 import { Cache, RequestDeduplicator, Logger } from 'oorep-mcp';
 const cache = new Cache(300000);
@@ -52,6 +46,7 @@ const logger = new Logger('info');
 ```
 
 **After:**
+
 ```typescript
 import { InMemoryCache, MapRequestDeduplicator, ConsoleLogger } from 'oorep-mcp';
 const cache = new InMemoryCache(300000);
@@ -64,18 +59,21 @@ const logger = new ConsoleLogger('info');
 `OOREPSDKClient.clearCache()` and `OOREPSDKClient.destroy()` are now async and return `Promise<void>`.
 
 **Before:**
+
 ```typescript
 client.clearCache();
 client.destroy();
 ```
 
 **After:**
+
 ```typescript
 await client.clearCache();
 await client.destroy();
 ```
 
 Failing to `await` these methods may cause:
+
 - Resource cleanup race conditions
 - Cache operations not completing before process exit
 - Potential memory leaks in long-running applications
@@ -85,6 +83,7 @@ Failing to `await` these methods may cause:
 If you implemented a custom cache, all methods must now be async:
 
 **Before:**
+
 ```typescript
 class MyCache {
   get(key: string): unknown | null { ... }
@@ -94,6 +93,7 @@ class MyCache {
 ```
 
 **After:**
+
 ```typescript
 class MyCache implements ICache {
   async get(key: string): Promise<unknown | null> { ... }

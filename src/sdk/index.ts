@@ -75,7 +75,6 @@ export type { IRequestDeduplicator } from '../interfaces/IRequestDeduplicator.js
 
 // Re-export implementations
 export { InMemoryCache } from '../lib/cache.js';
-export { HttpCacheControlCache, type HttpCacheMetadata } from '../lib/HttpCacheControlCache.js';
 export { MapRequestDeduplicator } from '../lib/deduplicator.js';
 export { ConsoleLogger } from '../utils/logger.js';
 
