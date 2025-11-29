@@ -52,9 +52,7 @@ describe('CookieSessionManager', () => {
       await manager.ensureSession();
 
       // Assert
-      expect(mockHttpClient.get).toHaveBeenCalledWith(
-        `${baseUrl}/api/available_remedies?limit=1`
-      );
+      expect(mockHttpClient.get).toHaveBeenCalledWith(`${baseUrl}/api/available_remedies?limit=1`);
       expect(mockLogger.debug).toHaveBeenCalledWith('Initializing OOREP session', {
         url: `${baseUrl}/api/available_remedies?limit=1`,
       });

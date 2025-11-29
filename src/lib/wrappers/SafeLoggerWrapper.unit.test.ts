@@ -56,10 +56,7 @@ describe('SafeLoggerWrapper', () => {
 
       // Assert
       expect(mockLogger.debug).toHaveBeenCalled();
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[OOREP-DEBUG]'),
-        error
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('[OOREP-DEBUG]'), error);
     });
   });
 
@@ -91,10 +88,7 @@ describe('SafeLoggerWrapper', () => {
       wrapper.info(message);
 
       // Assert
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[OOREP-INFO]'),
-        error
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('[OOREP-INFO]'), error);
     });
   });
 
@@ -126,10 +120,7 @@ describe('SafeLoggerWrapper', () => {
       wrapper.warn(message);
 
       // Assert
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[OOREP-WARN]'),
-        error
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('[OOREP-WARN]'), error);
     });
   });
 
@@ -261,10 +252,7 @@ describe('SafeLoggerWrapper', () => {
       wrapper.warn(message);
 
       // Assert
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[OOREP-WARN]'),
-        error
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('[OOREP-WARN]'), error);
     });
 
     it('fallbackLog_whenCalled_thenIncludesOriginalMessage', () => {
@@ -280,10 +268,7 @@ describe('SafeLoggerWrapper', () => {
       wrapper.debug(message);
 
       // Assert
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining(message),
-        error
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining(message), error);
     });
   });
 
