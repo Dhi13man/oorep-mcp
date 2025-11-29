@@ -213,8 +213,6 @@ export class OOREPClient {
       this.timeoutMs
     );
 
-    this.storeCookies(response);
-
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'Unknown session init error');
       throw new NetworkError(
@@ -224,6 +222,8 @@ export class OOREPClient {
       );
     }
 
+    // Only store cookies from successful session initialization
+    this.storeCookies(response);
     logger.debug('OOREP session initialized');
   }
 
@@ -272,8 +272,6 @@ export class OOREPClient {
         this.timeoutMs
       );
 
-      this.storeCookies(response);
-
       if (response.status === 401 && !sessionRetried) {
         logger.warn('OOREP session unauthorized, attempting refresh');
         await this.ensureSession(true);
@@ -299,6 +297,8 @@ export class OOREPClient {
         );
       }
 
+      // Only store cookies from successful responses
+      this.storeCookies(response);
       const body = await response.text();
       if (!body) {
         return null;
