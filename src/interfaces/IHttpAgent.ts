@@ -1,19 +1,29 @@
 /**
+ * HTTP Agent configuration for connection pooling
+ */
+export interface HttpAgentConfig {
+  keepAlive?: boolean;
+  maxSockets?: number;
+  maxFreeSockets?: number;
+  timeout?: number;
+}
+
+/**
  * HTTP Agent interface for connection pooling
  * Allows users to provide custom agents for HTTP/HTTPS requests
  *
- * Supports Node.js http.Agent and https.Agent
+ * Supports Node.js http.Agent and https.Agent configurations
  */
 export interface IHttpAgent {
   /**
-   * HTTP agent for http:// requests
+   * HTTP agent configuration for http:// requests
    */
-  http?: any;
+  http?: HttpAgentConfig;
 
   /**
-   * HTTPS agent for https:// requests
+   * HTTPS agent configuration for https:// requests
    */
-  https?: any;
+  https?: HttpAgentConfig;
 }
 
 /**
