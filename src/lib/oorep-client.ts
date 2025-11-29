@@ -6,9 +6,6 @@ import { OOREPConfig } from '../config.js';
 import { logger } from '../utils/logger.js';
 import { NetworkError, TimeoutError, RateLimitError } from '../utils/errors.js';
 import { RepertoryMetadata, MateriaMedicaMetadata } from '../utils/schemas.js';
-import type { ISessionManager } from '../interfaces/ISessionManager.js';
-import { FetchHttpClient } from './http-client.js';
-import { CookieSessionManager } from './session-manager.js';
 import pkg from '../../package.json' with { type: 'json' };
 const USER_AGENT = `oorep-mcp/${pkg.version}`;
 type RawWeightedRemedy = {
@@ -66,6 +63,50 @@ type RawMateriaMedicaResponse = {
   }>;
 };
 
+class CookieJar {
+  private readonly cookies = new Map<string, string>();
+
+  hasCookies(): boolean {
+    return this.cookies.size > 0;
+  }
+
+  clear(): void {
+    this.cookies.clear();
+  }
+
+  setFromSetCookieHeaders(headers: string[]): void {
+    headers.forEach((header) => {
+      const [cookiePair] = header.split(';');
+      const [name, ...valueParts] = cookiePair.split('=');
+      if (!name || valueParts.length === 0) {
+        return;
+      }
+      const value = valueParts.join('=').trim();
+      if (value) {
+        this.cookies.set(name.trim(), value);
+      }
+    });
+  }
+
+  getCookieHeader(): string | undefined {
+    if (!this.hasCookies()) {
+      return undefined;
+    }
+    return Array.from(this.cookies.entries())
+      .map(([key, value]) => `${key}=${value}`)
+      .join('; ');
+  }
+}
+
+function extractSetCookieHeaders(response: Response): string[] {
+  const headers = response.headers as Headers & { getSetCookie?: () => string[] };
+  if (typeof headers.getSetCookie === 'function') {
+    return headers.getSetCookie() ?? [];
+  }
+  const single = response.headers.get('set-cookie');
+  return single ? [single] : [];
+}
+
 /**
  * Fetch with timeout support
  */
@@ -101,35 +142,22 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
- * Extended config that supports dependency injection
- */
-export interface OOREPClientConfig extends OOREPConfig {
-  /** Optional session manager for dependency injection */
-  sessionManager?: ISessionManager;
-}
-
-/**
  * OOREP HTTP Client with retry logic
- * Supports dependency injection for session management
  */
 export class OOREPClient {
   private readonly baseUrl: string;
   private readonly timeoutMs: number;
   private readonly maxRetries = 3;
-  private readonly sessionManager: ISessionManager;
+  private readonly cookieJar = new CookieJar();
+  private sessionInitPromise: Promise<void> | null = null;
   private readonly defaultRepertory: string;
   private readonly defaultMateriaMedica: string;
 
-  constructor(config: OOREPClientConfig) {
+  constructor(config: OOREPConfig) {
     this.baseUrl = config.baseUrl.replace(/\/$/, ''); // Remove trailing slash
     this.timeoutMs = config.timeoutMs;
     this.defaultRepertory = config.defaultRepertory;
     this.defaultMateriaMedica = config.defaultMateriaMedica;
-
-    // Use provided session manager or create default CookieSessionManager
-    this.sessionManager =
-      config.sessionManager ??
-      new CookieSessionManager(new FetchHttpClient({ timeout: config.timeoutMs }), this.baseUrl);
   }
 
   private getDefaultHeaders(): Record<string, string> {
@@ -140,22 +168,70 @@ export class OOREPClient {
     };
   }
 
-  /**
-   * Convert native Response headers to Map for session manager
-   */
-  private handleResponseForSession(response: Response): void {
-    // Convert native Response to HttpResponse format for session manager
-    const headers = new Map<string, string>();
-    response.headers.forEach((value, key) => {
-      headers.set(key, value);
-    });
-    this.sessionManager.handleResponse({
-      status: response.status,
-      statusText: response.statusText,
-      headers,
-      data: null,
-      ok: response.ok,
-    });
+  private async ensureSession(forceRefresh = false): Promise<void> {
+    // If there's already a session init in progress, wait for it
+    if (this.sessionInitPromise) {
+      await this.sessionInitPromise;
+      // After waiting, if forceRefresh is requested but we just got a fresh session, use it
+      if (forceRefresh && this.cookieJar.hasCookies()) {
+        return;
+      }
+    }
+
+    // If we have cookies and not forcing refresh, we're done
+    if (!forceRefresh && this.cookieJar.hasCookies()) {
+      return;
+    }
+
+    // Only clear cookies if we're actually going to refresh AND no init is in progress
+    if (forceRefresh && !this.sessionInitPromise) {
+      this.cookieJar.clear();
+    }
+
+    // Start new session init if none in progress
+    if (!this.sessionInitPromise) {
+      this.sessionInitPromise = this.bootstrapSession().finally(() => {
+        this.sessionInitPromise = null;
+      });
+    }
+
+    await this.sessionInitPromise;
+  }
+
+  private async bootstrapSession(): Promise<void> {
+    const url = new URL(`${this.baseUrl}/api/available_remedies`);
+    url.searchParams.set('limit', '1');
+
+    logger.debug('Initializing OOREP session', { url: url.toString() });
+
+    const response = await fetchWithTimeout(
+      url.toString(),
+      {
+        method: 'GET',
+        headers: this.getDefaultHeaders(),
+      },
+      this.timeoutMs
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown session init error');
+      throw new NetworkError(
+        `Failed to initialize OOREP session (HTTP ${response.status})`,
+        response.status,
+        new Error(errorText)
+      );
+    }
+
+    // Only store cookies from successful session initialization
+    this.storeCookies(response);
+    logger.debug('OOREP session initialized');
+  }
+
+  private storeCookies(response: Response): void {
+    const cookies = extractSetCookieHeaders(response);
+    if (cookies.length > 0) {
+      this.cookieJar.setFromSetCookieHeaders(cookies);
+    }
   }
 
   /**
@@ -167,25 +243,7 @@ export class OOREPClient {
     retryCount = 0,
     sessionRetried = false
   ): Promise<T | null> {
-    try {
-      await this.sessionManager.ensureSession();
-    } catch (error) {
-      // Preserve TimeoutError for timeout scenarios (HTTP 408)
-      const status =
-        error instanceof Error && 'status' in error
-          ? (error as { status: number }).status
-          : undefined;
-      if (status === 408) {
-        throw new TimeoutError(error instanceof Error ? error.message : String(error));
-      }
-      // Preserve original error message for better debugging; wrap in NetworkError for consistent handling
-      const originalMessage = error instanceof Error ? error.message : String(error);
-      throw new NetworkError(
-        originalMessage,
-        status,
-        error instanceof Error ? error : new Error(String(error))
-      );
-    }
+    await this.ensureSession();
     const url = new URL(`${this.baseUrl}${endpoint}`);
 
     Object.entries(params).forEach(([key, value]) => {
@@ -198,8 +256,11 @@ export class OOREPClient {
 
     const headers: Record<string, string> = {
       ...this.getDefaultHeaders(),
-      ...this.sessionManager.getAuthHeaders(),
     };
+    const cookieHeader = this.cookieJar.getCookieHeader();
+    if (cookieHeader) {
+      headers.Cookie = cookieHeader;
+    }
 
     try {
       const response = await fetchWithTimeout(
@@ -211,12 +272,9 @@ export class OOREPClient {
         this.timeoutMs
       );
 
-      // Update session with any new cookies from response
-      this.handleResponseForSession(response);
-
       if (response.status === 401 && !sessionRetried) {
         logger.warn('OOREP session unauthorized, attempting refresh');
-        await this.sessionManager.ensureSession(true);
+        await this.ensureSession(true);
         return this.request<T>(endpoint, params, retryCount, true);
       }
 
@@ -239,6 +297,8 @@ export class OOREPClient {
         );
       }
 
+      // Only store cookies from successful responses
+      this.storeCookies(response);
       const body = await response.text();
       if (!body) {
         return null;

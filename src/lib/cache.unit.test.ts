@@ -367,6 +367,38 @@ describe('MapRequestDeduplicator', () => {
     mockDeduplicator = new MapRequestDeduplicator();
   });
 
+  describe('constructor', () => {
+    it('constructor when logger provided then uses logger for debug messages', async () => {
+      const mockLogger = {
+        debug: vi.fn(),
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+      };
+
+      const dedup = new MapRequestDeduplicator(mockLogger);
+
+      // Start a request
+      const fn = vi.fn(
+        () =>
+          new Promise<string>((resolve) => {
+            setTimeout(() => resolve('result'), 50);
+          })
+      );
+
+      const promise1 = dedup.deduplicate('key', fn);
+      // Second request for same key should trigger debug log
+      dedup.deduplicate('key', fn);
+
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        expect.stringContaining('Request deduplication: using existing request for key')
+      );
+
+      // Cleanup
+      await promise1;
+    });
+  });
+
   describe('deduplicate', () => {
     it('deduplicate when first request for key then executes function', async () => {
       const key = 'testKey';

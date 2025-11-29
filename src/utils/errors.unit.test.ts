@@ -246,6 +246,33 @@ describe('sanitizeError', () => {
     expect(sanitized.message).toBe('Validation error: Invalid input');
   });
 
+  it('sanitizeError when ZodError with empty issues array then returns generic ValidationError', () => {
+    const zodError = {
+      name: 'ZodError',
+      issues: [],
+    };
+    const sanitized = sanitizeError(zodError);
+
+    expect(sanitized).toBeInstanceOf(ValidationError);
+    expect(sanitized.message).toBe('Validation error: Invalid input');
+  });
+
+  it('sanitizeError when ZodError with empty path then omits field prefix', () => {
+    const zodError = {
+      name: 'ZodError',
+      issues: [
+        {
+          message: 'Invalid input',
+          path: [],
+        },
+      ],
+    };
+    const sanitized = sanitizeError(zodError);
+
+    expect(sanitized).toBeInstanceOf(ValidationError);
+    expect(sanitized.message).toBe('Validation error: Invalid input');
+  });
+
   it('sanitizeError when unknown error type then returns generic error', () => {
     const unknownError = new Error('Some other error');
     const sanitized = sanitizeError(unknownError);

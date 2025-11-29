@@ -5,16 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.0] - 2025-11-29
 
 ### Added
 
 - **Dependency Injection Architecture**: Full DI support for customizable implementations
   - `ICache` interface for custom caching strategies (Redis, Memcached, DynamoDB, etc.)
   - `ILogger` interface for custom logging frameworks (Winston, Pino, etc.)
-  - `IHttpClient` interface for HTTP client abstraction (Axios, Got, native fetch, etc.)
   - `IRequestDeduplicator` interface for request deduplication strategies
-  - `ISessionManager` interface for session management customization
   - `NoOpCache`, `NoOpLogger`, `NoOpDeduplicator` implementations for disabling features
   - `InMemoryCache`, `MapRequestDeduplicator`, `ConsoleLogger` as default implementations
   - Constructor injection pattern for all SDK components
@@ -25,14 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `get()`, `set()`, `has()`, `delete()`, `clear()`, `destroy()` are all async
   - Enables Redis, Memcached, and other remote cache integrations
 - **Logger Integration**: All internal caches now accept optional logger for debug visibility
-- **Zero Breaking Changes**: Existing code continues to work with default implementations
 
-### Removed
+### Breaking Changes
 
-- **Backward Compatibility Exports**: Removed deprecated type aliases
-  - `Cache` → use `InMemoryCache` directly
-  - `RequestDeduplicator` → use `MapRequestDeduplicator` directly
-  - `Logger` → use `ConsoleLogger` directly
+- **Renamed exports**: `Cache` → `InMemoryCache`, `RequestDeduplicator` → `MapRequestDeduplicator`, `Logger` → `ConsoleLogger`
+- **Async cache methods**: `clearCache()` and `destroy()` now return `Promise<void>` - must be awaited
+- **ICache interface**: All methods now async for distributed cache support (Redis, Memcached, etc.)
 
 ## [0.0.9] - 2025-11-21
 
@@ -197,7 +193,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - For full functionality, users should run a local OOREP instance or configure authentication
 - Public metadata endpoints work without authentication (remedies list, repertories list, materia medicas list)
 
-[Unreleased]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.9...HEAD
+[Unreleased]: https://github.com/Dhi13man/oorep-mcp/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.9...v1.0.0
 [0.0.9]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.8...v0.0.9
 [0.0.8]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.7...v0.0.8
 [0.0.7]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.6...v0.0.7

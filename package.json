@@ -1,6 +1,6 @@
 {
   "name": "oorep-mcp",
-  "version": "0.0.9",
+  "version": "1.0.0",
   "description": "MCP server for OOREP homeopathic repertory and materia medica - enables AI assistants to search symptoms, remedies, and homeopathic reference materials",
   "mcpName": "io.github.dhi13man/oorep-mcp",
   "type": "module",
@@ -57,7 +57,7 @@
     "format": "prettier --write 'src/**/*.ts'",
     "format:check": "prettier --check 'src/**/*.ts'",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run format && npm run build && npm run lint && npm run test"  
+    "prepublishOnly": "npm run typecheck && npm run format && npm run build && npm run lint && npm run test"  
   },
   "keywords": [
     "mcp",
