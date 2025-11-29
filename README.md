@@ -1081,7 +1081,7 @@ src/
 └── **/*.integration.test.ts # Integration tests (real implementations)
 ```
 
-- **779 tests** with **94%+ coverage**
+- **834 tests** with **94%+ coverage**
 - Unit tests use mocked dependencies
 - Integration tests use real implementations with mocked HTTP
 
