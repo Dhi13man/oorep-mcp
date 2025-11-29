@@ -26,83 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Breaking Changes
 
-#### Renamed Class Exports
-
-The following classes have been renamed to better reflect their implementation:
-
-| Old Name | New Name | Migration |
-|----------|----------|-----------|
-| `Cache` | `InMemoryCache` | `import { InMemoryCache } from 'oorep-mcp'` |
-| `RequestDeduplicator` | `MapRequestDeduplicator` | `import { MapRequestDeduplicator } from 'oorep-mcp'` |
-| `Logger` | `ConsoleLogger` | `import { ConsoleLogger } from 'oorep-mcp'` |
-
-**Before:**
-
-```typescript
-import { Cache, RequestDeduplicator, Logger } from 'oorep-mcp';
-const cache = new Cache(300000);
-const dedup = new RequestDeduplicator();
-const logger = new Logger('info');
-```
-
-**After:**
-
-```typescript
-import { InMemoryCache, MapRequestDeduplicator, ConsoleLogger } from 'oorep-mcp';
-const cache = new InMemoryCache(300000);
-const dedup = new MapRequestDeduplicator();
-const logger = new ConsoleLogger('info');
-```
-
-#### Async Cache Methods
-
-`OOREPSDKClient.clearCache()` and `OOREPSDKClient.destroy()` are now async and return `Promise<void>`.
-
-**Before:**
-
-```typescript
-client.clearCache();
-client.destroy();
-```
-
-**After:**
-
-```typescript
-await client.clearCache();
-await client.destroy();
-```
-
-Failing to `await` these methods may cause:
-
-- Resource cleanup race conditions
-- Cache operations not completing before process exit
-- Potential memory leaks in long-running applications
-
-#### Custom Cache Implementations
-
-If you implemented a custom cache, all methods must now be async:
-
-**Before:**
-
-```typescript
-class MyCache {
-  get(key: string): unknown | null { ... }
-  set(key: string, value: unknown): void { ... }
-  clear(): void { ... }
-}
-```
-
-**After:**
-
-```typescript
-class MyCache implements ICache {
-  async get(key: string): Promise<unknown | null> { ... }
-  async set(key: string, value: unknown): Promise<void> { ... }
-  async clear(): Promise<void> { ... }
-  async has(key: string): Promise<boolean> { ... }
-  async delete(key: string): Promise<void> { ... }
-  async destroy?(): Promise<void> { ... }
-}
+- **Renamed exports**: `Cache` → `InMemoryCache`, `RequestDeduplicator` → `MapRequestDeduplicator`, `Logger` → `ConsoleLogger`
+- **Async cache methods**: `clearCache()` and `destroy()` now return `Promise<void>` - must be awaited
+- **ICache interface**: All methods now async for distributed cache support (Redis, Memcached, etc.)
 
 ## [0.0.9] - 2025-11-21
 
