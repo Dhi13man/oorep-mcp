@@ -7,6 +7,16 @@ export interface ILogger {
   info(message: string, ...args: unknown[]): void;
   warn(message: string, ...args: unknown[]): void;
   error(message: string, error?: Error | unknown, ...args: unknown[]): void;
+
+  /**
+   * Set the minimum log level (optional)
+   * Messages below this level will be suppressed
+   *
+   * @example
+   * ```typescript
+   * logger.setLevel?.('warn'); // Only warn and error messages will be logged
+   * ```
+   */
   setLevel?(level: LogLevel): void;
 }
 
@@ -16,19 +26,19 @@ export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
  * No-op logger for when logging is disabled
  */
 export class NoOpLogger implements ILogger {
-  debug(): void {
+  debug(_message: string, ..._args: unknown[]): void {
     // No-op
   }
-  info(): void {
+  info(_message: string, ..._args: unknown[]): void {
     // No-op
   }
-  warn(): void {
+  warn(_message: string, ..._args: unknown[]): void {
     // No-op
   }
-  error(): void {
+  error(_message: string, _error?: Error | unknown, ..._args: unknown[]): void {
     // No-op
   }
-  setLevel(): void {
+  setLevel(_level: LogLevel): void {
     // No-op
   }
 }

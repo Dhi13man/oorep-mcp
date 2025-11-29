@@ -105,12 +105,9 @@ export class CookieSessionManager implements ISessionManager {
     const url = `${this.baseUrl}/api/available_remedies?limit=1`;
     this.logger?.debug('Initializing OOREP session', { url });
 
+    // httpClient.get() throws HttpError with response body on non-ok responses
     const response = await this.httpClient.get(url);
     this.storeCookies(response);
-
-    if (!response.ok) {
-      throw new Error(`Failed to initialize OOREP session (HTTP ${response.status})`);
-    }
 
     this.logger?.debug('OOREP session initialized');
   }

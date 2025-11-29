@@ -42,11 +42,27 @@ export interface ICache<T = unknown> {
   /**
    * Get cache statistics (optional)
    * @returns Promise resolving to cache stats
+   *
+   * @example
+   * ```typescript
+   * const stats = await cache.getStats?.();
+   * if (stats) {
+   *   console.log(`Cache size: ${stats.size}, TTL: ${stats.ttl}ms`);
+   * }
+   * ```
    */
   getStats?(): Promise<{ size: number; ttl?: number; [key: string]: unknown }>;
 
   /**
-   * Destroy the cache and cleanup resources
+   * Destroy the cache and cleanup resources (optional)
+   * Use this for cleanup when the cache is no longer needed
+   * (e.g., closing Redis connections, clearing timers)
+   *
+   * @example
+   * ```typescript
+   * // Cleanup on application shutdown
+   * await cache.destroy?.();
+   * ```
    */
   destroy?(): Promise<void>;
 }
@@ -56,19 +72,19 @@ export interface ICache<T = unknown> {
  * Always returns null for gets, ignores sets
  */
 export class NoOpCache<T = unknown> implements ICache<T> {
-  async get(): Promise<T | null> {
+  async get(_key: string): Promise<T | null> {
     return null;
   }
 
-  async set(): Promise<void> {
+  async set(_key: string, _value: T): Promise<void> {
     // No-op
   }
 
-  async has(): Promise<boolean> {
+  async has(_key: string): Promise<boolean> {
     return false;
   }
 
-  async delete(): Promise<void> {
+  async delete(_key: string): Promise<void> {
     // No-op
   }
 

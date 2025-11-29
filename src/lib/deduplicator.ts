@@ -6,6 +6,9 @@
 import type { IRequestDeduplicator } from '../interfaces/IRequestDeduplicator.js';
 import type { ILogger } from '../interfaces/ILogger.js';
 
+/** Default timeout for deduplicated requests (60 seconds) */
+const DEFAULT_DEDUPLICATION_TIMEOUT_MS = 60_000;
+
 /**
  * Map-based request deduplicator
  * Implements IRequestDeduplicator interface for dependency injection
@@ -22,21 +25,29 @@ export class MapRequestDeduplicator implements IRequestDeduplicator {
    * Deduplicate requests by key
    * If a request with the same key is already in flight, return the existing promise
    */
-  async deduplicate<T>(key: string, fn: () => Promise<T>, timeoutMs = 60000): Promise<T> {
+  async deduplicate<T>(
+    key: string,
+    fn: () => Promise<T>,
+    timeoutMs = DEFAULT_DEDUPLICATION_TIMEOUT_MS
+  ): Promise<T> {
     // If request already in flight, return existing promise
     if (this.pending.has(key)) {
       this.logger?.debug(`Request deduplication: using existing request for ${key}`);
       return this.pending.get(key) as Promise<T>;
     }
 
-    // Store timeout timer so it can be cleared
+    // Track which cleanup path won the race to prevent double-delete issues
+    let resolved = false;
     let timeoutTimer: NodeJS.Timeout | undefined;
 
     // Create a timeout promise that will cleanup if request hangs
     const timeoutPromise = new Promise<never>((_, reject) => {
       timeoutTimer = setTimeout(() => {
-        this.pending.delete(key);
-        reject(new Error(`Request timeout after ${timeoutMs}ms`));
+        if (!resolved) {
+          resolved = true;
+          this.pending.delete(key);
+          reject(new Error(`Request timeout after ${timeoutMs}ms`));
+        }
       }, timeoutMs);
 
       // Allow garbage collection if request completes before timeout
@@ -47,8 +58,11 @@ export class MapRequestDeduplicator implements IRequestDeduplicator {
 
     // Start new request with automatic cleanup
     const requestPromise = fn().finally(() => {
-      this.pending.delete(key);
-      // Clear the timeout if request completes
+      if (!resolved) {
+        resolved = true;
+        this.pending.delete(key);
+      }
+      // Always clear the timeout to prevent memory leaks
       if (timeoutTimer) {
         clearTimeout(timeoutTimer);
       }

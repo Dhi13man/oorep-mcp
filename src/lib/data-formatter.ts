@@ -161,8 +161,12 @@ export function formatMateriaMedicaResults(
   };
 }
 
+/** Maximum cache key length to ensure compatibility with cache backends (e.g., Memcached 250 bytes) */
+const MAX_CACHE_KEY_LENGTH = 250;
+
 /**
  * Generate a cache key from parameters
+ * Keys longer than MAX_CACHE_KEY_LENGTH are truncated with a hash suffix for uniqueness
  */
 export function generateCacheKey(
   prefix: string,
@@ -172,7 +176,30 @@ export function generateCacheKey(
     .sort()
     .map((key) => `${key}=${params[key]}`)
     .join('&');
-  return `${prefix}:${sortedParams}`;
+  const key = `${prefix}:${sortedParams}`;
+
+  if (key.length <= MAX_CACHE_KEY_LENGTH) {
+    return key;
+  }
+
+  // For keys exceeding the limit, use a simple hash suffix for uniqueness
+  // This ensures different long keys don't collide after truncation
+  const hash = simpleHash(key);
+  const truncatedLength = MAX_CACHE_KEY_LENGTH - hash.length - 1; // -1 for separator
+  return `${key.substring(0, truncatedLength)}#${hash}`;
+}
+
+/**
+ * Simple string hash function for cache key deduplication
+ * Uses djb2 algorithm - fast and produces reasonable distribution
+ */
+function simpleHash(str: string): string {
+  let hash = 5381;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash * 33) ^ str.charCodeAt(i);
+  }
+  // Convert to unsigned 32-bit integer and then to base36 for compact representation
+  return (hash >>> 0).toString(36);
 }
 
 /**

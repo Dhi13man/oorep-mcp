@@ -132,21 +132,13 @@ describe('CookieSessionManager', () => {
     });
 
     it('ensureSession_whenBootstrapFails_thenThrowsError', async () => {
-      // Arrange
-      const mockResponse: HttpResponse<unknown> = {
-        status: 500,
-        statusText: 'Internal Server Error',
-        ok: false,
-        headers: new Map(),
-        data: null,
-      };
-      mockHttpClient.get = vi.fn().mockResolvedValue(mockResponse);
+      // Arrange - httpClient.get() throws HttpError for non-ok responses
+      const httpError = new Error('HTTP 500: Internal Server Error');
+      mockHttpClient.get = vi.fn().mockRejectedValue(httpError);
       manager = new CookieSessionManager(mockHttpClient, baseUrl, mockLogger);
 
       // Act & Assert
-      await expect(manager.ensureSession()).rejects.toThrow(
-        'Failed to initialize OOREP session (HTTP 500)'
-      );
+      await expect(manager.ensureSession()).rejects.toThrow('HTTP 500: Internal Server Error');
     });
 
     it('ensureSession_whenNetworkError_thenThrowsError', async () => {

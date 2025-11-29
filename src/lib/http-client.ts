@@ -103,7 +103,8 @@ export class FetchHttpClient implements IHttpClient {
     } catch (error) {
       clearTimeout(timeoutId);
       if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error(`Request timeout after ${timeout}ms`);
+        // Use HTTP 408 Request Timeout status code for consistency
+        throw new HttpError(`Request timeout after ${timeout}ms`, 408);
       }
       throw error;
     }

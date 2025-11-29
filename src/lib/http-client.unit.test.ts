@@ -181,11 +181,15 @@ describe('FetchHttpClient', () => {
 
       // Act & Assert
       const promise = client.get(url);
-      const errorPromise = expect(promise).rejects.toThrow('Request timeout after 5000ms');
 
       // Fast-forward time to trigger timeout
-      await vi.runAllTimersAsync();
-      await errorPromise;
+      vi.runAllTimersAsync();
+
+      await expect(promise).rejects.toThrow(HttpError);
+      await expect(client.get(url)).rejects.toMatchObject({
+        status: 408,
+        message: 'Request timeout after 5000ms',
+      });
 
       expect(abortCalled).toBe(true);
     });
@@ -210,11 +214,15 @@ describe('FetchHttpClient', () => {
 
       // Act & Assert
       const promise = client.get(url, { timeout: 1000 });
-      const errorPromise = expect(promise).rejects.toThrow('Request timeout after 1000ms');
 
       // Fast-forward time to trigger timeout
-      await vi.runAllTimersAsync();
-      await errorPromise;
+      vi.runAllTimersAsync();
+
+      await expect(promise).rejects.toThrow(HttpError);
+      await expect(client.get(url, { timeout: 1000 })).rejects.toMatchObject({
+        status: 408,
+        message: 'Request timeout after 1000ms',
+      });
 
       expect(abortCalled).toBe(true);
     });

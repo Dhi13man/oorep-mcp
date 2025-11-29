@@ -20,6 +20,14 @@ export interface IRequestDeduplicator {
   /**
    * Get count of pending requests (optional, for monitoring)
    * @returns Number of requests currently in flight
+   *
+   * @example
+   * ```typescript
+   * const pending = deduplicator.getPendingCount?.() ?? 0;
+   * if (pending > 10) {
+   *   console.warn(`High pending request count: ${pending}`);
+   * }
+   * ```
    */
   getPendingCount?(): number;
 }
