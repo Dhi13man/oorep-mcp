@@ -1,0 +1,3 @@
+[submodule "oorep"]
+	path = oorep
+	url = git@github.com:nondeterministic/oorep.git
