@@ -16,7 +16,7 @@ export const SearchRepertoryArgsSchema = z.object({
     .string()
     .min(3, 'Symptom must be at least 3 characters')
     .max(200, 'Symptom must not exceed 200 characters')
-    .regex(/^[a-zA-Z0-9\s\-*"]+$/, 'Symptom contains invalid characters')
+    .regex(/^[a-zA-Z0-9\s\-*"'.,;:()\/&]+$/, 'Symptom contains invalid characters')
     .refine((s) => !/\w\*\w/.test(s), 'Wildcards (*) cannot appear in the middle of words')
     .transform((s) => s.trim()),
   repertory: z
