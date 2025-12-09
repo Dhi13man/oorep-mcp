@@ -150,11 +150,9 @@ export interface GeminiToolExecutors {
 export function createGeminiToolExecutors(client: OOREPSDKClient): GeminiToolExecutors {
   return {
     search_repertory: (args: SearchRepertoryArgs) => client.searchRepertory(args),
-    search_materia_medica: (args: SearchMateriaMedicaArgs) =>
-      client.searchMateriaMedica(args),
+    search_materia_medica: (args: SearchMateriaMedicaArgs) => client.searchMateriaMedica(args),
     get_remedy_info: (args: GetRemedyInfoArgs) => client.getRemedyInfo(args),
-    list_available_repertories: (args: ListRepertoriesArgs) =>
-      client.listRepertories(args),
+    list_available_repertories: (args: ListRepertoriesArgs) => client.listRepertories(args),
     list_available_materia_medicas: (args: ListMateriaMedicasArgs) =>
       client.listMateriaMedicas(args),
   };

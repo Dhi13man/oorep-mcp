@@ -1,6 +1,6 @@
 {
   "name": "oorep-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MCP server for OOREP homeopathic repertory and materia medica - enables AI assistants to search symptoms, remedies, and homeopathic reference materials",
   "mcpName": "io.github.dhi13man/oorep-mcp",
   "type": "module",
@@ -33,6 +33,10 @@
     "./sdk/langchain": {
       "types": "./dist/sdk/adapters/langchain.d.ts",
       "import": "./dist/sdk/adapters/langchain.js"
+    },
+    "./sdk/google-genai": {
+      "types": "./dist/sdk/adapters/google-genai.d.ts",
+      "import": "./dist/sdk/adapters/google-genai.js"
     },
     "./sdk/adapters": {
       "types": "./dist/sdk/adapters/index.d.ts",
