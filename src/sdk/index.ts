@@ -23,6 +23,21 @@
 // Re-export the main client
 export { OOREPSDKClient, createOOREPClient, type OOREPSDKConfig } from './client.js';
 
+// Re-export Resource types
+export type {
+  ResourceUri,
+  ResourceContent,
+} from './client.js';
+
+// Re-export Prompt types
+export type {
+  PromptName,
+  PromptMessage,
+  PromptResult,
+  AnalyzeSymptomsArgs,
+  RemedyComparisonArgs,
+} from './client.js';
+
 // Re-export all types
 export type {
   // Input types

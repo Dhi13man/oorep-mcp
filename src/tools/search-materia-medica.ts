@@ -3,7 +3,7 @@
  * Search materia medica texts for symptoms and return matching remedy sections
  */
 
-import { OOREPSDKClient, type OOREPSDKConfig } from '../sdk/client.js';
+import type { IOOREPSDKClient } from '../interfaces/IOOREPSDKClient.js';
 import {
   SearchMateriaMedicaArgsSchema,
   MateriaMedicaSearchResultSchema,
@@ -12,21 +12,9 @@ import {
 } from '../utils/schemas.js';
 import { sanitizeError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
-import type { OOREPConfig } from '../config.js';
 
 export class SearchMateriaMedicaTool {
-  private client: OOREPSDKClient;
-
-  constructor(config: OOREPConfig) {
-    const sdkConfig: OOREPSDKConfig = {
-      baseUrl: config.baseUrl,
-      timeoutMs: config.timeoutMs,
-      cacheTtlMs: config.cacheTtlMs,
-      defaultRepertory: config.defaultRepertory,
-      defaultMateriaMedica: config.defaultMateriaMedica,
-    };
-    this.client = new OOREPSDKClient(sdkConfig);
-  }
+  constructor(private client: IOOREPSDKClient) {}
 
   async execute(args: unknown): Promise<MateriaMedicaSearchResult> {
     try {
@@ -52,10 +40,6 @@ export class SearchMateriaMedicaTool {
       logger.error('Error in search_materia_medica', error);
       throw sanitizeError(error);
     }
-  }
-
-  destroy(): void {
-    this.client.destroy();
   }
 }
 

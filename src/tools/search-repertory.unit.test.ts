@@ -2,34 +2,17 @@
  * Unit tests for search_repertory tool
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { SearchRepertoryTool } from './search-repertory.js';
-import type { OOREPConfig } from '../config.js';
+import { createMockSDKClient } from './test-helpers.js';
 
 describe('SearchRepertoryTool', () => {
-  let mockTool: SearchRepertoryTool;
-  let mockConfig: OOREPConfig;
-  let mockSearchRepertory: ReturnType<typeof vi.fn>;
+  let tool: SearchRepertoryTool;
+  let mockClient: ReturnType<typeof createMockSDKClient>;
 
   beforeEach(() => {
-    mockConfig = {
-      baseUrl: 'https://test.oorep.com',
-      timeoutMs: 5000,
-      cacheTtlMs: 300000,
-      maxResults: 100,
-      logLevel: 'error',
-      defaultRepertory: 'test-rep',
-      defaultMateriaMedica: 'test-mm',
-    };
-
-    mockTool = new SearchRepertoryTool(mockConfig);
-
-    mockSearchRepertory = vi.fn();
-    (mockTool as any).client.searchRepertory = mockSearchRepertory;
-  });
-
-  afterEach(() => {
-    mockTool.destroy();
+    mockClient = createMockSDKClient();
+    tool = new SearchRepertoryTool(mockClient);
   });
 
   describe('execute', () => {
@@ -50,9 +33,9 @@ describe('SearchRepertoryTool', () => {
           },
         ],
       };
-      mockSearchRepertory.mockResolvedValue(mockResult);
+      mockClient.searchRepertory.mockResolvedValue(mockResult);
 
-      const result = await mockTool.execute({ symptom: 'headache' });
+      const result = await tool.execute({ symptom: 'headache' });
 
       expect(result.totalResults).toBe(1);
       expect(result.rubrics).toHaveLength(1);
@@ -64,11 +47,11 @@ describe('SearchRepertoryTool', () => {
         totalResults: 0,
         rubrics: [],
       };
-      mockSearchRepertory.mockResolvedValue(mockResult);
+      mockClient.searchRepertory.mockResolvedValue(mockResult);
 
-      await mockTool.execute({ symptom: 'test', repertory: 'kent' });
+      await tool.execute({ symptom: 'test', repertory: 'kent' });
 
-      expect(mockSearchRepertory).toHaveBeenCalledWith(
+      expect(mockClient.searchRepertory).toHaveBeenCalledWith(
         expect.objectContaining({
           repertory: 'kent',
         })
@@ -80,11 +63,11 @@ describe('SearchRepertoryTool', () => {
         totalResults: 0,
         rubrics: [],
       };
-      mockSearchRepertory.mockResolvedValue(mockResult);
+      mockClient.searchRepertory.mockResolvedValue(mockResult);
 
-      await mockTool.execute({ symptom: 'test', minWeight: 3 });
+      await tool.execute({ symptom: 'test', minWeight: 3 });
 
-      expect(mockSearchRepertory).toHaveBeenCalledWith(
+      expect(mockClient.searchRepertory).toHaveBeenCalledWith(
         expect.objectContaining({
           minWeight: 3,
         })
@@ -100,9 +83,9 @@ describe('SearchRepertoryTool', () => {
           remedies: [],
         })),
       };
-      mockSearchRepertory.mockResolvedValue(mockResult);
+      mockClient.searchRepertory.mockResolvedValue(mockResult);
 
-      const result = await mockTool.execute({ symptom: 'test', maxResults: 5 });
+      const result = await tool.execute({ symptom: 'test', maxResults: 5 });
 
       expect(result.rubrics).toHaveLength(5);
     });
@@ -132,9 +115,9 @@ describe('SearchRepertoryTool', () => {
           },
         ],
       };
-      mockSearchRepertory.mockResolvedValue(mockResult);
+      mockClient.searchRepertory.mockResolvedValue(mockResult);
 
-      const result = await mockTool.execute({ symptom: 'test', includeRemedyStats: true });
+      const result = await tool.execute({ symptom: 'test', includeRemedyStats: true });
 
       expect(result.remedyStats).toBeDefined();
       expect(result.remedyStats).toHaveLength(1);
@@ -151,43 +134,43 @@ describe('SearchRepertoryTool', () => {
           },
         ],
       };
-      mockSearchRepertory.mockResolvedValue(mockResult);
+      mockClient.searchRepertory.mockResolvedValue(mockResult);
 
-      const result = await mockTool.execute({ symptom: 'test', includeRemedyStats: false });
+      const result = await tool.execute({ symptom: 'test', includeRemedyStats: false });
 
       expect(result.remedyStats).toBeUndefined();
     });
 
     it('execute when symptom too short then throws ValidationError', async () => {
-      await expect(mockTool.execute({ symptom: 'ab' })).rejects.toThrow();
+      await expect(tool.execute({ symptom: 'ab' })).rejects.toThrow();
     });
 
     it('execute when symptom too long then throws ValidationError', async () => {
       const longSymptom = 'a'.repeat(201);
 
-      await expect(mockTool.execute({ symptom: longSymptom })).rejects.toThrow();
+      await expect(tool.execute({ symptom: longSymptom })).rejects.toThrow();
     });
 
     it('execute when symptom has invalid characters then throws ValidationError', async () => {
-      await expect(mockTool.execute({ symptom: 'test@symptom' })).rejects.toThrow();
+      await expect(tool.execute({ symptom: 'test@symptom' })).rejects.toThrow();
     });
 
     it('execute when symptom has wildcard in middle then throws ValidationError', async () => {
-      await expect(mockTool.execute({ symptom: 'he*d' })).rejects.toThrow();
+      await expect(tool.execute({ symptom: 'he*d' })).rejects.toThrow();
     });
 
     it('execute when symptom has multiple wildcards then throws ValidationError', async () => {
-      await expect(mockTool.execute({ symptom: 'test**' })).rejects.toThrow();
+      await expect(tool.execute({ symptom: 'test**' })).rejects.toThrow();
     });
 
     it('execute when API error then sanitizes error', async () => {
-      mockSearchRepertory.mockRejectedValue(new Error('API Error'));
+      mockClient.searchRepertory.mockRejectedValue(new Error('API Error'));
 
-      await expect(mockTool.execute({ symptom: 'test' })).rejects.toThrow();
+      await expect(tool.execute({ symptom: 'test' })).rejects.toThrow();
     });
 
     it('execute when invalid arguments then sanitizes error', async () => {
-      await expect(mockTool.execute({ invalid: 'field' })).rejects.toThrow();
+      await expect(tool.execute({ invalid: 'field' })).rejects.toThrow();
     });
 
     it('execute when symptom has whitespace then trims it', async () => {
@@ -195,11 +178,11 @@ describe('SearchRepertoryTool', () => {
         totalResults: 0,
         rubrics: [],
       };
-      mockSearchRepertory.mockResolvedValue(mockResult);
+      mockClient.searchRepertory.mockResolvedValue(mockResult);
 
-      await mockTool.execute({ symptom: '  headache  ' });
+      await tool.execute({ symptom: '  headache  ' });
 
-      expect(mockSearchRepertory).toHaveBeenCalledWith(
+      expect(mockClient.searchRepertory).toHaveBeenCalledWith(
         expect.objectContaining({
           symptom: 'headache',
         })
@@ -211,9 +194,9 @@ describe('SearchRepertoryTool', () => {
         totalResults: 0,
         rubrics: [],
       };
-      mockSearchRepertory.mockResolvedValue(mockResult);
+      mockClient.searchRepertory.mockResolvedValue(mockResult);
 
-      await expect(mockTool.execute({ symptom: 'head*' })).resolves.toBeDefined();
+      await expect(tool.execute({ symptom: 'head*' })).resolves.toBeDefined();
     });
 
     it('execute when valid wildcard at beginning then succeeds', async () => {
@@ -221,9 +204,9 @@ describe('SearchRepertoryTool', () => {
         totalResults: 0,
         rubrics: [],
       };
-      mockSearchRepertory.mockResolvedValue(mockResult);
+      mockClient.searchRepertory.mockResolvedValue(mockResult);
 
-      await expect(mockTool.execute({ symptom: '*ache' })).resolves.toBeDefined();
+      await expect(tool.execute({ symptom: '*ache' })).resolves.toBeDefined();
     });
   });
 });

@@ -3,7 +3,7 @@
  * Search for symptoms in homeopathic repertories and return matching rubrics with remedies
  */
 
-import { OOREPSDKClient, type OOREPSDKConfig } from '../sdk/client.js';
+import type { IOOREPSDKClient } from '../interfaces/IOOREPSDKClient.js';
 import {
   SearchRepertoryArgsSchema,
   RepertorySearchResultSchema,
@@ -12,21 +12,9 @@ import {
 } from '../utils/schemas.js';
 import { sanitizeError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
-import type { OOREPConfig } from '../config.js';
 
 export class SearchRepertoryTool {
-  private client: OOREPSDKClient;
-
-  constructor(config: OOREPConfig) {
-    const sdkConfig: OOREPSDKConfig = {
-      baseUrl: config.baseUrl,
-      timeoutMs: config.timeoutMs,
-      cacheTtlMs: config.cacheTtlMs,
-      defaultRepertory: config.defaultRepertory,
-      defaultMateriaMedica: config.defaultMateriaMedica,
-    };
-    this.client = new OOREPSDKClient(sdkConfig);
-  }
+  constructor(private client: IOOREPSDKClient) {}
 
   async execute(args: unknown): Promise<RepertorySearchResult> {
     try {
@@ -53,10 +41,6 @@ export class SearchRepertoryTool {
       logger.error('Error in search_repertory', error);
       throw sanitizeError(error);
     }
-  }
-
-  destroy(): void {
-    this.client.destroy();
   }
 }
 

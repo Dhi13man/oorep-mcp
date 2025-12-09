@@ -3,7 +3,7 @@
  * Retrieve comprehensive information about a specific homeopathic remedy
  */
 
-import { OOREPSDKClient, type OOREPSDKConfig } from '../sdk/client.js';
+import type { IOOREPSDKClient } from '../interfaces/IOOREPSDKClient.js';
 import {
   GetRemedyInfoArgsSchema,
   RemedyInfoSchema,
@@ -12,21 +12,9 @@ import {
 } from '../utils/schemas.js';
 import { sanitizeError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
-import type { OOREPConfig } from '../config.js';
 
 export class GetRemedyInfoTool {
-  private client: OOREPSDKClient;
-
-  constructor(config: OOREPConfig) {
-    const sdkConfig: OOREPSDKConfig = {
-      baseUrl: config.baseUrl,
-      timeoutMs: config.timeoutMs,
-      cacheTtlMs: config.cacheTtlMs,
-      defaultRepertory: config.defaultRepertory,
-      defaultMateriaMedica: config.defaultMateriaMedica,
-    };
-    this.client = new OOREPSDKClient(sdkConfig);
-  }
+  constructor(private client: IOOREPSDKClient) {}
 
   async execute(args: unknown): Promise<RemedyInfo> {
     try {
@@ -56,10 +44,6 @@ export class GetRemedyInfoTool {
       logger.error('Error in get_remedy_info', error);
       throw sanitizeError(error);
     }
-  }
-
-  destroy(): void {
-    this.client.destroy();
   }
 }
 

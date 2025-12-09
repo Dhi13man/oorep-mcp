@@ -478,3 +478,252 @@ describe('createOOREPClient factory - unit', () => {
     client.destroy();
   });
 });
+
+describe('Resource Access Methods', () => {
+  describe('getResource', () => {
+    it('returns search syntax help resource', async () => {
+      const client = new OOREPSDKClient();
+
+      const result = await client.getResource('oorep://help/search-syntax');
+
+      expect(result.uri).toBe('oorep://help/search-syntax');
+      expect(result.mimeType).toBe('text/markdown');
+      expect(result.text).toContain('# OOREP Search Syntax Guide');
+      expect(result.text).toContain('## Wildcards');
+      expect(result.text).toContain('## Exclusions');
+
+      client.destroy();
+    });
+
+    it('returns remedies list resource', async () => {
+      const client = new OOREPSDKClient();
+
+      mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue([
+        { id: 1, nameAbbrev: 'Acon.', nameLong: 'Aconitum napellus', namealt: [] },
+        { id: 2, nameAbbrev: 'Bell.', nameLong: 'Belladonna', namealt: [] },
+      ]);
+
+      const result = await client.getResource('oorep://remedies/list');
+
+      expect(result.uri).toBe('oorep://remedies/list');
+      expect(result.mimeType).toBe('application/json');
+      expect(JSON.parse(result.text)).toHaveLength(2);
+
+      client.destroy();
+    });
+
+    it('returns repertories list resource', async () => {
+      const client = new OOREPSDKClient();
+
+      mockOOREPClientInstance.getAvailableRepertories.mockResolvedValue([
+        { abbreviation: 'kent', title: 'Kent', language: 'en', author: 'Kent' },
+      ]);
+
+      const result = await client.getResource('oorep://repertories/list');
+
+      expect(result.uri).toBe('oorep://repertories/list');
+      expect(result.mimeType).toBe('application/json');
+      expect(JSON.parse(result.text)).toHaveLength(1);
+
+      client.destroy();
+    });
+
+    it('returns materia medicas list resource', async () => {
+      const client = new OOREPSDKClient();
+
+      mockOOREPClientInstance.getAvailableMateriaMedicas.mockResolvedValue([
+        { abbreviation: 'boericke', title: 'Boericke', language: 'en', author: 'Boericke' },
+      ]);
+
+      const result = await client.getResource('oorep://materia-medicas/list');
+
+      expect(result.uri).toBe('oorep://materia-medicas/list');
+      expect(result.mimeType).toBe('application/json');
+      expect(JSON.parse(result.text)).toHaveLength(1);
+
+      client.destroy();
+    });
+
+    it('returns cached resource on second call', async () => {
+      const client = new OOREPSDKClient();
+
+      const cachedResource = {
+        uri: 'oorep://help/search-syntax' as const,
+        mimeType: 'text/markdown',
+        text: 'cached content',
+      };
+      mockCacheInstance.get.mockResolvedValue(cachedResource);
+
+      const result = await client.getResource('oorep://help/search-syntax');
+
+      expect(result).toBe(cachedResource);
+
+      client.destroy();
+    });
+  });
+
+  describe('getSearchSyntaxHelp', () => {
+    it('returns markdown text directly', async () => {
+      const client = new OOREPSDKClient();
+
+      // Ensure cache returns null so we get fresh content
+      mockCacheInstance.get.mockResolvedValue(null);
+
+      const result = await client.getSearchSyntaxHelp();
+
+      expect(typeof result).toBe('string');
+      expect(result).toContain('# OOREP Search Syntax Guide');
+
+      client.destroy();
+    });
+  });
+
+  describe('listResources', () => {
+    it('returns all available resource definitions', () => {
+      const client = new OOREPSDKClient();
+
+      const resources = client.listResources();
+
+      expect(resources).toHaveLength(4);
+      expect(resources.map((r) => r.uri)).toContain('oorep://remedies/list');
+      expect(resources.map((r) => r.uri)).toContain('oorep://repertories/list');
+      expect(resources.map((r) => r.uri)).toContain('oorep://materia-medicas/list');
+      expect(resources.map((r) => r.uri)).toContain('oorep://help/search-syntax');
+
+      client.destroy();
+    });
+
+    it('includes metadata for each resource', () => {
+      const client = new OOREPSDKClient();
+
+      const resources = client.listResources();
+      const searchSyntax = resources.find((r) => r.uri === 'oorep://help/search-syntax');
+
+      expect(searchSyntax).toBeDefined();
+      expect(searchSyntax!.name).toBe('OOREP Search Syntax Help');
+      expect(searchSyntax!.mimeType).toBe('text/markdown');
+      expect(searchSyntax!.description).toContain('search syntax');
+
+      client.destroy();
+    });
+  });
+});
+
+describe('Prompt Access Methods', () => {
+  describe('getPrompt', () => {
+    it('returns analyze-symptoms prompt without args', async () => {
+      const client = new OOREPSDKClient();
+
+      const result = await client.getPrompt('analyze-symptoms');
+
+      expect(result.name).toBe('analyze-symptoms');
+      expect(result.messages).toHaveLength(1);
+      expect(result.messages[0].role).toBe('user');
+      expect(result.messages[0].content.text).toContain('Gather Chief Complaint');
+      expect(result.messages[0].content.text).toContain('Search Repertory');
+
+      client.destroy();
+    });
+
+    it('returns analyze-symptoms prompt with initial symptom', async () => {
+      const client = new OOREPSDKClient();
+
+      const result = await client.getPrompt('analyze-symptoms', {
+        symptom_description: 'throbbing headache',
+      });
+
+      expect(result.messages[0].content.text).toContain('throbbing headache');
+      expect(result.messages[0].content.text).toContain('Initial symptom:');
+
+      client.destroy();
+    });
+
+    it('returns remedy-comparison prompt with remedies', async () => {
+      const client = new OOREPSDKClient();
+
+      const result = await client.getPrompt('remedy-comparison', {
+        remedies: 'Aconite,Belladonna,Gelsemium',
+      });
+
+      expect(result.name).toBe('remedy-comparison');
+      expect(result.messages[0].content.text).toContain('Aconite, Belladonna, Gelsemium');
+      expect(result.messages[0].content.text).toContain('Comparison Table');
+
+      client.destroy();
+    });
+
+    it('throws error for remedy-comparison without remedies', async () => {
+      const client = new OOREPSDKClient();
+
+      await expect(client.getPrompt('remedy-comparison', {} as any)).rejects.toThrow(
+        'remedies argument is required'
+      );
+
+      client.destroy();
+    });
+
+    it('throws error for remedy-comparison with only one remedy', async () => {
+      const client = new OOREPSDKClient();
+
+      await expect(client.getPrompt('remedy-comparison', { remedies: 'Aconite' })).rejects.toThrow(
+        'At least 2 remedies are required'
+      );
+
+      client.destroy();
+    });
+
+    it('returns repertorization-workflow prompt', async () => {
+      const client = new OOREPSDKClient();
+
+      const result = await client.getPrompt('repertorization-workflow');
+
+      expect(result.name).toBe('repertorization-workflow');
+      expect(result.messages[0].content.text).toContain('STEP 1: Chief Complaint');
+      expect(result.messages[0].content.text).toContain('STEP 7: Recommendations');
+      expect(result.messages[0].content.text).toContain('Detailed Symptom Gathering');
+
+      client.destroy();
+    });
+  });
+
+  describe('listPrompts', () => {
+    it('returns all available prompt definitions', () => {
+      const client = new OOREPSDKClient();
+
+      const prompts = client.listPrompts();
+
+      expect(prompts).toHaveLength(3);
+      expect(prompts.map((p) => p.name)).toContain('analyze-symptoms');
+      expect(prompts.map((p) => p.name)).toContain('remedy-comparison');
+      expect(prompts.map((p) => p.name)).toContain('repertorization-workflow');
+
+      client.destroy();
+    });
+
+    it('includes arguments metadata for each prompt', () => {
+      const client = new OOREPSDKClient();
+
+      const prompts = client.listPrompts();
+      const comparison = prompts.find((p) => p.name === 'remedy-comparison');
+
+      expect(comparison).toBeDefined();
+      expect(comparison!.arguments).toHaveLength(1);
+      expect(comparison!.arguments![0].name).toBe('remedies');
+      expect(comparison!.arguments![0].required).toBe(true);
+
+      client.destroy();
+    });
+
+    it('marks repertorization-workflow as having no arguments', () => {
+      const client = new OOREPSDKClient();
+
+      const prompts = client.listPrompts();
+      const workflow = prompts.find((p) => p.name === 'repertorization-workflow');
+
+      expect(workflow).toBeDefined();
+      expect(workflow!.arguments).toHaveLength(0);
+
+      client.destroy();
+    });
+  });
+});

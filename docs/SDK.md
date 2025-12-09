@@ -222,6 +222,132 @@ try {
 }
 ```
 
+## Resources
+
+The SDK provides access to MCP resources for rich context injection:
+
+```typescript
+import { createOOREPClient } from 'oorep-mcp/sdk/client';
+
+const client = createOOREPClient();
+
+// Get search syntax help (markdown) - great for system prompts
+const searchHelp = await client.getSearchSyntaxHelp();
+console.log(searchHelp); // Markdown guide for search syntax
+
+// Get any resource by URI
+const remedies = await client.getResource('oorep://remedies/list');
+console.log(remedies.text); // JSON with 600+ remedies
+
+// List all available resources
+const resources = client.listResources();
+// Returns: { uri, name, description, mimeType }[]
+
+client.destroy();
+```
+
+### Available Resources
+
+| URI | Description | MIME Type |
+|-----|-------------|-----------|
+| `oorep://remedies/list` | Complete list of 600+ homeopathic remedies | `application/json` |
+| `oorep://repertories/list` | All available repertories with metadata | `application/json` |
+| `oorep://materia-medicas/list` | All available materia medicas with metadata | `application/json` |
+| `oorep://help/search-syntax` | Search syntax guide with examples | `text/markdown` |
+
+### Using Resources for Better Search Accuracy
+
+Inject the search syntax guide into your system prompt:
+
+```typescript
+const searchSyntax = await client.getSearchSyntaxHelp();
+
+const systemPrompt = `You are a homeopathic analysis assistant.
+
+${searchSyntax}
+
+Use the search_repertory tool with the syntax rules above.`;
+```
+
+## Prompts
+
+The SDK provides pre-built prompt workflows for common homeopathic analysis tasks:
+
+```typescript
+import { createOOREPClient } from 'oorep-mcp/sdk/client';
+
+const client = createOOREPClient();
+
+// Get the repertorization workflow (7-step process)
+const workflow = await client.getPrompt('repertorization-workflow');
+console.log(workflow.messages[0].content.text);
+// Returns structured workflow with steps for case taking
+
+// Analyze symptoms with optional initial description
+const analysis = await client.getPrompt('analyze-symptoms', {
+  symptom_description: 'throbbing headache worse from light',
+});
+
+// Compare multiple remedies
+const comparison = await client.getPrompt('remedy-comparison', {
+  remedies: 'Belladonna,Gelsemium,Bryonia',
+});
+
+// List all available prompts
+const prompts = client.listPrompts();
+// Returns: { name, description, arguments }[]
+
+client.destroy();
+```
+
+### Available Prompts
+
+| Prompt | Description | Arguments |
+|--------|-------------|-----------|
+| `analyze-symptoms` | Guided workflow for systematic symptom analysis | `symptom_description?` (optional initial symptom) |
+| `remedy-comparison` | Compare 2-6 remedies side-by-side | `remedies` (comma-separated, required) |
+| `repertorization-workflow` | 7-step case taking and repertorization | None |
+
+### Prompt Message Format
+
+Prompts return messages ready for LLM consumption:
+
+```typescript
+interface PromptResult {
+  name: PromptName;
+  description: string;
+  messages: Array<{
+    role: 'user' | 'assistant';
+    content: { type: 'text'; text: string };
+  }>;
+}
+```
+
+### Using Prompts with AI SDKs
+
+```typescript
+// With OpenAI
+const workflow = await client.getPrompt('repertorization-workflow');
+const response = await openai.chat.completions.create({
+  model: 'gpt-4o',
+  messages: workflow.messages.map(m => ({
+    role: m.role,
+    content: m.content.text,
+  })),
+  tools: openAITools,
+});
+
+// With Gemini
+const analysis = await client.getPrompt('analyze-symptoms', {
+  symptom_description: 'anxiety worse at night',
+});
+const response = await ai.models.generateContent({
+  model: 'gemini-2.0-flash',
+  contents: analysis.messages[0].content.text,
+  config: { tools: geminiTools },
+});
+```
+
 ## Available Tools
 
 All adapters provide these tools:
@@ -266,7 +392,18 @@ import type {
   Remedy,
   MateriaMedicaResult,
   MateriaMedicaSection,
-} from 'oorep-mcp/sdk/tools';
+
+  // Resource types
+  ResourceUri,
+  ResourceContent,
+
+  // Prompt types
+  PromptName,
+  PromptMessage,
+  PromptResult,
+  AnalyzeSymptomsArgs,
+  RemedyComparisonArgs,
+} from 'oorep-mcp/sdk/client';
 
 import type { OOREPSDKClient, OOREPSDKConfig } from 'oorep-mcp/sdk/client';
 ```
