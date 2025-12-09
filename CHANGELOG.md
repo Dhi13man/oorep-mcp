@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2025-12-09
+
+### Changed
+
+- **Relaxed Symptom Validation**: Removed overly restrictive regex and wildcard validation from `search_repertory` tool
+  - Regex `/^[a-zA-Z0-9\s\-*"'.,;:()/&]+$/` was rejecting valid symptoms with Unicode characters, accented letters, and special formatting
+  - Wildcard-in-middle-of-word validation removed as it was causing false positives
+  - The OOREP API handles input sanitization server-side; client-side restrictions were unnecessary
+  - Fixes validation errors when LLMs (especially Google Gemini) send symptom queries with non-ASCII characters
+
 ## [1.0.2] - 2025-12-09
 
 ### Changed
@@ -243,6 +253,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - For full functionality, users should run a local OOREP instance or configure authentication
 - Public metadata endpoints work without authentication (remedies list, repertories list, materia medicas list)
 
+[1.0.3]: https://github.com/Dhi13man/oorep-mcp/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/Dhi13man/oorep-mcp/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/Dhi13man/oorep-mcp/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.9...v1.0.0

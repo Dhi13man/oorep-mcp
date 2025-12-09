@@ -649,10 +649,9 @@ graph TB
 
 All inputs are validated using Zod schemas:
 
-- **Symptom searches**: 3-200 characters, alphanumeric with wildcards (`*`), quotes, and hyphens
+- **Symptom searches**: 3-200 characters, trimmed of whitespace
 - **Remedy names**: 1-100 characters
-- **Invalid characters**: `@`, `#`, `$`, `%`, `^`, `&` are rejected
-- **Wildcards**: Only at word boundaries (e.g., `head*` allowed, `he*d` rejected)
+- **Server-side sanitization**: The OOREP API handles additional input sanitization
 
 ### Error Handling
 

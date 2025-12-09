@@ -25,6 +25,8 @@ export function validateWildcard(symptom: string): void {
 
 /**
  * Validate search symptom input
+ * Note: Character validation is intentionally minimal - the OOREP API handles sanitization server-side.
+ * This allows Unicode characters, accented letters, and special formatting that LLMs may generate.
  */
 export function validateSymptom(symptom: string): void {
   const trimmed = symptom.trim();
@@ -40,16 +42,6 @@ export function validateSymptom(symptom: string): void {
   if (trimmed.length > 200) {
     throw new ValidationError('Symptom must not exceed 200 characters');
   }
-
-  // Check for invalid characters (allow alphanumeric, spaces, hyphens, wildcards, quotes)
-  const invalidChars = /[^a-zA-Z0-9\s\-*"]/;
-  if (invalidChars.test(trimmed)) {
-    throw new ValidationError(
-      'Symptom contains invalid characters. Only letters, numbers, spaces, hyphens, wildcards (*), and quotes (") are allowed.'
-    );
-  }
-
-  validateWildcard(trimmed);
 }
 
 /**

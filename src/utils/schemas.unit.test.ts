@@ -68,16 +68,15 @@ describe('SearchRepertoryArgsSchema', () => {
     expect(() => SearchRepertoryArgsSchema.parse(input)).toThrow();
   });
 
-  it('SearchRepertoryArgsSchema when symptom has invalid characters then throws error', () => {
-    const input = { symptom: 'head@ache' };
+  it('SearchRepertoryArgsSchema when symptom has special characters then parses successfully', () => {
+    // Previously these would throw, now they should pass through to the API
+    const input1 = { symptom: 'head@ache' };
+    const input2 = { symptom: 'héadàche' }; // Unicode accented characters
+    const input3 = { symptom: 'he*d' }; // Wildcard in middle
 
-    expect(() => SearchRepertoryArgsSchema.parse(input)).toThrow();
-  });
-
-  it('SearchRepertoryArgsSchema when wildcard in middle of word then throws error', () => {
-    const input = { symptom: 'he*d' };
-
-    expect(() => SearchRepertoryArgsSchema.parse(input)).toThrow();
+    expect(SearchRepertoryArgsSchema.parse(input1).symptom).toBe('head@ache');
+    expect(SearchRepertoryArgsSchema.parse(input2).symptom).toBe('héadàche');
+    expect(SearchRepertoryArgsSchema.parse(input3).symptom).toBe('he*d');
   });
 
   it('SearchRepertoryArgsSchema when minWeight is out of range then throws error', () => {
