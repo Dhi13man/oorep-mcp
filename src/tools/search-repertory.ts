@@ -12,6 +12,7 @@ import {
 } from '../utils/schemas.js';
 import { sanitizeError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
+import { TOOL_NAMES } from '../sdk/constants.js';
 
 export class SearchRepertoryTool {
   constructor(private client: IOOREPSDKClient) {}
@@ -45,7 +46,7 @@ export class SearchRepertoryTool {
 }
 
 export const searchRepertoryToolDefinition = {
-  name: 'search_repertory',
+  name: TOOL_NAMES.SEARCH_REPERTORY,
   description:
     'Search for symptoms in homeopathic repertories and return matching rubrics with remedies. ' +
     'Supports wildcards (*), exclusions (-), and exact phrases ("). ' +

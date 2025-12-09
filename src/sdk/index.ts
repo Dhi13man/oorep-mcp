@@ -23,15 +23,31 @@
 // Re-export the main client
 export { OOREPSDKClient, createOOREPClient, type OOREPSDKConfig } from './client.js';
 
+// Re-export constants (single source of truth)
+export {
+  // Tool constants
+  TOOL_NAMES,
+  ALL_TOOL_NAMES,
+  type ToolName,
+  // Resource constants
+  RESOURCE_URIS,
+  ALL_RESOURCE_URIS,
+  type ResourceUri,
+  // Prompt constants
+  PROMPT_NAMES,
+  ALL_PROMPT_NAMES,
+  type PromptName,
+  // Default values
+  DEFAULTS,
+  // MIME types
+  MIME_TYPES,
+} from './constants.js';
+
 // Re-export Resource types
-export type {
-  ResourceUri,
-  ResourceContent,
-} from './client.js';
+export type { ResourceContent } from './client.js';
 
 // Re-export Prompt types
 export type {
-  PromptName,
   PromptMessage,
   PromptResult,
   AnalyzeSymptomsArgs,

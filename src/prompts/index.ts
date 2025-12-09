@@ -5,7 +5,8 @@
  * The SDK is the single source of truth for all prompt logic.
  */
 
-import { OOREPSDKClient, type PromptName } from '../sdk/client.js';
+import { OOREPSDKClient } from '../sdk/client.js';
+import { ALL_PROMPT_NAMES, PROMPT_NAMES, type PromptName } from '../sdk/constants.js';
 import { logger } from '../utils/logger.js';
 
 export interface PromptDefinition {
@@ -44,9 +45,8 @@ export class PromptRegistry {
   ): Promise<{ messages: PromptMessage[] }> {
     logger.info('Getting prompt', { name, args });
 
-    // Validate prompt name
-    const validNames: PromptName[] = ['analyze-symptoms', 'remedy-comparison', 'repertorization-workflow'];
-    if (!validNames.includes(name as PromptName)) {
+    // Validate prompt name using constants
+    if (!ALL_PROMPT_NAMES.includes(name as PromptName)) {
       throw new Error(`Prompt not found: ${name}`);
     }
 
@@ -56,21 +56,21 @@ export class PromptRegistry {
     // SDK getPrompt has overloaded signatures, handle each case
     let result;
     switch (promptName) {
-      case 'analyze-symptoms':
-        result = await this.sdk.getPrompt('analyze-symptoms', {
+      case PROMPT_NAMES.ANALYZE_SYMPTOMS:
+        result = await this.sdk.getPrompt(PROMPT_NAMES.ANALYZE_SYMPTOMS, {
           symptom_description: args?.symptom_description,
         });
         break;
-      case 'remedy-comparison':
+      case PROMPT_NAMES.REMEDY_COMPARISON:
         if (!args?.remedies) {
           throw new Error('remedies argument is required for remedy-comparison prompt');
         }
-        result = await this.sdk.getPrompt('remedy-comparison', {
+        result = await this.sdk.getPrompt(PROMPT_NAMES.REMEDY_COMPARISON, {
           remedies: args.remedies,
         });
         break;
-      case 'repertorization-workflow':
-        result = await this.sdk.getPrompt('repertorization-workflow');
+      case PROMPT_NAMES.REPERTORIZATION_WORKFLOW:
+        result = await this.sdk.getPrompt(PROMPT_NAMES.REPERTORIZATION_WORKFLOW);
         break;
     }
 

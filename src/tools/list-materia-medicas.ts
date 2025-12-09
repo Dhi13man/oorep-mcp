@@ -13,6 +13,7 @@ import {
 } from '../utils/schemas.js';
 import { sanitizeError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
+import { TOOL_NAMES } from '../sdk/constants.js';
 
 export class ListMateriaMedicasTool {
   constructor(private client: IOOREPSDKClient) {}
@@ -42,7 +43,7 @@ export class ListMateriaMedicasTool {
 }
 
 export const listMateriaMedicasToolDefinition = {
-  name: 'list_available_materia_medicas',
+  name: TOOL_NAMES.LIST_MATERIA_MEDICAS,
   description:
     'Get a complete list of all available homeopathic materia medicas with their metadata including ' +
     'title, author, and language. Useful for discovering which materia medicas are available for searching.',

@@ -32,19 +32,17 @@ import {
   type RepertoryMetadata,
   type MateriaMedicaMetadata,
 } from '../utils/schemas.js';
+import {
+  RESOURCE_URIS,
+  PROMPT_NAMES,
+  DEFAULTS,
+  MIME_TYPES,
+  type ResourceUri,
+  type PromptName,
+} from './constants.js';
 
-// ============================================================================
-// Resource and Prompt Types for SDK
-// ============================================================================
-
-/**
- * Available resource URIs that can be fetched via getResource()
- */
-export type ResourceUri =
-  | 'oorep://remedies/list'
-  | 'oorep://repertories/list'
-  | 'oorep://materia-medicas/list'
-  | 'oorep://help/search-syntax';
+// Re-export types from constants for backward compatibility
+export type { ResourceUri, PromptName } from './constants.js';
 
 /**
  * Resource content returned by getResource()
@@ -54,11 +52,6 @@ export interface ResourceContent {
   mimeType: string;
   text: string;
 }
-
-/**
- * Available prompt names that can be fetched via getPrompt()
- */
-export type PromptName = 'analyze-symptoms' | 'remedy-comparison' | 'repertorization-workflow';
 
 /**
  * A single message in a prompt workflow
@@ -164,13 +157,13 @@ export class OOREPSDKClient {
   }
 
   constructor(config: OOREPSDKConfig = {}) {
-    // Set up core configuration
+    // Set up core configuration using constants as defaults
     this.config = {
-      baseUrl: config.baseUrl ?? 'https://www.oorep.com',
-      timeoutMs: config.timeoutMs ?? 30000,
-      cacheTtlMs: config.cacheTtlMs ?? 300000,
-      defaultRepertory: config.defaultRepertory ?? 'publicum',
-      defaultMateriaMedica: config.defaultMateriaMedica ?? 'boericke',
+      baseUrl: config.baseUrl ?? DEFAULTS.BASE_URL,
+      timeoutMs: config.timeoutMs ?? DEFAULTS.TIMEOUT_MS,
+      cacheTtlMs: config.cacheTtlMs ?? DEFAULTS.CACHE_TTL_MS,
+      defaultRepertory: config.defaultRepertory ?? DEFAULTS.REPERTORY,
+      defaultMateriaMedica: config.defaultMateriaMedica ?? DEFAULTS.MATERIA_MEDICA,
     };
 
     // Set up injectable dependencies with sensible defaults
@@ -426,40 +419,40 @@ export class OOREPSDKClient {
       let result: ResourceContent;
 
       switch (uri) {
-        case 'oorep://remedies/list': {
+        case RESOURCE_URIS.REMEDIES_LIST: {
           const remedies = await this.client.getAvailableRemedies();
           result = {
             uri,
-            mimeType: 'application/json',
+            mimeType: MIME_TYPES.JSON,
             text: JSON.stringify(remedies, null, 2),
           };
           break;
         }
 
-        case 'oorep://repertories/list': {
+        case RESOURCE_URIS.REPERTORIES_LIST: {
           const repertories = await this.client.getAvailableRepertories();
           result = {
             uri,
-            mimeType: 'application/json',
+            mimeType: MIME_TYPES.JSON,
             text: JSON.stringify(repertories, null, 2),
           };
           break;
         }
 
-        case 'oorep://materia-medicas/list': {
+        case RESOURCE_URIS.MATERIA_MEDICAS_LIST: {
           const materiaMedicas = await this.client.getAvailableMateriaMedicas();
           result = {
             uri,
-            mimeType: 'application/json',
+            mimeType: MIME_TYPES.JSON,
             text: JSON.stringify(materiaMedicas, null, 2),
           };
           break;
         }
 
-        case 'oorep://help/search-syntax': {
+        case RESOURCE_URIS.SEARCH_SYNTAX_HELP: {
           result = {
             uri,
-            mimeType: 'text/markdown',
+            mimeType: MIME_TYPES.MARKDOWN,
             text: this.getSearchSyntaxHelpText(),
           };
           break;
@@ -501,28 +494,28 @@ export class OOREPSDKClient {
   listResources(): Array<{ uri: ResourceUri; name: string; description: string; mimeType: string }> {
     return [
       {
-        uri: 'oorep://remedies/list',
+        uri: RESOURCE_URIS.REMEDIES_LIST,
         name: 'Available Remedies List',
         description: 'Complete list of all available homeopathic remedies with names and abbreviations',
-        mimeType: 'application/json',
+        mimeType: MIME_TYPES.JSON,
       },
       {
-        uri: 'oorep://repertories/list',
+        uri: RESOURCE_URIS.REPERTORIES_LIST,
         name: 'Available Repertories List',
         description: 'List of all accessible repertories with metadata (title, author, language)',
-        mimeType: 'application/json',
+        mimeType: MIME_TYPES.JSON,
       },
       {
-        uri: 'oorep://materia-medicas/list',
+        uri: RESOURCE_URIS.MATERIA_MEDICAS_LIST,
         name: 'Available Materia Medicas List',
         description: 'List of all accessible materia medicas with metadata (title, author, language)',
-        mimeType: 'application/json',
+        mimeType: MIME_TYPES.JSON,
       },
       {
-        uri: 'oorep://help/search-syntax',
+        uri: RESOURCE_URIS.SEARCH_SYNTAX_HELP,
         name: 'OOREP Search Syntax Help',
         description: 'Guide to OOREP search syntax including wildcards, exclusions, and exact phrases',
-        mimeType: 'text/markdown',
+        mimeType: MIME_TYPES.MARKDOWN,
       },
     ];
   }
@@ -561,10 +554,10 @@ export class OOREPSDKClient {
     args?: AnalyzeSymptomsArgs | RemedyComparisonArgs
   ): Promise<PromptResult> {
     switch (name) {
-      case 'analyze-symptoms':
+      case PROMPT_NAMES.ANALYZE_SYMPTOMS:
         return this.getAnalyzeSymptomsPrompt(args as AnalyzeSymptomsArgs | undefined);
 
-      case 'remedy-comparison': {
+      case PROMPT_NAMES.REMEDY_COMPARISON: {
         const compArgs = args as RemedyComparisonArgs | undefined;
         if (!compArgs?.remedies) {
           throw new Error('remedies argument is required for remedy-comparison prompt');
@@ -572,7 +565,7 @@ export class OOREPSDKClient {
         return this.getRemedyComparisonPrompt(compArgs.remedies);
       }
 
-      case 'repertorization-workflow':
+      case PROMPT_NAMES.REPERTORIZATION_WORKFLOW:
         return this.getRepertorizationWorkflowPrompt();
 
       default: {
@@ -592,7 +585,7 @@ export class OOREPSDKClient {
   }> {
     return [
       {
-        name: 'analyze-symptoms',
+        name: PROMPT_NAMES.ANALYZE_SYMPTOMS,
         description:
           'Guide AI through structured symptom analysis workflow for homeopathic case taking. ' +
           'Helps systematically analyze symptoms and find relevant remedies.',
@@ -605,7 +598,7 @@ export class OOREPSDKClient {
         ],
       },
       {
-        name: 'remedy-comparison',
+        name: PROMPT_NAMES.REMEDY_COMPARISON,
         description:
           'Compare multiple homeopathic remedies side-by-side to identify the best match. ' +
           'Useful for differential diagnosis between similar remedies.',
@@ -619,7 +612,7 @@ export class OOREPSDKClient {
         ],
       },
       {
-        name: 'repertorization-workflow',
+        name: PROMPT_NAMES.REPERTORIZATION_WORKFLOW,
         description:
           'Step-by-step case taking and repertorization workflow for comprehensive case analysis. ' +
           'Guides through symptom gathering, repertorization, and remedy selection.',
@@ -702,7 +695,7 @@ This is a search tool only. Always consult with a qualified homeopathic practiti
       : '';
 
     return {
-      name: 'analyze-symptoms',
+      name: PROMPT_NAMES.ANALYZE_SYMPTOMS,
       description:
         'Guide AI through structured symptom analysis workflow for homeopathic case taking.',
       messages: [
@@ -793,7 +786,7 @@ Guidelines:
     ].join('\n   ');
 
     return {
-      name: 'remedy-comparison',
+      name: PROMPT_NAMES.REMEDY_COMPARISON,
       description: 'Compare multiple homeopathic remedies side-by-side to identify the best match.',
       messages: [
         {
@@ -852,7 +845,7 @@ Remember:
 
   private getRepertorizationWorkflowPrompt(): PromptResult {
     return {
-      name: 'repertorization-workflow',
+      name: PROMPT_NAMES.REPERTORIZATION_WORKFLOW,
       description:
         'Step-by-step case taking and repertorization workflow for comprehensive case analysis.',
       messages: [

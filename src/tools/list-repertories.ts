@@ -13,6 +13,7 @@ import {
 } from '../utils/schemas.js';
 import { sanitizeError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
+import { TOOL_NAMES } from '../sdk/constants.js';
 
 export class ListRepertoriesTool {
   constructor(private client: IOOREPSDKClient) {}
@@ -42,7 +43,7 @@ export class ListRepertoriesTool {
 }
 
 export const listRepertoriesToolDefinition = {
-  name: 'list_available_repertories',
+  name: TOOL_NAMES.LIST_REPERTORIES,
   description:
     'Get a complete list of all available homeopathic repertories with their metadata including ' +
     'title, author, and language. Useful for discovering which repertories are available for searching.',

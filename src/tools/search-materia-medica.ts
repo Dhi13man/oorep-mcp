@@ -12,6 +12,7 @@ import {
 } from '../utils/schemas.js';
 import { sanitizeError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
+import { TOOL_NAMES } from '../sdk/constants.js';
 
 export class SearchMateriaMedicaTool {
   constructor(private client: IOOREPSDKClient) {}
@@ -44,7 +45,7 @@ export class SearchMateriaMedicaTool {
 }
 
 export const searchMateriaMedicaToolDefinition = {
-  name: 'search_materia_medica',
+  name: TOOL_NAMES.SEARCH_MATERIA_MEDICA,
   description:
     'Search materia medica texts for symptoms and return matching remedy sections. ' +
     'Materia medicas provide detailed descriptions of remedy characteristics, symptoms, and clinical applications. ' +

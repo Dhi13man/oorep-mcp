@@ -12,6 +12,7 @@ import {
 } from '../utils/schemas.js';
 import { sanitizeError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
+import { TOOL_NAMES } from '../sdk/constants.js';
 
 export class GetRemedyInfoTool {
   constructor(private client: IOOREPSDKClient) {}
@@ -48,7 +49,7 @@ export class GetRemedyInfoTool {
 }
 
 export const getRemedyInfoToolDefinition = {
-  name: 'get_remedy_info',
+  name: TOOL_NAMES.GET_REMEDY_INFO,
   description:
     'Retrieve comprehensive information about a specific homeopathic remedy including ' +
     'its full name, abbreviations, and alternative names. Useful for learning about individual remedies.',

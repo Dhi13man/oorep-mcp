@@ -5,7 +5,8 @@
  * The SDK is the single source of truth for all resource logic.
  */
 
-import { OOREPSDKClient, type ResourceUri } from '../sdk/client.js';
+import { OOREPSDKClient } from '../sdk/client.js';
+import { ALL_RESOURCE_URIS, type ResourceUri } from '../sdk/constants.js';
 import type { OOREPConfig } from '../config.js';
 import { logger } from '../utils/logger.js';
 import { sanitizeError, ValidationError } from '../utils/errors.js';
@@ -41,15 +42,8 @@ export class ResourceRegistry {
     try {
       logger.info('Getting resource', { uri });
 
-      // Validate URI is a known resource
-      const knownUris: ResourceUri[] = [
-        'oorep://remedies/list',
-        'oorep://repertories/list',
-        'oorep://materia-medicas/list',
-        'oorep://help/search-syntax',
-      ];
-
-      if (!knownUris.includes(uri as ResourceUri)) {
+      // Validate URI is a known resource using constants
+      if (!ALL_RESOURCE_URIS.includes(uri as ResourceUri)) {
         throw new ValidationError(`Resource not found: ${uri}`);
       }
 
