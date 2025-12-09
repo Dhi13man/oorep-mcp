@@ -93,7 +93,7 @@ describe('validateSymptom', () => {
     });
   });
 
-  describe('when symptom contains invalid characters', () => {
+  describe('when symptom contains special characters (now allowed - API handles sanitization)', () => {
     it.each([
       ['head@ache', 'at symbol'],
       ['head#ache', 'hash'],
@@ -102,20 +102,23 @@ describe('validateSymptom', () => {
       ['head%ache', 'percent'],
       ['headache.', 'period'],
       ['headache,', 'comma'],
-    ])('validateSymptom when %s then throws ValidationError', (input: string) => {
-      expect(() => validateSymptom(input)).toThrow(ValidationError);
-    });
+      ['héadàche', 'unicode accented characters'],
+      ['頭痛症', 'unicode CJK characters (3 chars)'],
+    ])(
+      'validateSymptom when %s then does not throw (API handles sanitization)',
+      (input: string) => {
+        expect(() => validateSymptom(input)).not.toThrow();
+      }
+    );
   });
 
-  describe('when symptom has wildcard in middle', () => {
-    it('validateSymptom when wildcard in middle then throws ValidationError', () => {
-      expect(() => validateSymptom('he*d')).toThrow(ValidationError);
+  describe('when symptom has wildcard patterns (now allowed - API handles sanitization)', () => {
+    it('validateSymptom when wildcard in middle then does not throw', () => {
+      expect(() => validateSymptom('he*d')).not.toThrow();
     });
-  });
 
-  describe('when symptom has multiple consecutive wildcards', () => {
-    it('validateSymptom when double wildcard then throws ValidationError', () => {
-      expect(() => validateSymptom('head**')).toThrow(ValidationError);
+    it('validateSymptom when double wildcard then does not throw', () => {
+      expect(() => validateSymptom('head**')).not.toThrow();
     });
   });
 });
@@ -198,10 +201,11 @@ describe('validateLanguage', () => {
 });
 
 describe('Security Tests', () => {
-  describe('null byte handling', () => {
-    it('validateSymptom when contains null byte then throws ValidationError', () => {
+  describe('null byte handling (remedyName and language still validated)', () => {
+    it('validateSymptom when contains null byte then allows (API handles sanitization)', () => {
       const maliciousInput = 'head\x00ache';
-      expect(() => validateSymptom(maliciousInput)).toThrow(ValidationError);
+      // Symptom validation is relaxed - API handles sanitization
+      expect(() => validateSymptom(maliciousInput)).not.toThrow();
     });
 
     it('validateRemedyName when contains null byte then throws ValidationError', () => {
@@ -215,7 +219,7 @@ describe('Security Tests', () => {
     });
   });
 
-  describe('control character handling', () => {
+  describe('control character handling (symptom validation relaxed)', () => {
     it.each([
       ['\x01', 'SOH control character'],
       ['\x02', 'STX control character'],
@@ -224,43 +228,45 @@ describe('Security Tests', () => {
       ['\x08', 'backspace'],
       ['\x1B', 'escape'],
       ['\x7F', 'DEL control character'],
-    ])('validateSymptom when contains %s then throws ValidationError', (char: string) => {
-      const input = `head${char}ache`;
-      expect(() => validateSymptom(input)).toThrow(ValidationError);
-    });
+    ])(
+      'validateSymptom when contains %s then allows (API handles sanitization)',
+      (char: string) => {
+        const input = `head${char}ache`;
+        // Symptom validation is relaxed - API handles sanitization
+        expect(() => validateSymptom(input)).not.toThrow();
+      }
+    );
 
-    // These whitespace control characters are allowed by \s in regex
     it.each([
       ['\x0B', 'vertical tab'],
       ['\x0C', 'form feed'],
       ['\r', 'carriage return'],
-    ])('validateSymptom when contains %s then allows (matched by \\s)', (char: string) => {
+    ])('validateSymptom when contains %s then allows', (char: string) => {
       const input = `head${char}ache`;
-      // These are valid whitespace characters matched by \s
       expect(() => validateSymptom(input)).not.toThrow();
     });
   });
 
-  describe('unicode normalization', () => {
-    it('validateSymptom when contains combining characters then still validates', () => {
+  describe('unicode normalization (symptom validation relaxed)', () => {
+    it('validateSymptom when contains combining characters then allows (API handles sanitization)', () => {
       // "café" with combining acute accent
       const input = 'cafe\u0301';
-      // This contains special unicode, should be rejected by invalid char check
-      expect(() => validateSymptom(input)).toThrow(ValidationError);
+      // Symptom validation is relaxed to allow Unicode
+      expect(() => validateSymptom(input)).not.toThrow();
     });
 
-    it('validateSymptom when contains zero-width characters then throws', () => {
+    it('validateSymptom when contains zero-width characters then allows (API handles sanitization)', () => {
       const input = 'head\u200Bache'; // zero-width space
-      expect(() => validateSymptom(input)).toThrow(ValidationError);
+      expect(() => validateSymptom(input)).not.toThrow();
     });
 
-    it('validateSymptom when contains right-to-left override then throws', () => {
+    it('validateSymptom when contains right-to-left override then allows (API handles sanitization)', () => {
       const input = 'head\u202Eache'; // right-to-left override
-      expect(() => validateSymptom(input)).toThrow(ValidationError);
+      expect(() => validateSymptom(input)).not.toThrow();
     });
   });
 
-  describe('injection prevention', () => {
+  describe('injection prevention (symptom relaxed, remedyName still validated)', () => {
     it.each([
       ['<script>alert(1)</script>', 'XSS script tag'],
       ['javascript:alert(1)', 'javascript protocol'],
@@ -269,8 +275,9 @@ describe('Security Tests', () => {
       ['${process.env.SECRET}', 'template injection'],
       ['$(command)', 'command substitution'],
       ['`command`', 'backtick command'],
-    ])('validateSymptom when %s then throws ValidationError', (input: string) => {
-      expect(() => validateSymptom(input)).toThrow(ValidationError);
+    ])('validateSymptom when %s then allows (API handles sanitization)', (input: string) => {
+      // Symptom validation is relaxed - API handles sanitization server-side
+      expect(() => validateSymptom(input)).not.toThrow();
     });
 
     it.each([
@@ -300,14 +307,14 @@ describe('Security Tests', () => {
   });
 
   describe('whitespace edge cases', () => {
-    it('validateSymptom when only non-breaking spaces then throws', () => {
+    it('validateSymptom when only non-breaking spaces then throws (trims to empty)', () => {
       const input = '\u00A0\u00A0\u00A0'; // non-breaking spaces
+      // Non-breaking spaces are trimmed and result in empty string
       expect(() => validateSymptom(input)).toThrow(ValidationError);
     });
 
     it('validateSymptom when normal newline then allows', () => {
       const input = 'head\nache';
-      // Newlines are valid whitespace matched by \s
       expect(() => validateSymptom(input)).not.toThrow();
     });
 

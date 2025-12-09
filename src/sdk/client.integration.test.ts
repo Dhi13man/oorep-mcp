@@ -318,13 +318,15 @@ describe('OOREPSDKClient Integration Tests', () => {
       client.destroy();
     });
 
-    it('when symptom has invalid characters then throws validation error', async () => {
+    it('when symptom has special characters then passes validation (API handles sanitization)', async () => {
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse())
+        .mockResolvedValueOnce(createRepertoryResponse());
+
       const client = new OOREPSDKClient();
 
-      // Zod schema validates character pattern before custom validators run
-      await expect(client.searchRepertory({ symptom: 'head@che' })).rejects.toThrow();
-
-      expect(mockFetch).not.toHaveBeenCalled();
+      // Symptom validation is relaxed - special characters are allowed, API handles sanitization
+      await expect(client.searchRepertory({ symptom: 'head@che' })).resolves.toBeDefined();
 
       client.destroy();
     });
