@@ -44,21 +44,29 @@ client.destroy();
 
 ### How Homeopathic Data is Structured
 
-```text
-Repertory Structure:
-├── Chapter (e.g., "Head")
-│   └── Rubric (e.g., "Pain > Throbbing")
-│       └── Remedies with weights (1-4)
-│           ├── Belladonna (4) - Highest indication
-│           ├── Glonoine (3)
-│           └── Natrum muriaticum (2)
+```mermaid
+graph TB
+    subgraph Repertory[Repertory Structure]
+        Chapter[Chapter<br/>e.g. Head]
+        Rubric[Rubric<br/>e.g. Pain - Throbbing]
+        R1[Belladonna - 4]
+        R2[Glonoine - 3]
+        R3[Natrum mur - 2]
+        Chapter --> Rubric
+        Rubric --> R1
+        Rubric --> R2
+        Rubric --> R3
+    end
 
-Materia Medica Structure:
-├── Remedy (e.g., "Belladonna")
-│   └── Sections by body system
-│       ├── Mind: "Sudden onset, violence, heat..."
-│       ├── Head: "Throbbing, bursting pain..."
-│       └── ...
+    subgraph MateriaMedica[Materia Medica Structure]
+        Remedy[Remedy<br/>e.g. Belladonna]
+        S1[Mind: Sudden onset...]
+        S2[Head: Throbbing pain...]
+        S3[...]
+        Remedy --> S1
+        Remedy --> S2
+        Remedy --> S3
+    end
 ```
 
 This MCP server enables AI assistants to query this data programmatically.
@@ -76,7 +84,7 @@ This MCP server enables AI assistants to query this data programmatically.
 | **Performance** | Built-in caching (5min TTL), request deduplication, automatic retries |
 | **Type Safety** | Full TypeScript with Zod validation on all inputs |
 | **Security** | Input sanitization, error message sanitization, no credentials required |
-| **SDK Adapters** | Direct integration with OpenAI, Vercel AI SDK, LangChain |
+| **SDK Adapters** | Direct integration with OpenAI, Vercel AI SDK, LangChain, Google Gemini |
 
 ## Quick Start
 
@@ -538,202 +546,19 @@ head* pain -chronic "worse motion"
 
 ## SDK Integration
 
-### Direct SDK Usage
+For programmatic use with AI frameworks, see the **[SDK Integration Guide](docs/SDK.md)**.
+
+**Supported frameworks:** OpenAI, Vercel AI SDK, LangChain/LangGraph, Google Gemini
+
+**Quick example:**
 
 ```typescript
 import { createOOREPClient } from 'oorep-mcp/sdk/client';
-
-const client = createOOREPClient({
-  baseUrl: 'https://www.oorep.com',
-  timeoutMs: 30000,
-  cacheTtlMs: 300000,
-});
-
-try {
-  // Search repertory
-  const results = await client.searchRepertory({
-    symptom: 'headache worse motion',
-    repertory: 'kent',
-    minWeight: 2,
-    maxResults: 20,
-    includeRemedyStats: true,
-  });
-
-  console.log(`Found ${results.totalResults} results`);
-  console.log('Top rubric:', results.rubrics[0]?.rubric);
-
-  // Get remedy info
-  const remedy = await client.getRemedyInfo({ remedy: 'Belladonna' });
-  if (remedy) {
-    console.log(`${remedy.nameLong} (${remedy.nameAbbrev})`);
-  }
-
-  // Search materia medica
-  const mmResults = await client.searchMateriaMedica({
-    symptom: 'anxiety',
-    remedy: 'Aconite',
-    maxResults: 5,
-  });
-
-  // List resources
-  const repertories = await client.listRepertories({ language: 'en' });
-  const materiaMedicas = await client.listMateriaMedicas();
-
-} catch (error) {
-  if (error instanceof Error) {
-    console.error('OOREP error:', error.message);
-  }
-} finally {
-  // Always cleanup to stop cache timers
-  client.destroy();
-}
-```
-
-### OpenAI Function Calling
-
-```typescript
-import OpenAI from 'openai';
-import { createOOREPClient } from 'oorep-mcp/sdk/client';
-import { openAITools, processToolCalls } from 'oorep-mcp/sdk/openai';
-
-const openai = new OpenAI();
-const oorep = createOOREPClient();
-
-try {
-  // Initial request with tools
-  const response = await openai.chat.completions.create({
-    model: 'gpt-5',
-    messages: [{ role: 'user', content: 'Find remedies for throbbing headache' }],
-    tools: openAITools,
-  });
-
-  // Process tool calls
-  const toolMessages = await processToolCalls(
-    oorep,
-    response.choices[0].message.tool_calls
-  );
-
-  // Continue conversation with tool results
-  if (toolMessages.length > 0) {
-    const finalResponse = await openai.chat.completions.create({
-      model: 'gpt-5',
-      messages: [
-        { role: 'user', content: 'Find remedies for throbbing headache' },
-        response.choices[0].message,
-        ...toolMessages,
-      ],
-    });
-    console.log(finalResponse.choices[0].message.content);
-  }
-} catch (error) {
-  console.error('Error:', error);
-} finally {
-  oorep.destroy();
-}
-```
-
-### Vercel AI SDK
-
-```typescript
-import { generateText } from 'ai';
-import { openai } from '@ai-sdk/openai';
-import { createOOREPClient } from 'oorep-mcp/sdk/client';
-import { createOOREPTools } from 'oorep-mcp/sdk/vercel-ai';
 
 const client = createOOREPClient();
-
-try {
-  const tools = createOOREPTools(client);
-
-  const result = await generateText({
-    model: openai('gpt-5'),
-    tools,
-    maxSteps: 5,  // Allow multiple tool calls
-    prompt: 'Find remedies for throbbing headache worse from motion',
-  });
-
-  console.log(result.text);
-
-  // Access tool results
-  for (const step of result.steps) {
-    if (step.toolResults) {
-      console.log('Tool results:', step.toolResults);
-    }
-  }
-} catch (error) {
-  console.error('Error:', error);
-} finally {
-  client.destroy();
-}
-```
-
-### LangChain / LangGraph
-
-```typescript
-import { ChatOpenAI } from '@langchain/openai';
-import { createReactAgent } from '@langchain/langgraph/prebuilt';
-import { DynamicStructuredTool } from '@langchain/core/tools';
-import { HumanMessage } from '@langchain/core/messages';
-import { createOOREPClient } from 'oorep-mcp/sdk/client';
-import { createLangChainTools } from 'oorep-mcp/sdk/langchain';
-
-const client = createOOREPClient();
-
-try {
-  const toolDefinitions = createLangChainTools(client);
-
-  // Convert to DynamicStructuredTool instances
-  const tools = toolDefinitions.map(
-    (def) =>
-      new DynamicStructuredTool({
-        name: def.name,
-        description: def.description,
-        schema: def.schema,
-        func: async (args) => def.func(args),
-      })
-  );
-
-  // Create agent
-  const model = new ChatOpenAI({ model: 'gpt-5' });
-  const agent = createReactAgent({ llm: model, tools });
-
-  // Invoke agent
-  const result = await agent.invoke({
-    messages: [new HumanMessage('Find remedies for headache with nausea')],
-  });
-
-  // Get final message
-  const lastMessage = result.messages[result.messages.length - 1];
-  console.log(lastMessage.content);
-} catch (error) {
-  console.error('Error:', error);
-} finally {
-  client.destroy();
-}
-```
-
-### Available SDK Tools
-
-All adapters provide these tools:
-
-| Tool | Description |
-| --- | --- |
-| `search_repertory` | Search for symptoms in homeopathic repertories |
-| `search_materia_medica` | Search materia medica texts for remedy descriptions |
-| `get_remedy_info` | Get detailed information about a specific remedy |
-| `list_available_repertories` | List all accessible repertories |
-| `list_available_materia_medicas` | List all accessible materia medicas |
-
-### SDK Configuration
-
-```typescript
-const client = createOOREPClient({
-  baseUrl: 'https://www.oorep.com',  // OOREP API base URL
-  timeoutMs: 30000,                   // Request timeout (ms)
-  cacheTtlMs: 300000,                 // Cache TTL (ms, 0 to disable)
-  defaultRepertory: 'publicum',       // Default repertory
-  defaultMateriaMedica: 'boericke',   // Default materia medica
-});
+const results = await client.searchRepertory({ symptom: 'headache worse motion' });
+console.log(results.rubrics);
+client.destroy();
 ```
 
 ## Configuration
@@ -772,39 +597,43 @@ All configuration via environment variables:
 
 ## Architecture
 
-```text
-┌─────────────────────────────────────────────────────────┐
-│                    MCP Client                           │
-│            (Claude, Codex, Gemini, etc.)                │
-└─────────────────────┬───────────────────────────────────┘
-                      │ MCP Protocol (stdio)
-┌─────────────────────▼───────────────────────────────────┐
-│                  OOREP MCP Server                       │
-├─────────────────────────────────────────────────────────┤
-│  ┌─────────┐  ┌──────────┐  ┌─────────┐  ┌──────────┐   │
-│  │  Tools  │  │ Resources│  │ Prompts │  │   SDK    │   │
-│  └────┬────┘  └────┬─────┘  └────┬────┘  └────┬─────┘   │
-│       └────────────┼─────────────┼────────────┘         │
-│                    ▼                                    │
-│  ┌─────────────────────────────────────────────────┐    │
-│  │              OOREPSDKClient                     │    │
-│  │  ┌───────────┐ ┌────────────┐ ┌─────────────┐   │    │
-│  │  │   Cache   │ │Deduplicator│ │  Validators │   │    │
-│  │  └───────────┘ └────────────┘ └─────────────┘   │    │
-│  └───────────────────────┬─────────────────────────┘    │
-│                          ▼                              │
-│  ┌─────────────────────────────────────────────────┐    │
-│  │              OOREPClient (HTTP)                 │    │
-│  │  • Session management (cookies)                 │    │
-│  │  • Retry logic (3 attempts)                     │    │
-│  │  • Timeout handling                             │    │
-│  └───────────────────────┬─────────────────────────┘    │
-└──────────────────────────┼──────────────────────────────┘
-                           │ HTTPS
-┌──────────────────────────▼──────────────────────────────┐
-│                   OOREP API                             │
-│              https://www.oorep.com                      │
-└─────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph Client[MCP Client]
+        MCPClient((Claude, Codex,<br/>Gemini, etc.))
+    end
+
+    subgraph Server[OOREP MCP Server]
+        Tools[Tools]
+        Resources[Resources]
+        Prompts[Prompts]
+        SDK[SDK]
+
+        subgraph SDKClient[OOREPSDKClient]
+            Cache[(Cache)]
+            Dedup[Deduplicator]
+            Validators[Validators]
+        end
+
+        subgraph HTTPClient[OOREPClient - HTTP]
+            Session[Session mgmt]
+            Retry[Retry logic]
+            Timeout[Timeout handling]
+        end
+
+        Tools --> SDKClient
+        Resources --> SDKClient
+        Prompts --> SDKClient
+        SDK --> SDKClient
+        SDKClient --> HTTPClient
+    end
+
+    subgraph External[OOREP API]
+        API[https://www.oorep.com]
+    end
+
+    MCPClient -->|MCP Protocol| Server
+    HTTPClient -->|HTTPS| API
 ```
 
 **Key Components:**

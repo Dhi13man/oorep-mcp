@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2025-12-09
+
+### Added
+
+- **Google Gemini Adapter** (`oorep-mcp/sdk/google-genai`): Function calling integration for Google's `@google/genai` SDK
+  - `geminiTools` - Pre-formatted tools array for GenerativeModel config
+  - `geminiFunctionDeclarations` - Individual function declarations
+  - `createGeminiToolExecutors()` - Factory for tool execution handlers
+  - `executeGeminiFunctionCall()` - Execute function calls from Gemini responses
+  - Automatic schema sanitization for Gemini compatibility (removes unsupported fields)
+  - 30 new unit tests for full coverage
+
+- **SDK Integration Guide** (`docs/SDK.md`): Comprehensive guide for programmatic SDK usage
+  - Examples for OpenAI, Vercel AI SDK, LangChain/LangGraph, and Google Gemini
+  - Client configuration reference
+  - TypeScript types and Zod schema imports
+
+### Changed
+
+- **README Restructuring**: Improved documentation organization
+  - Moved detailed SDK examples to `docs/SDK.md` (reduced README by ~300 lines)
+  - Converted ASCII diagrams to Mermaid for better rendering
+  - Added brief SDK section with link to full guide
+
+### Fixed
+
+- **Symptom Validation**: Expanded regex to allow common punctuation (commas, semicolons, colons, parentheses)
+  - Fixes validation errors for symptoms like "pain, worse motion" or "headache (frontal)"
+
+### Security
+
+- **Dependency Update**: Fixed body-parser vulnerability in transitive dependencies
+
 ## [1.0.0] - 2025-11-29
 
 ### Added
@@ -193,7 +226,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - For full functionality, users should run a local OOREP instance or configure authentication
 - Public metadata endpoints work without authentication (remedies list, repertories list, materia medicas list)
 
-[Unreleased]: https://github.com/Dhi13man/oorep-mcp/compare/v1.0.0...HEAD
+[1.0.1]: https://github.com/Dhi13man/oorep-mcp/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.9...v1.0.0
 [0.0.9]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.8...v0.0.9
 [0.0.8]: https://github.com/Dhi13man/oorep-mcp/compare/v0.0.7...v0.0.8
