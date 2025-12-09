@@ -7,3 +7,4 @@
 export * from './openai.js';
 export * from './vercel-ai.js';
 export * from './langchain.js';
+export * from './google-genai.js';
