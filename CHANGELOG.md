@@ -57,10 +57,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **Package Exports**: Root entry now exports SDK (not empty server entry point)
-  - Added `./sdk` and `./sdk/constants` export paths
-  - `import { ... } from 'oorep-mcp'` now works correctly
-  - `main` and `types` fields updated to point to SDK
+- **Package Exports**: Simplified to 6 clean entry points
+  - Root `'oorep-mcp'` exports everything (client, types, schemas, constants, resources, prompts)
+  - Adapter subpaths: `'oorep-mcp/sdk/openai'`, `'oorep-mcp/sdk/vercel-ai'`, `'oorep-mcp/sdk/langchain'`, `'oorep-mcp/sdk/google-genai'`
+  - Convenience: `'oorep-mcp/sdk/adapters'` for all adapters
+  - Removed redundant paths (`./sdk`, `./sdk/client`, `./sdk/constants`, `./sdk/tools`, `./sdk/resources`, `./sdk/prompts`)
 
 - **SDK.md Documentation**: Corrected function naming inconsistencies
   - Fixed camelCase for adapter functions (`openAIFormatResourceAsSystemMessage`, not `openaiFormat...`)

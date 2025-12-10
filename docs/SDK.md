@@ -11,7 +11,7 @@ npm install oorep-mcp
 ## Quick Start
 
 ```typescript
-import { createOOREPClient } from 'oorep-mcp/sdk/client';
+import { createOOREPClient } from 'oorep-mcp';
 
 const client = createOOREPClient();
 const results = await client.searchRepertory({ symptom: 'headache worse motion' });
@@ -69,7 +69,7 @@ client.destroy();
 
 ```typescript
 import OpenAI from 'openai';
-import { createOOREPClient } from 'oorep-mcp/sdk/client';
+import { createOOREPClient } from 'oorep-mcp';
 import { openAITools, processToolCalls } from 'oorep-mcp/sdk/openai';
 
 const openai = new OpenAI();
@@ -108,7 +108,7 @@ try {
 ```typescript
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
-import { createOOREPClient } from 'oorep-mcp/sdk/client';
+import { createOOREPClient } from 'oorep-mcp';
 import { createOOREPTools } from 'oorep-mcp/sdk/vercel-ai';
 
 const client = createOOREPClient();
@@ -142,7 +142,7 @@ import { ChatOpenAI } from '@langchain/openai';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { HumanMessage } from '@langchain/core/messages';
-import { createOOREPClient } from 'oorep-mcp/sdk/client';
+import { createOOREPClient } from 'oorep-mcp';
 import { createLangChainTools } from 'oorep-mcp/sdk/langchain';
 
 const client = createOOREPClient();
@@ -178,7 +178,7 @@ try {
 
 ```typescript
 import { GoogleGenAI } from '@google/genai';
-import { createOOREPClient } from 'oorep-mcp/sdk/client';
+import { createOOREPClient } from 'oorep-mcp';
 import {
   geminiTools,
   createGeminiToolExecutors,
@@ -227,8 +227,7 @@ try {
 The SDK provides standalone functions for accessing MCP resources:
 
 ```typescript
-import { createOOREPClient } from 'oorep-mcp/sdk/client';
-import { getResource, listResources, getSearchSyntaxHelp } from 'oorep-mcp/sdk/resources';
+import { createOOREPClient, getResource, listResources, getSearchSyntaxHelp } from 'oorep-mcp';
 
 // Get search syntax help (markdown) - great for system prompts (no client needed)
 const searchHelp = getSearchSyntaxHelp();
@@ -260,7 +259,7 @@ client.destroy();
 Inject the search syntax guide into your system prompt:
 
 ```typescript
-import { getSearchSyntaxHelp } from 'oorep-mcp/sdk/resources';
+import { getSearchSyntaxHelp } from 'oorep-mcp';
 
 const searchSyntax = getSearchSyntaxHelp();
 
@@ -276,7 +275,7 @@ Use the search_repertory tool with the syntax rules above.`;
 The SDK provides standalone functions for pre-built prompt workflows:
 
 ```typescript
-import { getPrompt, listPrompts } from 'oorep-mcp/sdk/prompts';
+import { getPrompt, listPrompts } from 'oorep-mcp';
 
 // Get the repertorization workflow (7-step process)
 const workflow = getPrompt('repertorization-workflow');
@@ -334,8 +333,7 @@ import {
   openAIFormatResourceAsSystemMessage,
   openAIConvertPromptWithContext,
 } from 'oorep-mcp/sdk/openai';
-import { getResource } from 'oorep-mcp/sdk/resources';
-import { getPrompt } from 'oorep-mcp/sdk/prompts';
+import { getResource, getPrompt } from 'oorep-mcp';
 
 // Convert prompt to OpenAI message format
 const workflow = getPrompt('repertorization-workflow');
@@ -358,15 +356,13 @@ const messagesWithContext = openAIConvertPromptWithContext(searchSyntax, workflo
 #### Vercel AI SDK Prompts
 
 ```typescript
-import { createOOREPClient } from 'oorep-mcp/sdk/client';
+import { createOOREPClient, getResource, getPrompt } from 'oorep-mcp';
 import {
   createOOREPTools,
   convertPromptToVercelAI,
   vercelAIFormatResourceAsSystemMessage,
   vercelAICombinePromptWithContext,
 } from 'oorep-mcp/sdk/vercel-ai';
-import { getResource } from 'oorep-mcp/sdk/resources';
-import { getPrompt } from 'oorep-mcp/sdk/prompts';
 
 const client = createOOREPClient();
 const tools = createOOREPTools(client);
@@ -398,15 +394,13 @@ client.destroy();
 
 ```typescript
 import { SystemMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
-import { createOOREPClient } from 'oorep-mcp/sdk/client';
+import { createOOREPClient, getResource, getPrompt } from 'oorep-mcp';
 import {
   createLangChainTools,
   convertPromptToLangChain,
   langChainFormatResourceAsSystemMessage,
   langChainFormatResourceAsDocument,
 } from 'oorep-mcp/sdk/langchain';
-import { getResource } from 'oorep-mcp/sdk/resources';
-import { getPrompt } from 'oorep-mcp/sdk/prompts';
 
 const client = createOOREPClient();
 
@@ -437,7 +431,7 @@ client.destroy();
 
 ```typescript
 import { GoogleGenAI } from '@google/genai';
-import { createOOREPClient } from 'oorep-mcp/sdk/client';
+import { createOOREPClient, getResource, getPrompt } from 'oorep-mcp';
 import {
   geminiTools,
   createGeminiToolExecutors,
@@ -445,8 +439,6 @@ import {
   geminiFormatResourceAsSystemInstruction,
   geminiConvertPromptWithContext,
 } from 'oorep-mcp/sdk/google-genai';
-import { getResource } from 'oorep-mcp/sdk/resources';
-import { getPrompt } from 'oorep-mcp/sdk/prompts';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const client = createOOREPClient();
@@ -519,13 +511,15 @@ All adapters provide these tools:
 ## TypeScript Types
 
 ```typescript
-// Tool argument and result types
+// All types from main entry point
 import type {
+  // Tool argument types
   SearchRepertoryArgs,
   SearchMateriaMedicaArgs,
   GetRemedyInfoArgs,
   ListRepertoriesArgs,
   ListMateriaMedicasArgs,
+  // Result types
   RepertorySearchResult,
   MateriaMedicaSearchResult,
   RemedyInfo,
@@ -535,21 +529,18 @@ import type {
   Remedy,
   MateriaMedicaResult,
   MateriaMedicaSection,
-} from 'oorep-mcp';
-
-// Resource types (standalone functions)
-import type { ResourceUri, ResourceContent } from 'oorep-mcp/sdk/resources';
-
-// Prompt types (standalone functions)
-import type {
+  // Resource types
+  ResourceUri,
+  ResourceContent,
+  // Prompt types
   PromptName,
   PromptResult,
   AnalyzeSymptomsArgs,
   RemedyComparisonArgs,
-} from 'oorep-mcp/sdk/prompts';
-
-// SDK Client types
-import type { OOREPSDKClient, OOREPSDKConfig } from 'oorep-mcp/sdk/client';
+  // Client types
+  OOREPSDKClient,
+  OOREPSDKConfig,
+} from 'oorep-mcp';
 
 // Adapter-specific types
 import type {

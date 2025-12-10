@@ -14,22 +14,6 @@
       "types": "./dist/sdk/index.d.ts",
       "import": "./dist/sdk/index.js"
     },
-    "./sdk": {
-      "types": "./dist/sdk/index.d.ts",
-      "import": "./dist/sdk/index.js"
-    },
-    "./sdk/client": {
-      "types": "./dist/sdk/index.d.ts",
-      "import": "./dist/sdk/index.js"
-    },
-    "./sdk/constants": {
-      "types": "./dist/sdk/constants.d.ts",
-      "import": "./dist/sdk/constants.js"
-    },
-    "./sdk/tools": {
-      "types": "./dist/sdk/tools.d.ts",
-      "import": "./dist/sdk/tools.js"
-    },
     "./sdk/openai": {
       "types": "./dist/sdk/adapters/openai.d.ts",
       "import": "./dist/sdk/adapters/openai.js"
@@ -49,14 +33,6 @@
     "./sdk/adapters": {
       "types": "./dist/sdk/adapters/index.d.ts",
       "import": "./dist/sdk/adapters/index.js"
-    },
-    "./sdk/resources": {
-      "types": "./dist/sdk/resources.d.ts",
-      "import": "./dist/sdk/resources.js"
-    },
-    "./sdk/prompts": {
-      "types": "./dist/sdk/prompts.d.ts",
-      "import": "./dist/sdk/prompts.js"
     }
   },
   "files": [
