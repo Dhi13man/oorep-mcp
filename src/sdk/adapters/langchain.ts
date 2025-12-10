@@ -23,6 +23,7 @@
 
 import { z } from '../../utils/schemas.js';
 import type { OOREPSDKClient, ResourceContent, PromptResult } from '../client.js';
+import { TOOL_NAMES } from '../constants.js';
 
 /**
  * LangChain-compatible tool interface
@@ -56,7 +57,7 @@ export interface LangChainToolDefinition {
 export function createLangChainTools(client: OOREPSDKClient): LangChainToolDefinition[] {
   return [
     {
-      name: 'search_repertory',
+      name: TOOL_NAMES.SEARCH_REPERTORY,
       description:
         'Search for symptoms in homeopathic repertories. Returns matching rubrics with remedies and their weights.',
       schema: z.object({
@@ -78,7 +79,7 @@ export function createLangChainTools(client: OOREPSDKClient): LangChainToolDefin
       },
     },
     {
-      name: 'search_materia_medica',
+      name: TOOL_NAMES.SEARCH_MATERIA_MEDICA,
       description: 'Search materia medica texts for remedy descriptions and symptoms.',
       schema: z.object({
         symptom: z.string().describe('The symptom to search for'),
@@ -97,7 +98,7 @@ export function createLangChainTools(client: OOREPSDKClient): LangChainToolDefin
       },
     },
     {
-      name: 'get_remedy_info',
+      name: TOOL_NAMES.GET_REMEDY_INFO,
       description: 'Get detailed information about a specific homeopathic remedy.',
       schema: z.object({
         remedy: z.string().describe('Remedy name or abbreviation'),
@@ -110,7 +111,7 @@ export function createLangChainTools(client: OOREPSDKClient): LangChainToolDefin
       },
     },
     {
-      name: 'list_available_repertories',
+      name: TOOL_NAMES.LIST_REPERTORIES,
       description: 'List all available homeopathic repertories.',
       schema: z.object({
         language: z.string().optional().describe('Filter by language code'),
@@ -123,7 +124,7 @@ export function createLangChainTools(client: OOREPSDKClient): LangChainToolDefin
       },
     },
     {
-      name: 'list_available_materia_medicas',
+      name: TOOL_NAMES.LIST_MATERIA_MEDICAS,
       description: 'List all available materia medica texts.',
       schema: z.object({
         language: z.string().optional().describe('Filter by language code'),
@@ -193,10 +194,6 @@ export function isLangChainToolDefinition(value: unknown): value is LangChainToo
     'func' in value
   );
 }
-
-// ==========================================================================
-// Resource Adapters
-// ==========================================================================
 
 /**
  * LangChain SystemMessage-compatible format
@@ -329,10 +326,6 @@ export function langChainFormatResourcesAsContext(resources: ResourceContent[]):
     .map((r) => `## Resource: ${r.uri}\n\n${r.text}`)
     .join('\n\n---\n\n');
 }
-
-// ==========================================================================
-// Prompt Adapters
-// ==========================================================================
 
 /**
  * Convert an OOREP prompt to LangChain message format

@@ -33,6 +33,11 @@ export type {
   PromptDefinition,
 };
 
+// Re-export build functions for use in SDK client
+export { buildAnalyzeSymptomsPrompt } from './analyze-symptoms.js';
+export { buildRemedyComparisonPrompt } from './remedy-comparison.js';
+export { buildRepertorizationWorkflowPrompt } from './repertorization-workflow.js';
+
 const promptDefinitions: PromptDefinition[] = [
   analyzeSymptomsDefinition,
   remedyComparisonDefinition,

@@ -29,6 +29,7 @@
 
 import type { OOREPSDKClient, ResourceContent, PromptResult } from '../client.js';
 import { toolDefinitions } from '../tools.js';
+import { TOOL_NAMES } from '../constants.js';
 
 /**
  * OpenAI tool definition format
@@ -101,7 +102,7 @@ export async function executeOOREPTool(
   args: Record<string, unknown>
 ): Promise<unknown> {
   switch (toolName) {
-    case 'search_repertory':
+    case TOOL_NAMES.SEARCH_REPERTORY:
       return client.searchRepertory({
         symptom: args.symptom as string,
         repertory: args.repertory as string | undefined,
@@ -110,7 +111,7 @@ export async function executeOOREPTool(
         includeRemedyStats: args.includeRemedyStats as boolean | undefined,
       });
 
-    case 'search_materia_medica':
+    case TOOL_NAMES.SEARCH_MATERIA_MEDICA:
       return client.searchMateriaMedica({
         symptom: args.symptom as string,
         materiamedica: args.materiamedica as string | undefined,
@@ -118,17 +119,17 @@ export async function executeOOREPTool(
         maxResults: args.maxResults as number | undefined,
       });
 
-    case 'get_remedy_info':
+    case TOOL_NAMES.GET_REMEDY_INFO:
       return client.getRemedyInfo({
         remedy: args.remedy as string,
       });
 
-    case 'list_available_repertories':
+    case TOOL_NAMES.LIST_REPERTORIES:
       return client.listRepertories({
         language: args.language as string | undefined,
       });
 
-    case 'list_available_materia_medicas':
+    case TOOL_NAMES.LIST_MATERIA_MEDICAS:
       return client.listMateriaMedicas({
         language: args.language as string | undefined,
       });
@@ -217,10 +218,6 @@ export async function processToolCalls(
   return results;
 }
 
-// ==========================================================================
-// Resource Adapters
-// ==========================================================================
-
 /**
  * OpenAI system message format for resources
  */
@@ -280,10 +277,6 @@ export function openAIFormatResourcesAsContext(resources: ResourceContent[]): st
     .map((r) => `## Resource: ${r.uri}\n\n${r.text}`)
     .join('\n\n---\n\n');
 }
-
-// ==========================================================================
-// Prompt Adapters
-// ==========================================================================
 
 /**
  * OpenAI chat completion message format

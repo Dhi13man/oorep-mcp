@@ -29,6 +29,7 @@
 
 import { toolDefinitions, type OOREPToolDefinition } from '../tools.js';
 import type { OOREPSDKClient, ResourceContent, PromptResult } from '../client.js';
+import { TOOL_NAMES, type ToolName } from '../constants.js';
 import type {
   SearchRepertoryArgs,
   SearchMateriaMedicaArgs,
@@ -131,15 +132,23 @@ export type GeminiToolExecutor<TArgs = unknown, TResult = unknown> = (
 ) => Promise<TResult>;
 
 /**
- * Map of tool executors
+ * Map of tool executors keyed by tool name
  */
-export interface GeminiToolExecutors {
-  search_repertory: GeminiToolExecutor<SearchRepertoryArgs>;
-  search_materia_medica: GeminiToolExecutor<SearchMateriaMedicaArgs>;
-  get_remedy_info: GeminiToolExecutor<GetRemedyInfoArgs>;
-  list_available_repertories: GeminiToolExecutor<ListRepertoriesArgs>;
-  list_available_materia_medicas: GeminiToolExecutor<ListMateriaMedicasArgs>;
-}
+export type GeminiToolExecutors = {
+  [K in ToolName]: GeminiToolExecutor<
+    K extends typeof TOOL_NAMES.SEARCH_REPERTORY
+      ? SearchRepertoryArgs
+      : K extends typeof TOOL_NAMES.SEARCH_MATERIA_MEDICA
+        ? SearchMateriaMedicaArgs
+        : K extends typeof TOOL_NAMES.GET_REMEDY_INFO
+          ? GetRemedyInfoArgs
+          : K extends typeof TOOL_NAMES.LIST_REPERTORIES
+            ? ListRepertoriesArgs
+            : K extends typeof TOOL_NAMES.LIST_MATERIA_MEDICAS
+              ? ListMateriaMedicasArgs
+              : never
+  >;
+};
 
 /**
  * Create tool executors for handling Gemini function calls
@@ -149,11 +158,12 @@ export interface GeminiToolExecutors {
  */
 export function createGeminiToolExecutors(client: OOREPSDKClient): GeminiToolExecutors {
   return {
-    search_repertory: (args: SearchRepertoryArgs) => client.searchRepertory(args),
-    search_materia_medica: (args: SearchMateriaMedicaArgs) => client.searchMateriaMedica(args),
-    get_remedy_info: (args: GetRemedyInfoArgs) => client.getRemedyInfo(args),
-    list_available_repertories: (args: ListRepertoriesArgs) => client.listRepertories(args),
-    list_available_materia_medicas: (args: ListMateriaMedicasArgs) =>
+    [TOOL_NAMES.SEARCH_REPERTORY]: (args: SearchRepertoryArgs) => client.searchRepertory(args),
+    [TOOL_NAMES.SEARCH_MATERIA_MEDICA]: (args: SearchMateriaMedicaArgs) =>
+      client.searchMateriaMedica(args),
+    [TOOL_NAMES.GET_REMEDY_INFO]: (args: GetRemedyInfoArgs) => client.getRemedyInfo(args),
+    [TOOL_NAMES.LIST_REPERTORIES]: (args: ListRepertoriesArgs) => client.listRepertories(args),
+    [TOOL_NAMES.LIST_MATERIA_MEDICAS]: (args: ListMateriaMedicasArgs) =>
       client.listMateriaMedicas(args),
   };
 }
@@ -181,7 +191,7 @@ export async function executeGeminiFunctionCall(
   executors: GeminiToolExecutors,
   functionCall: GeminiFunctionCall
 ): Promise<unknown> {
-  const executor = executors[functionCall.name as keyof GeminiToolExecutors];
+  const executor = executors[functionCall.name as ToolName];
 
   if (!executor) {
     throw new Error(
@@ -192,26 +202,6 @@ export async function executeGeminiFunctionCall(
 
   return executor(functionCall.args as never);
 }
-
-/**
- * Tool name constants for type-safe tool references
- */
-export const GEMINI_TOOL_NAMES = {
-  SEARCH_REPERTORY: 'search_repertory',
-  SEARCH_MATERIA_MEDICA: 'search_materia_medica',
-  GET_REMEDY_INFO: 'get_remedy_info',
-  LIST_AVAILABLE_REPERTORIES: 'list_available_repertories',
-  LIST_AVAILABLE_MATERIA_MEDICAS: 'list_available_materia_medicas',
-} as const;
-
-/**
- * Type for tool names
- */
-export type GeminiToolName = (typeof GEMINI_TOOL_NAMES)[keyof typeof GEMINI_TOOL_NAMES];
-
-// ==========================================================================
-// Resource Adapters
-// ==========================================================================
 
 /**
  * Format a resource as a system instruction string for Gemini
@@ -257,14 +247,8 @@ export function geminiFormatResourceAsSystemInstruction(resource: ResourceConten
  * ```
  */
 export function geminiFormatResourcesAsContext(resources: ResourceContent[]): string {
-  return resources
-    .map((r) => `## Resource: ${r.uri}\n\n${r.text}`)
-    .join('\n\n---\n\n');
+  return resources.map((r) => `## Resource: ${r.uri}\n\n${r.text}`).join('\n\n---\n\n');
 }
-
-// ==========================================================================
-// Prompt Adapters
-// ==========================================================================
 
 /**
  * Gemini Content part format

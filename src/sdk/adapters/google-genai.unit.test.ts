@@ -8,10 +8,10 @@ import {
   geminiTools,
   createGeminiToolExecutors,
   executeGeminiFunctionCall,
-  GEMINI_TOOL_NAMES,
   type GeminiFunctionDeclaration,
   type GeminiToolExecutors,
 } from './google-genai.js';
+import { TOOL_NAMES } from '../constants.js';
 import type { OOREPSDKClient } from '../client.js';
 
 describe('geminiFunctionDeclarations', () => {
@@ -73,13 +73,13 @@ describe('geminiTools', () => {
   });
 });
 
-describe('GEMINI_TOOL_NAMES', () => {
-  it('when accessed then contains all tool names', () => {
-    expect(GEMINI_TOOL_NAMES.SEARCH_REPERTORY).toBe('search_repertory');
-    expect(GEMINI_TOOL_NAMES.SEARCH_MATERIA_MEDICA).toBe('search_materia_medica');
-    expect(GEMINI_TOOL_NAMES.GET_REMEDY_INFO).toBe('get_remedy_info');
-    expect(GEMINI_TOOL_NAMES.LIST_AVAILABLE_REPERTORIES).toBe('list_available_repertories');
-    expect(GEMINI_TOOL_NAMES.LIST_AVAILABLE_MATERIA_MEDICAS).toBe('list_available_materia_medicas');
+describe('TOOL_NAMES from constants', () => {
+  it('when accessed then contains all tool names used by Gemini adapter', () => {
+    expect(TOOL_NAMES.SEARCH_REPERTORY).toBe('search_repertory');
+    expect(TOOL_NAMES.SEARCH_MATERIA_MEDICA).toBe('search_materia_medica');
+    expect(TOOL_NAMES.GET_REMEDY_INFO).toBe('get_remedy_info');
+    expect(TOOL_NAMES.LIST_REPERTORIES).toBe('list_available_repertories');
+    expect(TOOL_NAMES.LIST_MATERIA_MEDICAS).toBe('list_available_materia_medicas');
   });
 });
 

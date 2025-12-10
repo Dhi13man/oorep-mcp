@@ -49,7 +49,6 @@ import {
   buildRepertorizationWorkflowPrompt,
   type AnalyzeSymptomsArgs,
   type RemedyComparisonArgs,
-  type PromptMessage,
   type PromptResult,
   type PromptDefinition,
 } from '../prompts/index.js';
@@ -434,14 +433,35 @@ export class OOREPSDKClient {
    * List all available resources with their metadata
    */
   listResources(): ResourceDefinition[] {
-    // Import dynamically to avoid circular dependency
-    const { ResourceRegistry } = require('../resources/index.js');
-    return new ResourceRegistry({
-      baseUrl: this.config.baseUrl,
-      timeoutMs: this.config.timeoutMs,
-      defaultRepertory: this.config.defaultRepertory,
-      defaultMateriaMedica: this.config.defaultMateriaMedica,
-    }).getDefinitions();
+    // Import statically - definitions don't need config
+    return [
+      {
+        uri: RESOURCE_URIS.REMEDIES_LIST,
+        name: 'Available Remedies List',
+        description:
+          'Complete list of all available homeopathic remedies with names and abbreviations',
+        mimeType: 'application/json',
+      },
+      {
+        uri: RESOURCE_URIS.REPERTORIES_LIST,
+        name: 'Available Repertories List',
+        description: 'List of all available homeopathic repertories with metadata',
+        mimeType: 'application/json',
+      },
+      {
+        uri: RESOURCE_URIS.MATERIA_MEDICAS_LIST,
+        name: 'Available Materia Medicas List',
+        description: 'List of all available materia medica texts with metadata',
+        mimeType: 'application/json',
+      },
+      {
+        uri: RESOURCE_URIS.SEARCH_SYNTAX_HELP,
+        name: 'OOREP Search Syntax Help',
+        description:
+          'Guide to OOREP search syntax including wildcards, exclusions, and exact phrases',
+        mimeType: 'text/markdown',
+      },
+    ];
   }
 
   /**
@@ -499,8 +519,42 @@ export class OOREPSDKClient {
    * List all available prompts with their metadata
    */
   listPrompts(): PromptDefinition[] {
-    const { PromptRegistry } = require('../prompts/index.js');
-    return new PromptRegistry().getDefinitions();
+    return [
+      {
+        name: PROMPT_NAMES.ANALYZE_SYMPTOMS,
+        description:
+          'Guide AI through structured symptom analysis workflow for homeopathic case taking. ' +
+          'Uses the OOREP tools to search repertory and materia medica systematically.',
+        arguments: [
+          {
+            name: 'symptom_description',
+            description: 'Optional initial symptom description to analyze',
+            required: false,
+          },
+        ],
+      },
+      {
+        name: PROMPT_NAMES.REMEDY_COMPARISON,
+        description:
+          'Compare multiple homeopathic remedies side-by-side to identify the best match. ' +
+          'Useful for differential diagnosis between similar remedies.',
+        arguments: [
+          {
+            name: 'remedies',
+            description:
+              'Comma-separated list of remedy names to compare (e.g., "Aconite,Belladonna,Gelsemium")',
+            required: true,
+          },
+        ],
+      },
+      {
+        name: PROMPT_NAMES.REPERTORIZATION_WORKFLOW,
+        description:
+          'Step-by-step case taking and repertorization workflow for comprehensive case analysis. ' +
+          'Guides through symptom gathering, repertorization, and remedy selection.',
+        arguments: [],
+      },
+    ];
   }
 }
 

@@ -24,6 +24,7 @@
 
 import { z } from '../../utils/schemas.js';
 import type { OOREPSDKClient, ResourceContent, PromptResult } from '../client.js';
+import { TOOL_NAMES } from '../constants.js';
 
 /**
  * Vercel AI SDK tool type
@@ -57,7 +58,7 @@ export interface VercelAITool<TInput, TOutput> {
  */
 export function createOOREPTools(client: OOREPSDKClient) {
   return {
-    search_repertory: {
+    [TOOL_NAMES.SEARCH_REPERTORY]: {
       description:
         'Search for symptoms in homeopathic repertories. Returns matching rubrics with remedies and their weights.',
       parameters: z.object({
@@ -85,7 +86,7 @@ export function createOOREPTools(client: OOREPSDKClient) {
       }) => client.searchRepertory(args),
     },
 
-    search_materia_medica: {
+    [TOOL_NAMES.SEARCH_MATERIA_MEDICA]: {
       description: 'Search materia medica texts for remedy descriptions and symptoms.',
       parameters: z.object({
         symptom: z.string().describe('The symptom to search for'),
@@ -104,7 +105,7 @@ export function createOOREPTools(client: OOREPSDKClient) {
       }) => client.searchMateriaMedica(args),
     },
 
-    get_remedy_info: {
+    [TOOL_NAMES.GET_REMEDY_INFO]: {
       description: 'Get detailed information about a specific homeopathic remedy.',
       parameters: z.object({
         remedy: z.string().describe('Remedy name or abbreviation'),
@@ -112,7 +113,7 @@ export function createOOREPTools(client: OOREPSDKClient) {
       execute: async (args: { remedy: string }) => client.getRemedyInfo(args),
     },
 
-    list_available_repertories: {
+    [TOOL_NAMES.LIST_REPERTORIES]: {
       description: 'List all available homeopathic repertories.',
       parameters: z.object({
         language: z.string().optional().describe('Filter by language code (e.g., "en")'),
@@ -120,7 +121,7 @@ export function createOOREPTools(client: OOREPSDKClient) {
       execute: async (args: { language?: string }) => client.listRepertories(args),
     },
 
-    list_available_materia_medicas: {
+    [TOOL_NAMES.LIST_MATERIA_MEDICAS]: {
       description: 'List all available materia medica texts.',
       parameters: z.object({
         language: z.string().optional().describe('Filter by language code (e.g., "en")'),
@@ -189,10 +190,6 @@ export function createListMateriaMedicasTool(client: OOREPSDKClient) {
   return createOOREPTools(client).list_available_materia_medicas;
 }
 
-// ==========================================================================
-// Resource Adapters
-// ==========================================================================
-
 /**
  * Vercel AI SDK system message format for resources
  */
@@ -253,10 +250,6 @@ export function vercelAIFormatResourcesAsContext(resources: ResourceContent[]): 
     .map((r) => `## Resource: ${r.uri}\n\n${r.text}`)
     .join('\n\n---\n\n');
 }
-
-// ==========================================================================
-// Prompt Adapters
-// ==========================================================================
 
 /**
  * Vercel AI SDK message format (CoreMessage compatible)

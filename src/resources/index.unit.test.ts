@@ -2,24 +2,25 @@
  * Unit tests for resource registry
  */
 
-import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ResourceRegistry } from './index.js';
 import type { OOREPConfig } from '../config.js';
 
 // Use vi.hoisted to create mock functions that can be accessed inside vi.mock
-const { mockListResources, mockGetResource, mockDestroy } = vi.hoisted(() => ({
-  mockListResources: vi.fn(),
-  mockGetResource: vi.fn(),
-  mockDestroy: vi.fn(),
-}));
+const { mockGetAvailableRemedies, mockGetAvailableRepertories, mockGetAvailableMateriaMedicas } =
+  vi.hoisted(() => ({
+    mockGetAvailableRemedies: vi.fn(),
+    mockGetAvailableRepertories: vi.fn(),
+    mockGetAvailableMateriaMedicas: vi.fn(),
+  }));
 
-// Mock the SDK client module using a class
-vi.mock('../sdk/client.js', () => {
+// Mock the OOREPClient from lib
+vi.mock('../lib/oorep-client.js', () => {
   return {
-    OOREPSDKClient: class MockOOREPSDKClient {
-      listResources = mockListResources;
-      getResource = mockGetResource;
-      destroy = mockDestroy;
+    OOREPClient: class MockOOREPClient {
+      getAvailableRemedies = mockGetAvailableRemedies;
+      getAvailableRepertories = mockGetAvailableRepertories;
+      getAvailableMateriaMedicas = mockGetAvailableMateriaMedicas;
     },
   };
 });
@@ -33,31 +34,14 @@ describe('ResourceRegistry', () => {
     vi.clearAllMocks();
 
     // Set up default mock implementations
-    mockListResources.mockReturnValue([
-      {
-        uri: 'oorep://remedies/list',
-        name: 'Available Remedies List',
-        description: 'Complete list of all available homeopathic remedies',
-        mimeType: 'application/json',
-      },
-      {
-        uri: 'oorep://repertories/list',
-        name: 'Available Repertories List',
-        description: 'List of all accessible repertories',
-        mimeType: 'application/json',
-      },
-      {
-        uri: 'oorep://materia-medicas/list',
-        name: 'Available Materia Medicas List',
-        description: 'List of all accessible materia medicas',
-        mimeType: 'application/json',
-      },
-      {
-        uri: 'oorep://help/search-syntax',
-        name: 'OOREP Search Syntax Help',
-        description: 'Guide to OOREP search syntax',
-        mimeType: 'text/markdown',
-      },
+    mockGetAvailableRemedies.mockResolvedValue([
+      { id: 1, nameAbbrev: 'Acon.', nameLong: 'Aconitum napellus', namealt: [] },
+    ]);
+    mockGetAvailableRepertories.mockResolvedValue([
+      { abbreviation: 'kent', title: 'Kent Repertory' },
+    ]);
+    mockGetAvailableMateriaMedicas.mockResolvedValue([
+      { abbreviation: 'boericke', title: 'Boericke MM' },
     ]);
 
     mockConfig = {
@@ -121,11 +105,7 @@ describe('ResourceRegistry', () => {
       const mockRemedies = [
         { id: 1, nameAbbrev: 'Acon.', nameLong: 'Aconitum napellus', namealt: [] },
       ];
-      mockGetResource.mockResolvedValue({
-        uri: 'oorep://remedies/list',
-        mimeType: 'application/json',
-        text: JSON.stringify(mockRemedies, null, 2),
-      });
+      mockGetAvailableRemedies.mockResolvedValue(mockRemedies);
 
       const result = await registry.getResource('oorep://remedies/list');
 
@@ -135,30 +115,22 @@ describe('ResourceRegistry', () => {
       expect(JSON.parse(result.contents[0].text)).toEqual(mockRemedies);
     });
 
-    it('getResource when remedies cached then SDK handles caching', async () => {
+    it('getResource when remedies cached then uses cache', async () => {
       const mockRemedies = [{ id: 1, nameAbbrev: 'Test', nameLong: 'Test', namealt: [] }];
-      mockGetResource.mockResolvedValue({
-        uri: 'oorep://remedies/list',
-        mimeType: 'application/json',
-        text: JSON.stringify(mockRemedies, null, 2),
-      });
+      mockGetAvailableRemedies.mockResolvedValue(mockRemedies);
 
       await registry.getResource('oorep://remedies/list');
       await registry.getResource('oorep://remedies/list');
 
-      // SDK handles caching - registry always delegates
-      expect(mockGetResource).toHaveBeenCalledTimes(2);
+      // Registry caches results - should only call API once
+      expect(mockGetAvailableRemedies).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('getResource - repertories list', () => {
     it('getResource when oorep://repertories/list then returns repertories', async () => {
       const mockRepertories = [{ abbreviation: 'kent', title: 'Kent Repertory' }];
-      mockGetResource.mockResolvedValue({
-        uri: 'oorep://repertories/list',
-        mimeType: 'application/json',
-        text: JSON.stringify(mockRepertories, null, 2),
-      });
+      mockGetAvailableRepertories.mockResolvedValue(mockRepertories);
 
       const result = await registry.getResource('oorep://repertories/list');
 
@@ -168,30 +140,22 @@ describe('ResourceRegistry', () => {
       expect(JSON.parse(result.contents[0].text)).toEqual(mockRepertories);
     });
 
-    it('getResource when repertories cached then SDK handles caching', async () => {
+    it('getResource when repertories cached then uses cache', async () => {
       const mockRepertories = [{ abbreviation: 'test', title: 'Test' }];
-      mockGetResource.mockResolvedValue({
-        uri: 'oorep://repertories/list',
-        mimeType: 'application/json',
-        text: JSON.stringify(mockRepertories, null, 2),
-      });
+      mockGetAvailableRepertories.mockResolvedValue(mockRepertories);
 
       await registry.getResource('oorep://repertories/list');
       await registry.getResource('oorep://repertories/list');
 
-      // SDK handles caching - registry always delegates
-      expect(mockGetResource).toHaveBeenCalledTimes(2);
+      // Registry caches results - should only call API once
+      expect(mockGetAvailableRepertories).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('getResource - materia medicas list', () => {
     it('getResource when oorep://materia-medicas/list then returns materia medicas', async () => {
       const mockMMs = [{ abbreviation: 'boericke', title: 'Boericke MM' }];
-      mockGetResource.mockResolvedValue({
-        uri: 'oorep://materia-medicas/list',
-        mimeType: 'application/json',
-        text: JSON.stringify(mockMMs, null, 2),
-      });
+      mockGetAvailableMateriaMedicas.mockResolvedValue(mockMMs);
 
       const result = await registry.getResource('oorep://materia-medicas/list');
 
@@ -201,53 +165,20 @@ describe('ResourceRegistry', () => {
       expect(JSON.parse(result.contents[0].text)).toEqual(mockMMs);
     });
 
-    it('getResource when materia medicas cached then SDK handles caching', async () => {
+    it('getResource when materia medicas cached then uses cache', async () => {
       const mockMMs = [{ abbreviation: 'test', title: 'Test' }];
-      mockGetResource.mockResolvedValue({
-        uri: 'oorep://materia-medicas/list',
-        mimeType: 'application/json',
-        text: JSON.stringify(mockMMs, null, 2),
-      });
+      mockGetAvailableMateriaMedicas.mockResolvedValue(mockMMs);
 
       await registry.getResource('oorep://materia-medicas/list');
       await registry.getResource('oorep://materia-medicas/list');
 
-      // SDK handles caching - registry always delegates
-      expect(mockGetResource).toHaveBeenCalledTimes(2);
+      // Registry caches results - should only call API once
+      expect(mockGetAvailableMateriaMedicas).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('getResource - search syntax help', () => {
-    const helpText = `# OOREP Search Syntax Guide
-
-## Basic Search
-
-Simple text searches match symptoms and rubrics.
-
-## Wildcards
-
-Use asterisk (*) to match any characters.
-
-## Exclusions
-
-Use minus sign (-) to exclude terms.
-
-## Exact Phrases
-
-Use quotation marks for exact phrase matching.
-
-## Examples
-
-Some examples here.
-`;
-
     it('getResource when oorep://help/search-syntax then returns help text', async () => {
-      mockGetResource.mockResolvedValue({
-        uri: 'oorep://help/search-syntax',
-        mimeType: 'text/markdown',
-        text: helpText,
-      });
-
       const result = await registry.getResource('oorep://help/search-syntax');
 
       expect(result.contents).toHaveLength(1);
@@ -257,77 +188,37 @@ Some examples here.
     });
 
     it('getResource when search syntax help then includes wildcard section', async () => {
-      mockGetResource.mockResolvedValue({
-        uri: 'oorep://help/search-syntax',
-        mimeType: 'text/markdown',
-        text: helpText,
-      });
-
       const result = await registry.getResource('oorep://help/search-syntax');
 
-      expect(result.contents[0].text).toContain('## Wildcards');
-      expect(result.contents[0].text).toContain('asterisk');
+      expect(result.contents[0].text).toContain('Wildcard');
     });
 
     it('getResource when search syntax help then includes exclusion section', async () => {
-      mockGetResource.mockResolvedValue({
-        uri: 'oorep://help/search-syntax',
-        mimeType: 'text/markdown',
-        text: helpText,
-      });
-
       const result = await registry.getResource('oorep://help/search-syntax');
 
-      expect(result.contents[0].text).toContain('## Exclusions');
-      expect(result.contents[0].text).toContain('minus sign');
+      expect(result.contents[0].text).toContain('Exclusion');
     });
 
     it('getResource when search syntax help then includes exact phrase section', async () => {
-      mockGetResource.mockResolvedValue({
-        uri: 'oorep://help/search-syntax',
-        mimeType: 'text/markdown',
-        text: helpText,
-      });
-
       const result = await registry.getResource('oorep://help/search-syntax');
 
-      expect(result.contents[0].text).toContain('## Exact Phrases');
-      expect(result.contents[0].text).toContain('quotation marks');
+      expect(result.contents[0].text).toContain('Exact');
     });
 
     it('getResource when search syntax help then includes examples', async () => {
-      mockGetResource.mockResolvedValue({
-        uri: 'oorep://help/search-syntax',
-        mimeType: 'text/markdown',
-        text: helpText,
-      });
-
       const result = await registry.getResource('oorep://help/search-syntax');
 
-      expect(result.contents[0].text).toContain('## Examples');
+      expect(result.contents[0].text).toContain('Example');
     });
   });
 
   describe('getResource - error handling', () => {
     it('getResource when unknown URI then throws error', async () => {
-      // SDK throws for unknown URIs via exhaustive switch
-      mockGetResource.mockRejectedValue(
-        new Error('Unknown resource URI: oorep://unknown/resource')
-      );
-
-      await expect(registry.getResource('oorep://unknown/resource')).rejects.toThrow();
-    });
-
-    it('getResource when unknown URI then propagates SDK error', async () => {
-      mockGetResource.mockRejectedValue(
-        new Error('Unknown resource URI: oorep://unknown/resource')
-      );
-
       await expect(registry.getResource('oorep://unknown/resource')).rejects.toThrow();
     });
 
     it('getResource when API error then sanitizes error', async () => {
-      mockGetResource.mockRejectedValue(new Error('API Error'));
+      mockGetAvailableRemedies.mockRejectedValue(new Error('API Error'));
 
       await expect(registry.getResource('oorep://remedies/list')).rejects.toThrow();
     });
@@ -336,11 +227,7 @@ Some examples here.
   describe('JSON formatting', () => {
     it('getResource when JSON resource then formats with indentation', async () => {
       const mockRemedies = [{ id: 1, nameAbbrev: 'Test', nameLong: 'Test', namealt: [] }];
-      mockGetResource.mockResolvedValue({
-        uri: 'oorep://remedies/list',
-        mimeType: 'application/json',
-        text: JSON.stringify(mockRemedies, null, 2),
-      });
+      mockGetAvailableRemedies.mockResolvedValue(mockRemedies);
 
       const result = await registry.getResource('oorep://remedies/list');
       const text = result.contents[0].text;

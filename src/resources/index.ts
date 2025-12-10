@@ -28,6 +28,12 @@ import { searchSyntaxHelpDefinition, getSearchSyntaxHelp } from './search-syntax
 
 export type { ResourceContent, ResourceDefinition };
 
+// Re-export fetch functions for use in SDK client
+export { fetchRemediesList } from './remedies-list.js';
+export { fetchRepertoriesList } from './repertories-list.js';
+export { fetchMateriaMedicasList } from './materia-medicas-list.js';
+export { getSearchSyntaxHelp } from './search-syntax-help.js';
+
 const resourceDefinitions: ResourceDefinition[] = [
   remediesListDefinition,
   repertoriesListDefinition,
@@ -47,6 +53,8 @@ export class ResourceRegistry {
       baseUrl: config.baseUrl,
       timeoutMs: config.timeoutMs,
       cacheTtlMs: 3600000,
+      maxResults: config.maxResults,
+      logLevel: config.logLevel,
       defaultRepertory: config.defaultRepertory,
       defaultMateriaMedica: config.defaultMateriaMedica,
     });
