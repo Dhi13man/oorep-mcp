@@ -57,6 +57,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Package Exports**: Root entry now exports SDK (not empty server entry point)
+  - Added `./sdk` and `./sdk/constants` export paths
+  - `import { ... } from 'oorep-mcp'` now works correctly
+  - `main` and `types` fields updated to point to SDK
+
+- **SDK.md Documentation**: Corrected function naming inconsistencies
+  - Fixed camelCase for adapter functions (`openAIFormatResourceAsSystemMessage`, not `openaiFormat...`)
+  - Fixed type import paths to use correct entry points
+
 - **Unused Imports**: Cleaned up across SDK files
 
 ## [1.0.3] - 2025-12-09

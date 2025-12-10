@@ -4,19 +4,27 @@
   "description": "MCP server for OOREP homeopathic repertory and materia medica - enables AI assistants to search symptoms, remedies, and homeopathic reference materials",
   "mcpName": "io.github.dhi13man/oorep-mcp",
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/sdk/index.js",
+  "types": "dist/sdk/index.d.ts",
   "bin": {
     "oorep-mcp": "dist/index.js"
   },
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./dist/sdk/index.d.ts",
+      "import": "./dist/sdk/index.js"
+    },
+    "./sdk": {
+      "types": "./dist/sdk/index.d.ts",
+      "import": "./dist/sdk/index.js"
     },
     "./sdk/client": {
       "types": "./dist/sdk/index.d.ts",
       "import": "./dist/sdk/index.js"
+    },
+    "./sdk/constants": {
+      "types": "./dist/sdk/constants.d.ts",
+      "import": "./dist/sdk/constants.js"
     },
     "./sdk/tools": {
       "types": "./dist/sdk/tools.d.ts",
@@ -41,6 +49,14 @@
     "./sdk/adapters": {
       "types": "./dist/sdk/adapters/index.d.ts",
       "import": "./dist/sdk/adapters/index.js"
+    },
+    "./sdk/resources": {
+      "types": "./dist/sdk/resources.d.ts",
+      "import": "./dist/sdk/resources.js"
+    },
+    "./sdk/prompts": {
+      "types": "./dist/sdk/prompts.d.ts",
+      "import": "./dist/sdk/prompts.js"
     }
   },
   "files": [

@@ -331,8 +331,8 @@ Each adapter provides functions to convert prompts and resources into SDK-specif
 import {
   openAITools,
   convertPromptToOpenAI,
-  openaiFormatResourceAsSystemMessage,
-  openaiConvertPromptWithContext,
+  openAIFormatResourceAsSystemMessage,
+  openAIConvertPromptWithContext,
 } from 'oorep-mcp/sdk/openai';
 import { getResource } from 'oorep-mcp/sdk/resources';
 import { getPrompt } from 'oorep-mcp/sdk/prompts';
@@ -343,7 +343,7 @@ const messages = convertPromptToOpenAI(workflow);
 
 // Inject resource as system context (static resource, no client needed)
 const searchSyntax = await getResource('oorep://help/search-syntax');
-const systemMessage = openaiFormatResourceAsSystemMessage(searchSyntax);
+const systemMessage = openAIFormatResourceAsSystemMessage(searchSyntax);
 
 const response = await openai.chat.completions.create({
   model: 'gpt-5-mini',
@@ -352,7 +352,7 @@ const response = await openai.chat.completions.create({
 });
 
 // Or use the combined helper
-const messagesWithContext = openaiConvertPromptWithContext(searchSyntax, workflow);
+const messagesWithContext = openAIConvertPromptWithContext(searchSyntax, workflow);
 ```
 
 #### Vercel AI SDK Prompts
@@ -362,8 +362,8 @@ import { createOOREPClient } from 'oorep-mcp/sdk/client';
 import {
   createOOREPTools,
   convertPromptToVercelAI,
-  vercelaiFormatResourceAsSystemMessage,
-  vercelaiCombinePromptWithContext,
+  vercelAIFormatResourceAsSystemMessage,
+  vercelAICombinePromptWithContext,
 } from 'oorep-mcp/sdk/vercel-ai';
 import { getResource } from 'oorep-mcp/sdk/resources';
 import { getPrompt } from 'oorep-mcp/sdk/prompts';
@@ -373,7 +373,7 @@ const tools = createOOREPTools(client);
 
 // Get system instruction from resource (static resource, no client needed)
 const searchSyntax = await getResource('oorep://help/search-syntax');
-const system = vercelaiFormatResourceAsSystemMessage(searchSyntax);
+const system = vercelAIFormatResourceAsSystemMessage(searchSyntax);
 
 // Convert prompt to Vercel AI format
 const workflow = getPrompt('analyze-symptoms', {
@@ -389,7 +389,7 @@ const result = await generateText({
 });
 
 // Or use the combined helper
-const { system: sys, messages: msgs } = vercelaiCombinePromptWithContext(searchSyntax, workflow);
+const { system: sys, messages: msgs } = vercelAICombinePromptWithContext(searchSyntax, workflow);
 
 client.destroy();
 ```
@@ -402,8 +402,8 @@ import { createOOREPClient } from 'oorep-mcp/sdk/client';
 import {
   createLangChainTools,
   convertPromptToLangChain,
-  langchainFormatResourceAsSystemMessage,
-  langchainFormatResourceAsDocument,
+  langChainFormatResourceAsSystemMessage,
+  langChainFormatResourceAsDocument,
 } from 'oorep-mcp/sdk/langchain';
 import { getResource } from 'oorep-mcp/sdk/resources';
 import { getPrompt } from 'oorep-mcp/sdk/prompts';
@@ -412,7 +412,7 @@ const client = createOOREPClient();
 
 // Get resource as system message data (static resource, no client needed)
 const searchSyntax = await getResource('oorep://help/search-syntax');
-const sysMsg = langchainFormatResourceAsSystemMessage(searchSyntax);
+const sysMsg = langChainFormatResourceAsSystemMessage(searchSyntax);
 const systemMessage = new SystemMessage(sysMsg.content);
 
 // Convert prompt to LangChain message data
@@ -425,7 +425,7 @@ const messages = messageData.map((msg) =>
 );
 
 // For RAG use cases, get resources as Documents (dynamic resource needs client)
-const remediesDoc = langchainFormatResourceAsDocument(
+const remediesDoc = langChainFormatResourceAsDocument(
   await getResource('oorep://remedies/list', client.getClient())
 );
 // Use with vector stores or retrievers
@@ -535,7 +535,7 @@ import type {
   Remedy,
   MateriaMedicaResult,
   MateriaMedicaSection,
-} from 'oorep-mcp/sdk/tools';
+} from 'oorep-mcp';
 
 // Resource types (standalone functions)
 import type { ResourceUri, ResourceContent } from 'oorep-mcp/sdk/resources';
