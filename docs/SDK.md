@@ -224,23 +224,23 @@ try {
 
 ## Resources
 
-The SDK provides access to MCP resources for rich context injection:
+The SDK provides standalone functions for accessing MCP resources:
 
 ```typescript
 import { createOOREPClient } from 'oorep-mcp/sdk/client';
+import { getResource, listResources, getSearchSyntaxHelp } from 'oorep-mcp/sdk/resources';
 
-const client = createOOREPClient();
-
-// Get search syntax help (markdown) - great for system prompts
-const searchHelp = await client.getSearchSyntaxHelp();
+// Get search syntax help (markdown) - great for system prompts (no client needed)
+const searchHelp = getSearchSyntaxHelp();
 console.log(searchHelp); // Markdown guide for search syntax
 
-// Get any resource by URI
-const remedies = await client.getResource('oorep://remedies/list');
+// For dynamic resources, create a client and pass its underlying OOREPClient
+const client = createOOREPClient();
+const remedies = await getResource('oorep://remedies/list', client.getClient());
 console.log(remedies.text); // JSON with 600+ remedies
 
-// List all available resources
-const resources = client.listResources();
+// List all available resources (no client needed)
+const resources = listResources();
 // Returns: { uri, name, description, mimeType }[]
 
 client.destroy();
@@ -260,7 +260,9 @@ client.destroy();
 Inject the search syntax guide into your system prompt:
 
 ```typescript
-const searchSyntax = await client.getSearchSyntaxHelp();
+import { getSearchSyntaxHelp } from 'oorep-mcp/sdk/resources';
+
+const searchSyntax = getSearchSyntaxHelp();
 
 const systemPrompt = `You are a homeopathic analysis assistant.
 
@@ -271,33 +273,29 @@ Use the search_repertory tool with the syntax rules above.`;
 
 ## Prompts
 
-The SDK provides pre-built prompt workflows for common homeopathic analysis tasks:
+The SDK provides standalone functions for pre-built prompt workflows:
 
 ```typescript
-import { createOOREPClient } from 'oorep-mcp/sdk/client';
-
-const client = createOOREPClient();
+import { getPrompt, listPrompts } from 'oorep-mcp/sdk/prompts';
 
 // Get the repertorization workflow (7-step process)
-const workflow = await client.getPrompt('repertorization-workflow');
+const workflow = getPrompt('repertorization-workflow');
 console.log(workflow.messages[0].content.text);
 // Returns structured workflow with steps for case taking
 
 // Analyze symptoms with optional initial description
-const analysis = await client.getPrompt('analyze-symptoms', {
+const analysis = getPrompt('analyze-symptoms', {
   symptom_description: 'throbbing headache worse from light',
 });
 
 // Compare multiple remedies
-const comparison = await client.getPrompt('remedy-comparison', {
+const comparison = getPrompt('remedy-comparison', {
   remedies: 'Belladonna,Gelsemium,Bryonia',
 });
 
 // List all available prompts
-const prompts = client.listPrompts();
+const prompts = listPrompts();
 // Returns: { name, description, arguments }[]
-
-client.destroy();
 ```
 
 ### Available Prompts
@@ -330,23 +328,22 @@ Each adapter provides functions to convert prompts and resources into SDK-specif
 #### OpenAI
 
 ```typescript
-import { createOOREPClient } from 'oorep-mcp/sdk/client';
 import {
   openAITools,
   convertPromptToOpenAI,
-  formatResourceAsSystemMessage,
-  convertPromptWithContext,
+  openaiFormatResourceAsSystemMessage,
+  openaiConvertPromptWithContext,
 } from 'oorep-mcp/sdk/openai';
-
-const client = createOOREPClient();
+import { getResource } from 'oorep-mcp/sdk/resources';
+import { getPrompt } from 'oorep-mcp/sdk/prompts';
 
 // Convert prompt to OpenAI message format
-const workflow = await client.getPrompt('repertorization-workflow');
+const workflow = getPrompt('repertorization-workflow');
 const messages = convertPromptToOpenAI(workflow);
 
-// Inject resource as system context
-const searchSyntax = await client.getResource('oorep://help/search-syntax');
-const systemMessage = formatResourceAsSystemMessage(searchSyntax);
+// Inject resource as system context (static resource, no client needed)
+const searchSyntax = await getResource('oorep://help/search-syntax');
+const systemMessage = openaiFormatResourceAsSystemMessage(searchSyntax);
 
 const response = await openai.chat.completions.create({
   model: 'gpt-5-mini',
@@ -355,7 +352,7 @@ const response = await openai.chat.completions.create({
 });
 
 // Or use the combined helper
-const messagesWithContext = convertPromptWithContext(searchSyntax, workflow);
+const messagesWithContext = openaiConvertPromptWithContext(searchSyntax, workflow);
 ```
 
 #### Vercel AI SDK
@@ -365,19 +362,21 @@ import { createOOREPClient } from 'oorep-mcp/sdk/client';
 import {
   createOOREPTools,
   convertPromptToVercelAI,
-  getSystemInstruction,
-  combinePromptWithContext,
+  vercelaiFormatResourceAsSystemMessage,
+  vercelaiCombinePromptWithContext,
 } from 'oorep-mcp/sdk/vercel-ai';
+import { getResource } from 'oorep-mcp/sdk/resources';
+import { getPrompt } from 'oorep-mcp/sdk/prompts';
 
 const client = createOOREPClient();
 const tools = createOOREPTools(client);
 
-// Get system instruction from resource
-const searchSyntax = await client.getResource('oorep://help/search-syntax');
-const system = getSystemInstruction(searchSyntax);
+// Get system instruction from resource (static resource, no client needed)
+const searchSyntax = await getResource('oorep://help/search-syntax');
+const system = vercelaiFormatResourceAsSystemMessage(searchSyntax);
 
 // Convert prompt to Vercel AI format
-const workflow = await client.getPrompt('analyze-symptoms', {
+const workflow = getPrompt('analyze-symptoms', {
   symptom_description: 'headache',
 });
 const messages = convertPromptToVercelAI(workflow);
@@ -390,7 +389,9 @@ const result = await generateText({
 });
 
 // Or use the combined helper
-const { system: sys, messages: msgs } = combinePromptWithContext(searchSyntax, workflow);
+const { system: sys, messages: msgs } = vercelaiCombinePromptWithContext(searchSyntax, workflow);
+
+client.destroy();
 ```
 
 #### LangChain
@@ -401,19 +402,21 @@ import { createOOREPClient } from 'oorep-mcp/sdk/client';
 import {
   createLangChainTools,
   convertPromptToLangChain,
-  formatResourceAsSystemMessage,
-  formatResourceAsDocument,
+  langchainFormatResourceAsSystemMessage,
+  langchainFormatResourceAsDocument,
 } from 'oorep-mcp/sdk/langchain';
+import { getResource } from 'oorep-mcp/sdk/resources';
+import { getPrompt } from 'oorep-mcp/sdk/prompts';
 
 const client = createOOREPClient();
 
-// Get resource as system message data
-const searchSyntax = await client.getResource('oorep://help/search-syntax');
-const sysMsg = formatResourceAsSystemMessage(searchSyntax);
+// Get resource as system message data (static resource, no client needed)
+const searchSyntax = await getResource('oorep://help/search-syntax');
+const sysMsg = langchainFormatResourceAsSystemMessage(searchSyntax);
 const systemMessage = new SystemMessage(sysMsg.content);
 
 // Convert prompt to LangChain message data
-const workflow = await client.getPrompt('remedy-comparison', {
+const workflow = getPrompt('remedy-comparison', {
   remedies: 'Aconite,Belladonna',
 });
 const messageData = convertPromptToLangChain(workflow);
@@ -421,11 +424,13 @@ const messages = messageData.map((msg) =>
   msg.type === 'human' ? new HumanMessage(msg.content) : new AIMessage(msg.content)
 );
 
-// For RAG use cases, get resources as Documents
-const remediesDoc = formatResourceAsDocument(
-  await client.getResource('oorep://remedies/list')
+// For RAG use cases, get resources as Documents (dynamic resource needs client)
+const remediesDoc = langchainFormatResourceAsDocument(
+  await getResource('oorep://remedies/list', client.getClient())
 );
 // Use with vector stores or retrievers
+
+client.destroy();
 ```
 
 #### Google Gemini
@@ -437,19 +442,21 @@ import {
   geminiTools,
   createGeminiToolExecutors,
   convertPromptToGemini,
-  formatResourceAsSystemInstruction,
-  convertPromptWithContext,
+  geminiFormatResourceAsSystemInstruction,
+  geminiConvertPromptWithContext,
 } from 'oorep-mcp/sdk/google-genai';
+import { getResource } from 'oorep-mcp/sdk/resources';
+import { getPrompt } from 'oorep-mcp/sdk/prompts';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const client = createOOREPClient();
 
-// Get system instruction from resource
-const searchSyntax = await client.getResource('oorep://help/search-syntax');
-const systemInstruction = formatResourceAsSystemInstruction(searchSyntax);
+// Get system instruction from resource (static resource, no client needed)
+const searchSyntax = await getResource('oorep://help/search-syntax');
+const systemInstruction = geminiFormatResourceAsSystemInstruction(searchSyntax);
 
 // Convert prompt to Gemini Content format
-const workflow = await client.getPrompt('repertorization-workflow');
+const workflow = getPrompt('repertorization-workflow');
 const contents = convertPromptToGemini(workflow);
 
 const response = await ai.models.generateContent({
@@ -460,10 +467,12 @@ const response = await ai.models.generateContent({
 });
 
 // Or use the combined helper
-const { systemInstruction: sysInst, contents: cont } = convertPromptWithContext(
+const { systemInstruction: sysInst, contents: cont } = geminiConvertPromptWithContext(
   searchSyntax,
   workflow
 );
+
+client.destroy();
 ```
 
 ## Available Tools
@@ -493,56 +502,53 @@ All adapters provide these tools:
 
 | Adapter | System Message | Multi-Resource | Additional |
 |---------|---------------|----------------|------------|
-| **OpenAI** | `formatResourceAsSystemMessage()` | `formatResourcesAsContext()` | - |
-| **Vercel AI** | `formatResourceAsSystemMessage()` | `formatResourcesAsContext()` | `getSystemInstruction()` |
-| **LangChain** | `formatResourceAsSystemMessage()` | `formatResourcesAsContext()` | `formatResourceAsDocument()` |
-| **Google Gemini** | `formatResourceAsSystemInstruction()` | `formatResourcesAsContext()` | - |
+| **OpenAI** | `openAIFormatResourceAsSystemMessage()` | `openAIFormatResourcesAsContext()` | - |
+| **Vercel AI** | `vercelAIFormatResourceAsSystemMessage()` | `vercelAIFormatResourcesAsContext()` | `vercelAIGetSystemInstruction()` |
+| **LangChain** | `langChainFormatResourceAsSystemMessage()` | `langChainFormatResourcesAsContext()` | `langChainFormatResourceAsDocument()` |
+| **Google Gemini** | `geminiFormatResourceAsSystemInstruction()` | `geminiFormatResourcesAsContext()` | - |
 
 ### Prompts
 
 | Adapter | Convert Function | With Context |
 |---------|-----------------|--------------|
-| **OpenAI** | `convertPromptToOpenAI()` | `convertPromptWithContext()` |
-| **Vercel AI** | `convertPromptToVercelAI()` | `combinePromptWithContext()` |
-| **LangChain** | `convertPromptToLangChain()` | `convertPromptWithContext()` |
-| **Google Gemini** | `convertPromptToGemini()` | `convertPromptWithContext()` |
+| **OpenAI** | `convertPromptToOpenAI()` | `openAIConvertPromptWithContext()` |
+| **Vercel AI** | `convertPromptToVercelAI()` | `vercelAICombinePromptWithContext()` |
+| **LangChain** | `convertPromptToLangChain()` | `langChainConvertPromptWithContext()` |
+| **Google Gemini** | `convertPromptToGemini()` | `geminiConvertPromptWithContext()` |
 
 ## TypeScript Types
 
 ```typescript
+// Tool argument and result types
 import type {
-  // Tool argument types
   SearchRepertoryArgs,
   SearchMateriaMedicaArgs,
   GetRemedyInfoArgs,
   ListRepertoriesArgs,
   ListMateriaMedicasArgs,
-
-  // Result types
   RepertorySearchResult,
   MateriaMedicaSearchResult,
   RemedyInfo,
   RepertoryMetadata,
   MateriaMedicaMetadata,
-
-  // Supporting types
   Rubric,
   Remedy,
   MateriaMedicaResult,
   MateriaMedicaSection,
+} from 'oorep-mcp/sdk/tools';
 
-  // Resource types
-  ResourceUri,
-  ResourceContent,
+// Resource types (standalone functions)
+import type { ResourceUri, ResourceContent } from 'oorep-mcp/sdk/resources';
 
-  // Prompt types
+// Prompt types (standalone functions)
+import type {
   PromptName,
-  PromptMessage,
   PromptResult,
   AnalyzeSymptomsArgs,
   RemedyComparisonArgs,
-} from 'oorep-mcp/sdk/client';
+} from 'oorep-mcp/sdk/prompts';
 
+// SDK Client types
 import type { OOREPSDKClient, OOREPSDKConfig } from 'oorep-mcp/sdk/client';
 
 // Adapter-specific types
