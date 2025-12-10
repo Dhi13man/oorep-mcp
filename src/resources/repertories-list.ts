@@ -4,21 +4,9 @@
  * Provides the list of available homeopathic repertories with metadata.
  */
 
-import { RESOURCE_URIS, MIME_TYPES, type ResourceUri } from '../sdk/constants.js';
+import { RESOURCE_URIS, MIME_TYPES } from '../sdk/constants.js';
 import type { OOREPClient } from '../lib/oorep-client.js';
-
-export interface ResourceContent {
-  uri: ResourceUri;
-  mimeType: string;
-  text: string;
-}
-
-export interface ResourceDefinition {
-  uri: ResourceUri;
-  name: string;
-  description: string;
-  mimeType: string;
-}
+import type { ResourceContent, ResourceDefinition } from './remedies-list.js';
 
 export const repertoriesListDefinition: ResourceDefinition = {
   uri: RESOURCE_URIS.REPERTORIES_LIST,

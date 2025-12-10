@@ -124,4 +124,26 @@ export {
 } from '../lib/data-formatter.js';
 
 // Export tool definitions for building custom integrations
-export { toolDefinitions, type OOREPToolDefinition } from './tools.js';
+export {
+  toolDefinitions,
+  getToolDefinition,
+  getToolNames,
+  type OOREPToolDefinition,
+} from './tools.js';
+
+// Export resource definitions for building custom integrations
+export {
+  resourceDefinitions,
+  getResourceDefinition,
+  getResourceUris,
+  type OOREPResourceDefinition,
+} from './resources.js';
+
+// Export prompt definitions for building custom integrations
+export {
+  promptDefinitions,
+  getPromptDefinition,
+  getPromptNames,
+  type OOREPPromptDefinition,
+  type OOREPPromptArgument,
+} from './prompts.js';

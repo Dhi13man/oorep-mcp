@@ -5,6 +5,7 @@
  */
 
 import { RESOURCE_URIS, MIME_TYPES, type ResourceUri } from '../sdk/constants.js';
+import { type OOREPResourceDefinition } from '../sdk/resources.js';
 import type { OOREPClient } from '../lib/oorep-client.js';
 
 export interface ResourceContent {
@@ -13,11 +14,11 @@ export interface ResourceContent {
   text: string;
 }
 
-export interface ResourceDefinition {
+/**
+ * MCP-specific resource definition that extends SDK definition with typed URI
+ */
+export interface ResourceDefinition extends Omit<OOREPResourceDefinition, 'uri'> {
   uri: ResourceUri;
-  name: string;
-  description: string;
-  mimeType: string;
 }
 
 export const remediesListDefinition: ResourceDefinition = {

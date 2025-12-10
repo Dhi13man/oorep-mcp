@@ -49,6 +49,15 @@ export class PromptRegistry {
     return promptDefinitions;
   }
 
+  /**
+   * Get a prompt by name with optional arguments
+   *
+   * @param name - The prompt name to retrieve
+   * @param args - Optional arguments to customize the prompt
+   * @returns Promise resolving to the prompt messages
+   * @throws {Error} If the prompt name is not recognized
+   * @throws {Error} If remedy-comparison prompt receives fewer than 2 remedies
+   */
   async getPrompt(
     name: string,
     args?: Record<string, string>

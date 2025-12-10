@@ -78,6 +78,8 @@ export function getOpenAITools(toolNames?: string[]): OpenAITool[] {
  * @param functionName - Name of the function to execute
  * @param argumentsJson - JSON string of function arguments
  * @returns Tool result as a JSON-serializable object
+ * @throws {SyntaxError} If argumentsJson is not valid JSON
+ * @throws {Error} If functionName is not a recognized tool name
  */
 export async function executeOpenAITool(
   client: OOREPSDKClient,
@@ -95,6 +97,7 @@ export async function executeOpenAITool(
  * @param toolName - Name of the tool to execute
  * @param args - Parsed tool arguments
  * @returns Tool result
+ * @throws {Error} If toolName is not a recognized tool name
  */
 export async function executeOOREPTool(
   client: OOREPSDKClient,

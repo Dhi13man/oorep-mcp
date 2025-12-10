@@ -64,6 +64,14 @@ export class ResourceRegistry {
     return resourceDefinitions;
   }
 
+  /**
+   * Get a resource by URI
+   *
+   * @param uri - The resource URI to retrieve
+   * @returns Promise resolving to the resource contents
+   * @throws {Error} If the resource URI is not recognized
+   * @throws {NetworkError} If there is a network error fetching the resource
+   */
   async getResource(
     uri: string
   ): Promise<{ contents: Array<{ uri: string; mimeType?: string; text: string }> }> {

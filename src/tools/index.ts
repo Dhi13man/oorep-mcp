@@ -79,6 +79,14 @@ export class ToolRegistry {
     return this.definitions;
   }
 
+  /**
+   * Execute a tool by name with the provided arguments
+   *
+   * @param name - The tool name to execute
+   * @param args - The arguments to pass to the tool
+   * @returns Promise resolving to the tool result
+   * @throws {Error} If the tool name is not found
+   */
   async executeTool(name: string, args: unknown): Promise<unknown> {
     const tool = this.getTool(name);
     if (!tool) {

@@ -46,6 +46,14 @@ export const remedyComparisonDefinition: PromptDefinition = {
   ],
 };
 
+/**
+ * Build a remedy comparison prompt for comparing multiple homeopathic remedies
+ *
+ * @param args - Arguments containing comma-separated list of remedies
+ * @param logger - Optional logger for warnings
+ * @returns Prompt result with formatted comparison workflow
+ * @throws {Error} If fewer than 2 remedies are provided
+ */
 export function buildRemedyComparisonPrompt(
   args: RemedyComparisonArgs,
   logger?: ILogger
