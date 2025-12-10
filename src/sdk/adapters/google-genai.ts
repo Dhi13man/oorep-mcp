@@ -8,7 +8,7 @@
  * ```typescript
  * import { GoogleGenAI } from '@google/genai';
  * import { geminiTools, createGeminiToolExecutors, executeGeminiFunctionCall } from 'oorep-mcp/sdk/adapters/google-genai';
- * import { OOREPSDKClient } from 'oorep-mcp/sdk/client';
+ * import { OOREPSDKClient } from 'oorep-mcp';
  *
  * const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
  * const client = new OOREPSDKClient({ baseUrl: 'https://api.oorep.com' });

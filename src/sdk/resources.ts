@@ -73,7 +73,7 @@ export function getResourceUris(): string[] {
  *
  * @example
  * ```typescript
- * import { listResources } from 'oorep-mcp/sdk/resources';
+ * import { listResources } from 'oorep-mcp';
  *
  * const resources = listResources();
  * console.log(resources);
@@ -105,7 +105,7 @@ export function listResources(): ResourceDefinition[] {
  *
  * @example
  * ```typescript
- * import { getResource } from 'oorep-mcp/sdk/resources';
+ * import { getResource } from 'oorep-mcp';
  * import { OOREPClient } from 'oorep-mcp';
  *
  * // Static resource (no client needed)
@@ -161,7 +161,7 @@ export async function getResource(
  *
  * @example
  * ```typescript
- * import { getSearchSyntaxHelp } from 'oorep-mcp/sdk/resources';
+ * import { getSearchSyntaxHelp } from 'oorep-mcp';
  *
  * const searchGuide = getSearchSyntaxHelp();
  * // Inject into system prompt for better search accuracy
