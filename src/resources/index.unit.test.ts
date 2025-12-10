@@ -213,8 +213,11 @@ describe('ResourceRegistry', () => {
   });
 
   describe('getResource - error handling', () => {
-    it('getResource when unknown URI then throws error', async () => {
-      await expect(registry.getResource('oorep://unknown/resource')).rejects.toThrow();
+    it('getResource when unknown URI then throws error with not found message', async () => {
+      // NotFoundError is sanitized to a plain Error for MCP protocol
+      await expect(registry.getResource('oorep://unknown/resource')).rejects.toThrow(
+        'resource not found: oorep://unknown/resource'
+      );
     });
 
     it('getResource when API error then sanitizes error', async () => {
