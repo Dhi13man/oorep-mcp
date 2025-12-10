@@ -24,7 +24,7 @@ npx oorep-mcp
 
 ```typescript
 // Or use programmatically
-import { createOOREPClient } from 'oorep-mcp/sdk/client';
+import { createOOREPClient } from 'oorep-mcp';
 
 const client = createOOREPClient();
 const results = await client.searchRepertory({ symptom: 'headache worse motion' });
@@ -553,7 +553,7 @@ For programmatic use with AI frameworks, see the **[SDK Integration Guide](docs/
 **Quick example:**
 
 ```typescript
-import { createOOREPClient } from 'oorep-mcp/sdk/client';
+import { createOOREPClient } from 'oorep-mcp';
 
 const client = createOOREPClient();
 const results = await client.searchRepertory({ symptom: 'headache worse motion' });
@@ -727,10 +727,10 @@ import type {
   Remedy,
   MateriaMedicaResult,
   MateriaMedicaSection,
-} from 'oorep-mcp/sdk/tools';
-
-// SDK Client types
-import type { OOREPSDKClient, OOREPSDKConfig } from 'oorep-mcp/sdk/client';
+  // SDK Client types
+  OOREPSDKClient,
+  OOREPSDKConfig,
+} from 'oorep-mcp';
 ```
 
 ### Schema Validation
