@@ -70,6 +70,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Improved
 
+- **Enhanced Search Syntax Help**: Comprehensive `oorep://help/search-syntax` resource
+  - Rubric structure explanation (Location > Symptom > Modality)
+  - Vocabulary mapping table (common terms → repertory terms)
+  - Query optimization tips with examples of what works/fails
+  - Tool selection guide for choosing the right tool
+  - "No results" troubleshooting steps
+
+- **CLAMS Method in Prompts**: Added structured symptom analysis framework
+  - **C**haracter, **L**ocation, **A**ccompanying, **M**odalities, **S**trange/Rare/Peculiar
+  - Vocabulary mapping guidance in prompt workflows
+  - Query best practices (2-3 words, location first, use wildcards)
+  - Iteration guidance (5-8 quality searches, not many vague ones)
+
 - **Test Coverage**: Added 332 new tests (805 → 1137 total)
   - Unit tests for all new resource modules
   - Unit tests for all new prompt modules
