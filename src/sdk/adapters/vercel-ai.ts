@@ -23,7 +23,7 @@
  */
 
 import { z } from '../../utils/schemas.js';
-import type { OOREPSDKClient } from '../client.js';
+import type { OOREPSDKClient, ResourceContent, PromptResult } from '../client.js';
 
 /**
  * Vercel AI SDK tool type
@@ -187,4 +187,169 @@ export function createListRepertoriesTool(client: OOREPSDKClient) {
 
 export function createListMateriaMedicasTool(client: OOREPSDKClient) {
   return createOOREPTools(client).list_available_materia_medicas;
+}
+
+// ==========================================================================
+// Resource Adapters
+// ==========================================================================
+
+/**
+ * Vercel AI SDK system message format for resources
+ */
+export interface VercelAIResourceMessage {
+  role: 'system';
+  content: string;
+}
+
+/**
+ * Format a resource as a Vercel AI SDK system message
+ *
+ * Use this to inject resources (like search syntax help) into conversations
+ * as system context.
+ *
+ * @param resource - Resource content from client.getResource()
+ * @returns Vercel AI SDK-compatible system message
+ *
+ * @example
+ * ```typescript
+ * const searchSyntax = await client.getResource('oorep://help/search-syntax');
+ * const systemMessage = vercelAIFormatResourceAsSystemMessage(searchSyntax);
+ *
+ * const result = await generateText({
+ *   model: openai('gpt-5-mini'),
+ *   system: systemMessage.content,
+ *   messages: [{ role: 'user', content: 'Find headache remedies' }],
+ *   tools,
+ * });
+ * ```
+ */
+export function vercelAIFormatResourceAsSystemMessage(resource: ResourceContent): VercelAIResourceMessage {
+  return {
+    role: 'system',
+    content: resource.text,
+  };
+}
+
+/**
+ * Format multiple resources as a combined context string
+ *
+ * Useful when you need to combine multiple resources into a single system message
+ * or when integrating with other context management systems.
+ *
+ * @param resources - Array of resource contents
+ * @returns Combined string with resource headers
+ *
+ * @example
+ * ```typescript
+ * const [searchHelp, remedies] = await Promise.all([
+ *   client.getResource('oorep://help/search-syntax'),
+ *   client.getResource('oorep://remedies/list'),
+ * ]);
+ * const context = vercelAIFormatResourcesAsContext([searchHelp, remedies]);
+ * ```
+ */
+export function vercelAIFormatResourcesAsContext(resources: ResourceContent[]): string {
+  return resources
+    .map((r) => `## Resource: ${r.uri}\n\n${r.text}`)
+    .join('\n\n---\n\n');
+}
+
+// ==========================================================================
+// Prompt Adapters
+// ==========================================================================
+
+/**
+ * Vercel AI SDK message format (CoreMessage compatible)
+ */
+export interface VercelAIMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+/**
+ * Convert an OOREP prompt to Vercel AI SDK messages
+ *
+ * Transforms PromptResult messages into the CoreMessage format expected by
+ * Vercel AI SDK's generateText, streamText, and other functions.
+ *
+ * @param prompt - Prompt result from client.getPrompt()
+ * @returns Array of Vercel AI SDK-compatible messages
+ *
+ * @example
+ * ```typescript
+ * const workflow = await client.getPrompt('repertorization-workflow');
+ * const messages = convertPromptToVercelAI(workflow);
+ *
+ * const result = await generateText({
+ *   model: openai('gpt-5-mini'),
+ *   messages,
+ *   tools,
+ * });
+ * ```
+ */
+export function convertPromptToVercelAI(prompt: PromptResult): VercelAIMessage[] {
+  return prompt.messages.map((msg) => ({
+    role: msg.role,
+    content: msg.content.text,
+  }));
+}
+
+/**
+ * Get the system instruction string from a resource
+ *
+ * Convenience function for Vercel AI SDK's `system` parameter which takes
+ * a string directly.
+ *
+ * @param resource - Resource content from client.getResource()
+ * @returns Plain text content suitable for the `system` parameter
+ *
+ * @example
+ * ```typescript
+ * const searchSyntax = await client.getResource('oorep://help/search-syntax');
+ * const systemInstruction = vercelAIGetSystemInstruction(searchSyntax);
+ *
+ * const result = await generateText({
+ *   model: openai('gpt-5-mini'),
+ *   system: systemInstruction,
+ *   messages: [{ role: 'user', content: 'Find headache remedies' }],
+ *   tools,
+ * });
+ * ```
+ */
+export function vercelAIGetSystemInstruction(resource: ResourceContent): string {
+  return resource.text;
+}
+
+/**
+ * Combine a system instruction with prompt messages for use with generateText
+ *
+ * Returns an object with both `system` and `messages` properties that can be
+ * spread into generateText/streamText options.
+ *
+ * @param resource - Resource to use as system context
+ * @param prompt - Prompt workflow
+ * @returns Object with system and messages properties
+ *
+ * @example
+ * ```typescript
+ * const searchSyntax = await client.getResource('oorep://help/search-syntax');
+ * const workflow = await client.getPrompt('analyze-symptoms', { symptom_description: 'headache' });
+ * const { system, messages } = vercelAICombinePromptWithContext(searchSyntax, workflow);
+ *
+ * const result = await generateText({
+ *   model: openai('gpt-5-mini'),
+ *   system,
+ *   messages,
+ *   tools,
+ * });
+ * ```
+ */
+export function vercelAICombinePromptWithContext(
+  resource: ResourceContent,
+  prompt: PromptResult
+): { system: string; messages: VercelAIMessage[] } {
+  return {
+    system: resource.text,
+    messages: convertPromptToVercelAI(prompt),
+  };
 }

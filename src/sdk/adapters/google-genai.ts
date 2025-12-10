@@ -15,7 +15,7 @@
  * const executors = createGeminiToolExecutors(client);
  *
  * const response = await ai.models.generateContent({
- *   model: 'gemini-2.0-flash',
+ *   model: 'gemini-2.5-flash',
  *   contents: 'Search for headache remedies in homeopathy',
  *   config: { tools: geminiTools },
  * });
@@ -28,7 +28,7 @@
  */
 
 import { toolDefinitions, type OOREPToolDefinition } from '../tools.js';
-import type { OOREPSDKClient } from '../client.js';
+import type { OOREPSDKClient, ResourceContent, PromptResult } from '../client.js';
 import type {
   SearchRepertoryArgs,
   SearchMateriaMedicaArgs,
@@ -208,3 +208,161 @@ export const GEMINI_TOOL_NAMES = {
  * Type for tool names
  */
 export type GeminiToolName = (typeof GEMINI_TOOL_NAMES)[keyof typeof GEMINI_TOOL_NAMES];
+
+// ==========================================================================
+// Resource Adapters
+// ==========================================================================
+
+/**
+ * Format a resource as a system instruction string for Gemini
+ *
+ * Gemini uses a `systemInstruction` parameter that takes a plain string.
+ * This function extracts the text content from a resource for direct use.
+ *
+ * @param resource - Resource content from client.getResource()
+ * @returns Plain text content for the systemInstruction parameter
+ *
+ * @example
+ * ```typescript
+ * const searchSyntax = await client.getResource('oorep://help/search-syntax');
+ * const systemInstruction = geminiFormatResourceAsSystemInstruction(searchSyntax);
+ *
+ * const response = await ai.models.generateContent({
+ *   model: 'gemini-2.5-flash',
+ *   systemInstruction,
+ *   contents: 'Find remedies for headache',
+ *   config: { tools: geminiTools },
+ * });
+ * ```
+ */
+export function geminiFormatResourceAsSystemInstruction(resource: ResourceContent): string {
+  return resource.text;
+}
+
+/**
+ * Format multiple resources as a combined system instruction
+ *
+ * Useful when you need to combine multiple resources into a single system instruction.
+ *
+ * @param resources - Array of resource contents
+ * @returns Combined string with resource headers
+ *
+ * @example
+ * ```typescript
+ * const [searchHelp, remedies] = await Promise.all([
+ *   client.getResource('oorep://help/search-syntax'),
+ *   client.getResource('oorep://remedies/list'),
+ * ]);
+ * const systemInstruction = geminiFormatResourcesAsContext([searchHelp, remedies]);
+ * ```
+ */
+export function geminiFormatResourcesAsContext(resources: ResourceContent[]): string {
+  return resources
+    .map((r) => `## Resource: ${r.uri}\n\n${r.text}`)
+    .join('\n\n---\n\n');
+}
+
+// ==========================================================================
+// Prompt Adapters
+// ==========================================================================
+
+/**
+ * Gemini Content part format
+ */
+export interface GeminiPart {
+  text: string;
+}
+
+/**
+ * Gemini Content format for a single message
+ */
+export interface GeminiContent {
+  role: 'user' | 'model';
+  parts: GeminiPart[];
+}
+
+/**
+ * Convert an OOREP prompt to Gemini Content format
+ *
+ * Transforms PromptResult messages into the Content array format expected by
+ * Gemini's generateContent and chat APIs.
+ *
+ * Note: Gemini uses 'model' instead of 'assistant' for AI responses.
+ *
+ * @param prompt - Prompt result from client.getPrompt()
+ * @returns Array of Gemini Content objects
+ *
+ * @example
+ * ```typescript
+ * const workflow = await client.getPrompt('repertorization-workflow');
+ * const contents = convertPromptToGemini(workflow);
+ *
+ * const response = await ai.models.generateContent({
+ *   model: 'gemini-2.5-flash',
+ *   contents,
+ *   config: { tools: geminiTools },
+ * });
+ * ```
+ */
+export function convertPromptToGemini(prompt: PromptResult): GeminiContent[] {
+  return prompt.messages.map((msg) => ({
+    role: msg.role === 'user' ? 'user' : 'model',
+    parts: [{ text: msg.content.text }],
+  }));
+}
+
+/**
+ * Convert an OOREP prompt to Gemini format with system instruction
+ *
+ * Convenience function that returns both the system instruction and contents
+ * in a format ready for Gemini's generateContent.
+ *
+ * @param resource - Resource to use as system context
+ * @param prompt - Prompt workflow
+ * @returns Object with systemInstruction and contents for Gemini API
+ *
+ * @example
+ * ```typescript
+ * const searchSyntax = await client.getResource('oorep://help/search-syntax');
+ * const workflow = await client.getPrompt('analyze-symptoms', { symptom_description: 'headache' });
+ * const { systemInstruction, contents } = geminiConvertPromptWithContext(searchSyntax, workflow);
+ *
+ * const response = await ai.models.generateContent({
+ *   model: 'gemini-2.5-flash',
+ *   systemInstruction,
+ *   contents,
+ *   config: { tools: geminiTools },
+ * });
+ * ```
+ */
+export function geminiConvertPromptWithContext(
+  resource: ResourceContent,
+  prompt: PromptResult
+): { systemInstruction: string; contents: GeminiContent[] } {
+  return {
+    systemInstruction: resource.text,
+    contents: convertPromptToGemini(prompt),
+  };
+}
+
+/**
+ * Create a chat history from a prompt for use with Gemini's chat API
+ *
+ * @param prompt - Prompt result from client.getPrompt()
+ * @returns History array suitable for ai.chats.create({ history: ... })
+ *
+ * @example
+ * ```typescript
+ * const workflow = await client.getPrompt('repertorization-workflow');
+ * const history = geminiCreateChatHistory(workflow);
+ *
+ * const chat = ai.chats.create({
+ *   model: 'gemini-2.5-flash',
+ *   history,
+ *   config: { tools: geminiTools },
+ * });
+ * ```
+ */
+export function geminiCreateChatHistory(prompt: PromptResult): GeminiContent[] {
+  return convertPromptToGemini(prompt);
+}

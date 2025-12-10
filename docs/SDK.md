@@ -191,7 +191,7 @@ const executors = createGeminiToolExecutors(client);
 
 try {
   const response = await ai.models.generateContent({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-2.5-flash',
     contents: 'Search for homeopathic remedies for throbbing headache',
     config: { tools: geminiTools },
   });
@@ -203,7 +203,7 @@ try {
 
     // Continue conversation with multi-turn chat
     const chat = ai.chats.create({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.5-flash',
       config: { tools: geminiTools },
     });
 
@@ -323,29 +323,147 @@ interface PromptResult {
 }
 ```
 
-### Using Prompts with AI SDKs
+### Using Resources and Prompts with AI SDKs
+
+Each adapter provides functions to convert prompts and resources into SDK-specific formats.
+
+#### OpenAI
 
 ```typescript
-// With OpenAI
+import { createOOREPClient } from 'oorep-mcp/sdk/client';
+import {
+  openAITools,
+  convertPromptToOpenAI,
+  formatResourceAsSystemMessage,
+  convertPromptWithContext,
+} from 'oorep-mcp/sdk/openai';
+
+const client = createOOREPClient();
+
+// Convert prompt to OpenAI message format
 const workflow = await client.getPrompt('repertorization-workflow');
+const messages = convertPromptToOpenAI(workflow);
+
+// Inject resource as system context
+const searchSyntax = await client.getResource('oorep://help/search-syntax');
+const systemMessage = formatResourceAsSystemMessage(searchSyntax);
+
 const response = await openai.chat.completions.create({
-  model: 'gpt-4o',
-  messages: workflow.messages.map(m => ({
-    role: m.role,
-    content: m.content.text,
-  })),
+  model: 'gpt-5-mini',
+  messages: [systemMessage, ...messages],
   tools: openAITools,
 });
 
-// With Gemini
-const analysis = await client.getPrompt('analyze-symptoms', {
-  symptom_description: 'anxiety worse at night',
+// Or use the combined helper
+const messagesWithContext = convertPromptWithContext(searchSyntax, workflow);
+```
+
+#### Vercel AI SDK
+
+```typescript
+import { createOOREPClient } from 'oorep-mcp/sdk/client';
+import {
+  createOOREPTools,
+  convertPromptToVercelAI,
+  getSystemInstruction,
+  combinePromptWithContext,
+} from 'oorep-mcp/sdk/vercel-ai';
+
+const client = createOOREPClient();
+const tools = createOOREPTools(client);
+
+// Get system instruction from resource
+const searchSyntax = await client.getResource('oorep://help/search-syntax');
+const system = getSystemInstruction(searchSyntax);
+
+// Convert prompt to Vercel AI format
+const workflow = await client.getPrompt('analyze-symptoms', {
+  symptom_description: 'headache',
 });
+const messages = convertPromptToVercelAI(workflow);
+
+const result = await generateText({
+  model: openai('gpt-5-mini'),
+  system,
+  messages,
+  tools,
+});
+
+// Or use the combined helper
+const { system: sys, messages: msgs } = combinePromptWithContext(searchSyntax, workflow);
+```
+
+#### LangChain
+
+```typescript
+import { SystemMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
+import { createOOREPClient } from 'oorep-mcp/sdk/client';
+import {
+  createLangChainTools,
+  convertPromptToLangChain,
+  formatResourceAsSystemMessage,
+  formatResourceAsDocument,
+} from 'oorep-mcp/sdk/langchain';
+
+const client = createOOREPClient();
+
+// Get resource as system message data
+const searchSyntax = await client.getResource('oorep://help/search-syntax');
+const sysMsg = formatResourceAsSystemMessage(searchSyntax);
+const systemMessage = new SystemMessage(sysMsg.content);
+
+// Convert prompt to LangChain message data
+const workflow = await client.getPrompt('remedy-comparison', {
+  remedies: 'Aconite,Belladonna',
+});
+const messageData = convertPromptToLangChain(workflow);
+const messages = messageData.map((msg) =>
+  msg.type === 'human' ? new HumanMessage(msg.content) : new AIMessage(msg.content)
+);
+
+// For RAG use cases, get resources as Documents
+const remediesDoc = formatResourceAsDocument(
+  await client.getResource('oorep://remedies/list')
+);
+// Use with vector stores or retrievers
+```
+
+#### Google Gemini
+
+```typescript
+import { GoogleGenAI } from '@google/genai';
+import { createOOREPClient } from 'oorep-mcp/sdk/client';
+import {
+  geminiTools,
+  createGeminiToolExecutors,
+  convertPromptToGemini,
+  formatResourceAsSystemInstruction,
+  convertPromptWithContext,
+} from 'oorep-mcp/sdk/google-genai';
+
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const client = createOOREPClient();
+
+// Get system instruction from resource
+const searchSyntax = await client.getResource('oorep://help/search-syntax');
+const systemInstruction = formatResourceAsSystemInstruction(searchSyntax);
+
+// Convert prompt to Gemini Content format
+const workflow = await client.getPrompt('repertorization-workflow');
+const contents = convertPromptToGemini(workflow);
+
 const response = await ai.models.generateContent({
-  model: 'gemini-2.0-flash',
-  contents: analysis.messages[0].content.text,
+  model: 'gemini-2.5-flash',
+  systemInstruction,
+  contents,
   config: { tools: geminiTools },
 });
+
+// Or use the combined helper
+const { systemInstruction: sysInst, contents: cont } = convertPromptWithContext(
+  searchSyntax,
+  workflow
+);
 ```
 
 ## Available Tools
@@ -362,12 +480,32 @@ All adapters provide these tools:
 
 ## Adapter Comparison
 
+### Tools
+
 | Adapter | Format | Execution Helper |
 |---------|--------|------------------|
 | **OpenAI** | `{ type: 'function', function: {...} }` | `processToolCalls()` |
 | **Vercel AI** | Zod schemas with `execute` function | Built-in |
 | **LangChain** | `DynamicStructuredTool` compatible | `func()` |
 | **Google Gemini** | `{ parametersJsonSchema: {...} }` | `executeGeminiFunctionCall()` |
+
+### Resources
+
+| Adapter | System Message | Multi-Resource | Additional |
+|---------|---------------|----------------|------------|
+| **OpenAI** | `formatResourceAsSystemMessage()` | `formatResourcesAsContext()` | - |
+| **Vercel AI** | `formatResourceAsSystemMessage()` | `formatResourcesAsContext()` | `getSystemInstruction()` |
+| **LangChain** | `formatResourceAsSystemMessage()` | `formatResourcesAsContext()` | `formatResourceAsDocument()` |
+| **Google Gemini** | `formatResourceAsSystemInstruction()` | `formatResourcesAsContext()` | - |
+
+### Prompts
+
+| Adapter | Convert Function | With Context |
+|---------|-----------------|--------------|
+| **OpenAI** | `convertPromptToOpenAI()` | `convertPromptWithContext()` |
+| **Vercel AI** | `convertPromptToVercelAI()` | `combinePromptWithContext()` |
+| **LangChain** | `convertPromptToLangChain()` | `convertPromptWithContext()` |
+| **Google Gemini** | `convertPromptToGemini()` | `convertPromptWithContext()` |
 
 ## TypeScript Types
 
@@ -406,6 +544,30 @@ import type {
 } from 'oorep-mcp/sdk/client';
 
 import type { OOREPSDKClient, OOREPSDKConfig } from 'oorep-mcp/sdk/client';
+
+// Adapter-specific types
+import type {
+  OpenAIResourceMessage,
+  OpenAIMessage,
+} from 'oorep-mcp/sdk/openai';
+
+import type {
+  VercelAIResourceMessage,
+  VercelAIMessage,
+} from 'oorep-mcp/sdk/vercel-ai';
+
+import type {
+  LangChainSystemMessage,
+  LangChainHumanMessage,
+  LangChainAIMessage,
+  LangChainMessage,
+  LangChainDocument,
+} from 'oorep-mcp/sdk/langchain';
+
+import type {
+  GeminiContent,
+  GeminiPart,
+} from 'oorep-mcp/sdk/google-genai';
 ```
 
 ## Schema Validation

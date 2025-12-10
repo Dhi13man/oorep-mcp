@@ -397,12 +397,6 @@ export class OOREPSDKClient {
   /**
    * Get a resource by URI
    *
-   * Available resources:
-   * - `oorep://remedies/list` - Complete list of all 600+ remedies (JSON)
-   * - `oorep://repertories/list` - All available repertories with metadata (JSON)
-   * - `oorep://materia-medicas/list` - All available materia medicas (JSON)
-   * - `oorep://help/search-syntax` - Search syntax guide (Markdown)
-   *
    * @example
    * ```typescript
    * const client = createOOREPClient();

@@ -22,7 +22,7 @@
  */
 
 import { z } from '../../utils/schemas.js';
-import type { OOREPSDKClient } from '../client.js';
+import type { OOREPSDKClient, ResourceContent, PromptResult } from '../client.js';
 
 /**
  * LangChain-compatible tool interface
@@ -192,4 +192,222 @@ export function isLangChainToolDefinition(value: unknown): value is LangChainToo
     'schema' in value &&
     'func' in value
   );
+}
+
+// ==========================================================================
+// Resource Adapters
+// ==========================================================================
+
+/**
+ * LangChain SystemMessage-compatible format
+ *
+ * This interface matches LangChain's SystemMessage structure so it can be
+ * used directly with LangChain agents and chains.
+ */
+export interface LangChainSystemMessage {
+  type: 'system';
+  content: string;
+}
+
+/**
+ * LangChain HumanMessage-compatible format
+ */
+export interface LangChainHumanMessage {
+  type: 'human';
+  content: string;
+}
+
+/**
+ * LangChain AIMessage-compatible format
+ */
+export interface LangChainAIMessage {
+  type: 'ai';
+  content: string;
+}
+
+/**
+ * Union type for all LangChain message types we produce
+ */
+export type LangChainMessage = LangChainSystemMessage | LangChainHumanMessage | LangChainAIMessage;
+
+/**
+ * LangChain Document-compatible format for RAG and retrieval
+ */
+export interface LangChainDocument {
+  pageContent: string;
+  metadata: {
+    uri: string;
+    mimeType: string;
+    source: 'oorep-mcp';
+  };
+}
+
+/**
+ * Format a resource as a LangChain SystemMessage-compatible object
+ *
+ * Use this to inject resources (like search syntax help) into conversations
+ * as system context. The returned object can be passed to LangChain's
+ * SystemMessage constructor or used directly with compatible APIs.
+ *
+ * @param resource - Resource content from client.getResource()
+ * @returns LangChain SystemMessage-compatible object
+ *
+ * @example
+ * ```typescript
+ * import { SystemMessage } from '@langchain/core/messages';
+ *
+ * const searchSyntax = await client.getResource('oorep://help/search-syntax');
+ * const sysMsg = langChainFormatResourceAsSystemMessage(searchSyntax);
+ * const systemMessage = new SystemMessage(sysMsg.content);
+ * ```
+ */
+export function langChainFormatResourceAsSystemMessage(resource: ResourceContent): LangChainSystemMessage {
+  return {
+    type: 'system',
+    content: resource.text,
+  };
+}
+
+/**
+ * Format a resource as a LangChain Document for RAG/retrieval use cases
+ *
+ * This is useful when you want to include resources in a vector store
+ * or use them with LangChain's retrieval-augmented generation patterns.
+ *
+ * @param resource - Resource content from client.getResource()
+ * @returns LangChain Document-compatible object
+ *
+ * @example
+ * ```typescript
+ * import { Document } from '@langchain/core/documents';
+ *
+ * const searchSyntax = await client.getResource('oorep://help/search-syntax');
+ * const doc = langChainFormatResourceAsDocument(searchSyntax);
+ * // Use with vector stores or retrievers
+ * ```
+ */
+export function langChainFormatResourceAsDocument(resource: ResourceContent): LangChainDocument {
+  return {
+    pageContent: resource.text,
+    metadata: {
+      uri: resource.uri,
+      mimeType: resource.mimeType,
+      source: 'oorep-mcp',
+    },
+  };
+}
+
+/**
+ * Format multiple resources as LangChain Documents
+ *
+ * @param resources - Array of resource contents
+ * @returns Array of LangChain Document-compatible objects
+ *
+ * @example
+ * ```typescript
+ * const resources = await Promise.all([
+ *   client.getResource('oorep://help/search-syntax'),
+ *   client.getResource('oorep://remedies/list'),
+ * ]);
+ * const documents = langChainFormatResourcesAsDocuments(resources);
+ * ```
+ */
+export function langChainFormatResourcesAsDocuments(resources: ResourceContent[]): LangChainDocument[] {
+  return resources.map(langChainFormatResourceAsDocument);
+}
+
+/**
+ * Format multiple resources as a combined context string
+ *
+ * Useful when you need to combine multiple resources into a single system message.
+ *
+ * @param resources - Array of resource contents
+ * @returns Combined string with resource headers
+ */
+export function langChainFormatResourcesAsContext(resources: ResourceContent[]): string {
+  return resources
+    .map((r) => `## Resource: ${r.uri}\n\n${r.text}`)
+    .join('\n\n---\n\n');
+}
+
+// ==========================================================================
+// Prompt Adapters
+// ==========================================================================
+
+/**
+ * Convert an OOREP prompt to LangChain message format
+ *
+ * Transforms PromptResult messages into objects compatible with LangChain's
+ * message classes (HumanMessage, AIMessage).
+ *
+ * @param prompt - Prompt result from client.getPrompt()
+ * @returns Array of LangChain message-compatible objects
+ *
+ * @example
+ * ```typescript
+ * import { HumanMessage, AIMessage } from '@langchain/core/messages';
+ *
+ * const workflow = await client.getPrompt('repertorization-workflow');
+ * const messageData = convertPromptToLangChain(workflow);
+ *
+ * // Convert to actual LangChain message instances
+ * const messages = messageData.map(msg =>
+ *   msg.type === 'human' ? new HumanMessage(msg.content) : new AIMessage(msg.content)
+ * );
+ * ```
+ */
+export function convertPromptToLangChain(
+  prompt: PromptResult
+): Array<LangChainHumanMessage | LangChainAIMessage> {
+  return prompt.messages.map((msg) => {
+    if (msg.role === 'user') {
+      return {
+        type: 'human' as const,
+        content: msg.content.text,
+      };
+    } else {
+      return {
+        type: 'ai' as const,
+        content: msg.content.text,
+      };
+    }
+  });
+}
+
+/**
+ * Convert an OOREP prompt to LangChain messages with system context
+ *
+ * Convenience function that combines a resource (as system message) with
+ * a prompt workflow.
+ *
+ * @param resource - Resource to use as system context
+ * @param prompt - Prompt workflow
+ * @returns Array of LangChain message-compatible objects starting with system
+ *
+ * @example
+ * ```typescript
+ * import { SystemMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
+ *
+ * const searchSyntax = await client.getResource('oorep://help/search-syntax');
+ * const workflow = await client.getPrompt('analyze-symptoms');
+ * const messageData = langChainConvertPromptWithContext(searchSyntax, workflow);
+ *
+ * // Convert to actual LangChain message instances
+ * const messages = messageData.map(msg => {
+ *   switch (msg.type) {
+ *     case 'system': return new SystemMessage(msg.content);
+ *     case 'human': return new HumanMessage(msg.content);
+ *     case 'ai': return new AIMessage(msg.content);
+ *   }
+ * });
+ * ```
+ */
+export function langChainConvertPromptWithContext(
+  resource: ResourceContent,
+  prompt: PromptResult
+): LangChainMessage[] {
+  return [
+    langChainFormatResourceAsSystemMessage(resource),
+    ...convertPromptToLangChain(prompt),
+  ];
 }

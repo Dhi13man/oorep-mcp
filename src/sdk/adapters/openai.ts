@@ -27,7 +27,7 @@
  * ```
  */
 
-import type { OOREPSDKClient } from '../client.js';
+import type { OOREPSDKClient, ResourceContent, PromptResult } from '../client.js';
 import { toolDefinitions } from '../tools.js';
 
 /**
@@ -215,4 +215,141 @@ export async function processToolCalls(
   );
 
   return results;
+}
+
+// ==========================================================================
+// Resource Adapters
+// ==========================================================================
+
+/**
+ * OpenAI system message format for resources
+ */
+export interface OpenAIResourceMessage {
+  role: 'system';
+  content: string;
+}
+
+/**
+ * Format a resource as an OpenAI system message
+ *
+ * Use this to inject resources (like search syntax help) into conversations
+ * as system context.
+ *
+ * @param resource - Resource content from client.getResource()
+ * @returns OpenAI-compatible system message
+ *
+ * @example
+ * ```typescript
+ * const searchSyntax = await client.getResource('oorep://help/search-syntax');
+ * const systemMessage = openAIFormatResourceAsSystemMessage(searchSyntax);
+ *
+ * const response = await openai.chat.completions.create({
+ *   model: 'gpt-5-mini',
+ *   messages: [systemMessage, { role: 'user', content: 'Find headache remedies' }],
+ *   tools: openAITools,
+ * });
+ * ```
+ */
+export function openAIFormatResourceAsSystemMessage(resource: ResourceContent): OpenAIResourceMessage {
+  return {
+    role: 'system',
+    content: resource.text,
+  };
+}
+
+/**
+ * Format multiple resources as a combined context string
+ *
+ * Useful when you need to combine multiple resources into a single system message
+ * or when integrating with other context management systems.
+ *
+ * @param resources - Array of resource contents
+ * @returns Combined string with resource headers
+ *
+ * @example
+ * ```typescript
+ * const [searchHelp, remedies] = await Promise.all([
+ *   client.getResource('oorep://help/search-syntax'),
+ *   client.getResource('oorep://remedies/list'),
+ * ]);
+ * const context = openAIFormatResourcesAsContext([searchHelp, remedies]);
+ * ```
+ */
+export function openAIFormatResourcesAsContext(resources: ResourceContent[]): string {
+  return resources
+    .map((r) => `## Resource: ${r.uri}\n\n${r.text}`)
+    .join('\n\n---\n\n');
+}
+
+// ==========================================================================
+// Prompt Adapters
+// ==========================================================================
+
+/**
+ * OpenAI chat completion message format
+ */
+export interface OpenAIMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+/**
+ * Convert an OOREP prompt to OpenAI chat completion messages
+ *
+ * Transforms PromptResult messages into the format expected by
+ * OpenAI's chat completions API.
+ *
+ * @param prompt - Prompt result from client.getPrompt()
+ * @returns Array of OpenAI-compatible messages
+ *
+ * @example
+ * ```typescript
+ * const workflow = await client.getPrompt('repertorization-workflow');
+ * const messages = convertPromptToOpenAI(workflow);
+ *
+ * const response = await openai.chat.completions.create({
+ *   model: 'gpt-5-mini',
+ *   messages,
+ *   tools: openAITools,
+ * });
+ * ```
+ */
+export function convertPromptToOpenAI(prompt: PromptResult): OpenAIMessage[] {
+  return prompt.messages.map((msg) => ({
+    role: msg.role,
+    content: msg.content.text,
+  }));
+}
+
+/**
+ * Convert an OOREP prompt to OpenAI messages with a system context prefix
+ *
+ * Convenience function that combines a resource (as system message) with
+ * a prompt workflow.
+ *
+ * @param resource - Resource to use as system context
+ * @param prompt - Prompt workflow
+ * @returns Array of OpenAI-compatible messages starting with system context
+ *
+ * @example
+ * ```typescript
+ * const searchSyntax = await client.getResource('oorep://help/search-syntax');
+ * const workflow = await client.getPrompt('analyze-symptoms', { symptom_description: 'headache' });
+ * const messages = openAIConvertPromptWithContext(searchSyntax, workflow);
+ *
+ * const response = await openai.chat.completions.create({
+ *   model: 'gpt-5-mini',
+ *   messages,
+ *   tools: openAITools,
+ * });
+ * ```
+ */
+export function openAIConvertPromptWithContext(
+  resource: ResourceContent,
+  prompt: PromptResult
+): OpenAIMessage[] {
+  return [
+    openAIFormatResourceAsSystemMessage(resource),
+    ...convertPromptToOpenAI(prompt),
+  ];
 }
