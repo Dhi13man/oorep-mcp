@@ -18,6 +18,7 @@ import {
   type OpenAITool,
 } from './openai.js';
 import type { OOREPSDKClient, ResourceContent, PromptResult } from '../client.js';
+import { NotFoundError } from '../../utils/errors.js';
 
 describe('openAITools', () => {
   it('when accessed then contains all five tools', () => {
@@ -194,11 +195,21 @@ describe('executeOOREPTool', () => {
     });
   });
 
-  it('when unknown tool then throws error', async () => {
+  it('when unknown tool then throws NotFoundError', async () => {
     // Act & Assert
-    await expect(executeOOREPTool(mockClient, 'unknown_tool', {})).rejects.toThrow(
-      'Unknown tool: unknown_tool'
-    );
+    await expect(executeOOREPTool(mockClient, 'unknown_tool', {})).rejects.toThrow(NotFoundError);
+  });
+
+  it('when unknown tool then error has correct properties', async () => {
+    // Act & Assert
+    try {
+      await executeOOREPTool(mockClient, 'unknown_tool', {});
+    } catch (error) {
+      expect(error).toBeInstanceOf(NotFoundError);
+      const notFoundError = error as NotFoundError;
+      expect(notFoundError.resourceType).toBe('tool');
+      expect(notFoundError.resourceName).toBe('unknown_tool');
+    }
   });
 });
 

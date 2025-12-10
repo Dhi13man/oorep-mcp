@@ -8,7 +8,7 @@ import { OOREPClient } from '../lib/oorep-client.js';
 import { RESOURCE_URIS, type ResourceUri } from '../sdk/constants.js';
 import type { OOREPConfig } from '../config.js';
 import { logger } from '../utils/logger.js';
-import { sanitizeError } from '../utils/errors.js';
+import { sanitizeError, NotFoundError } from '../utils/errors.js';
 import { generateCacheKey } from '../lib/data-formatter.js';
 import { InMemoryCache } from '../lib/cache.js';
 import { MapRequestDeduplicator } from '../lib/deduplicator.js';
@@ -69,7 +69,7 @@ export class ResourceRegistry {
    *
    * @param uri - The resource URI to retrieve
    * @returns Promise resolving to the resource contents
-   * @throws {Error} If the resource URI is not recognized
+   * @throws {NotFoundError} If the resource URI is not recognized
    * @throws {NetworkError} If there is a network error fetching the resource
    */
   async getResource(
@@ -100,7 +100,7 @@ export class ResourceRegistry {
 
           default: {
             const _exhaustive: never = uri as never;
-            throw new Error(`Unknown resource URI: ${_exhaustive}`);
+            throw new NotFoundError(`Unknown resource URI: ${_exhaustive}`, 'resource', uri);
           }
         }
       });

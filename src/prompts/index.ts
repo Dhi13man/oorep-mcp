@@ -6,6 +6,7 @@
 
 import { PROMPT_NAMES, type PromptName } from '../sdk/constants.js';
 import { logger } from '../utils/logger.js';
+import { NotFoundError } from '../utils/errors.js';
 
 import {
   analyzeSymptomsDefinition,
@@ -55,7 +56,7 @@ export class PromptRegistry {
    * @param name - The prompt name to retrieve
    * @param args - Optional arguments to customize the prompt
    * @returns Promise resolving to the prompt messages
-   * @throws {Error} If the prompt name is not recognized
+   * @throws {NotFoundError} If the prompt name is not recognized
    * @throws {Error} If remedy-comparison prompt receives fewer than 2 remedies
    */
   async getPrompt(
@@ -86,7 +87,7 @@ export class PromptRegistry {
       }
 
       default:
-        throw new Error(`Unknown prompt: ${name}`);
+        throw new NotFoundError(`Unknown prompt: ${name}`, 'prompt', name);
     }
   }
 }

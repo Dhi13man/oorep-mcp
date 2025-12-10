@@ -20,6 +20,7 @@ import {
   generateCacheKey,
 } from '../lib/data-formatter.js';
 import { validateSymptom, validateRemedyName, validateLanguage } from '../utils/validation.js';
+import { NotFoundError } from '../utils/errors.js';
 import {
   SearchRepertoryArgsSchema,
   SearchMateriaMedicaArgsSchema,
@@ -410,7 +411,7 @@ export class OOREPSDKClient {
 
         default: {
           const _exhaustive: never = uri;
-          throw new Error(`Unknown resource URI: ${_exhaustive}`);
+          throw new NotFoundError(`Unknown resource URI: ${_exhaustive}`, 'resource', uri);
         }
       }
 
@@ -498,7 +499,7 @@ export class OOREPSDKClient {
 
       default: {
         const _exhaustive: never = name;
-        throw new Error(`Unknown prompt: ${_exhaustive}`);
+        throw new NotFoundError(`Unknown prompt: ${_exhaustive}`, 'prompt', name);
       }
     }
   }

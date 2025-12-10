@@ -7,6 +7,7 @@
 
 import type { OOREPConfig } from '../config.js';
 import { OOREPSDKClient, type OOREPSDKConfig } from '../sdk/client.js';
+import { NotFoundError } from '../utils/errors.js';
 import { SearchRepertoryTool, searchRepertoryToolDefinition } from './search-repertory.js';
 import {
   SearchMateriaMedicaTool,
@@ -85,12 +86,12 @@ export class ToolRegistry {
    * @param name - The tool name to execute
    * @param args - The arguments to pass to the tool
    * @returns Promise resolving to the tool result
-   * @throws {Error} If the tool name is not found
+   * @throws {NotFoundError} If the tool name is not found
    */
   async executeTool(name: string, args: unknown): Promise<unknown> {
     const tool = this.getTool(name);
     if (!tool) {
-      throw new Error(`Tool "${name}" not found`);
+      throw new NotFoundError(`Tool "${name}" not found`, 'tool', name);
     }
     return tool.execute(args);
   }

@@ -10,6 +10,7 @@ import {
   TimeoutError,
   RateLimitError,
   OOREPAPIError,
+  NotFoundError,
   sanitizeError,
 } from './errors.js';
 
@@ -144,6 +145,67 @@ describe('OOREPAPIError', () => {
   });
 });
 
+describe('NotFoundError', () => {
+  it('NotFoundError when created for tool then has correct properties', () => {
+    // Arrange
+    const message = 'Tool not found';
+    const resourceType = 'tool' as const;
+    const resourceName = 'unknown_tool';
+
+    // Act
+    const error = new NotFoundError(message, resourceType, resourceName);
+
+    // Assert
+    expect(error).toBeInstanceOf(Error);
+    expect(error).toBeInstanceOf(OOREPError);
+    expect(error).toBeInstanceOf(NotFoundError);
+    expect(error.message).toBe(message);
+    expect(error.name).toBe('NotFoundError');
+    expect(error.resourceType).toBe('tool');
+    expect(error.resourceName).toBe('unknown_tool');
+  });
+
+  it('NotFoundError when created for prompt then has correct properties', () => {
+    // Arrange
+    const message = 'Prompt not found';
+    const resourceType = 'prompt' as const;
+    const resourceName = 'unknown_prompt';
+
+    // Act
+    const error = new NotFoundError(message, resourceType, resourceName);
+
+    // Assert
+    expect(error.resourceType).toBe('prompt');
+    expect(error.resourceName).toBe('unknown_prompt');
+  });
+
+  it('NotFoundError when created for resource then has correct properties', () => {
+    // Arrange
+    const message = 'Resource not found';
+    const resourceType = 'resource' as const;
+    const resourceName = 'oorep://unknown';
+
+    // Act
+    const error = new NotFoundError(message, resourceType, resourceName);
+
+    // Assert
+    expect(error.resourceType).toBe('resource');
+    expect(error.resourceName).toBe('oorep://unknown');
+  });
+
+  it('NotFoundError when created with cause then stores cause', () => {
+    // Arrange
+    const message = 'Not found';
+    const cause = new Error('Original error');
+
+    // Act
+    const error = new NotFoundError(message, 'tool', 'test', cause);
+
+    // Assert
+    expect(error.cause).toBe(cause);
+  });
+});
+
 describe('sanitizeError', () => {
   it('sanitizeError when ValidationError then returns same error', () => {
     const originalError = new ValidationError('Invalid input');
@@ -157,6 +219,41 @@ describe('sanitizeError', () => {
     const sanitized = sanitizeError(originalError);
 
     expect(sanitized).toBe(originalError);
+  });
+
+  it('sanitizeError when NotFoundError for tool then returns formatted error', () => {
+    // Arrange
+    const originalError = new NotFoundError('Tool not found', 'tool', 'unknown_tool');
+
+    // Act
+    const sanitized = sanitizeError(originalError);
+
+    // Assert
+    expect(sanitized).toBeInstanceOf(Error);
+    expect(sanitized).not.toBeInstanceOf(NotFoundError);
+    expect(sanitized.message).toBe('tool not found: unknown_tool');
+  });
+
+  it('sanitizeError when NotFoundError for prompt then returns formatted error', () => {
+    // Arrange
+    const originalError = new NotFoundError('Prompt not found', 'prompt', 'unknown_prompt');
+
+    // Act
+    const sanitized = sanitizeError(originalError);
+
+    // Assert
+    expect(sanitized.message).toBe('prompt not found: unknown_prompt');
+  });
+
+  it('sanitizeError when NotFoundError for resource then returns formatted error', () => {
+    // Arrange
+    const originalError = new NotFoundError('Resource not found', 'resource', 'oorep://unknown');
+
+    // Act
+    const sanitized = sanitizeError(originalError);
+
+    // Assert
+    expect(sanitized.message).toBe('resource not found: oorep://unknown');
   });
 
   it('sanitizeError when NetworkError with status code then returns generic error with status', () => {

@@ -4,6 +4,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { PromptRegistry } from './index.js';
+import { NotFoundError } from '../utils/errors.js';
 
 describe('PromptRegistry', () => {
   let mockRegistry: PromptRegistry;
@@ -265,15 +266,19 @@ describe('PromptRegistry', () => {
   });
 
   describe('getPrompt - error handling', () => {
-    it('getPrompt when unknown prompt name then throws error', async () => {
-      await expect(mockRegistry.getPrompt('unknown-prompt')).rejects.toThrow();
+    it('getPrompt when unknown prompt name then throws NotFoundError', async () => {
+      await expect(mockRegistry.getPrompt('unknown-prompt')).rejects.toThrow(NotFoundError);
     });
 
-    it('getPrompt when unknown prompt name then error mentions prompt name', async () => {
+    it('getPrompt when unknown prompt name then error has correct properties', async () => {
       try {
         await mockRegistry.getPrompt('unknown-prompt');
       } catch (error) {
-        expect((error as Error).message).toContain('unknown-prompt');
+        expect(error).toBeInstanceOf(NotFoundError);
+        const notFoundError = error as NotFoundError;
+        expect(notFoundError.resourceType).toBe('prompt');
+        expect(notFoundError.resourceName).toBe('unknown-prompt');
+        expect(notFoundError.message).toContain('unknown-prompt');
       }
     });
   });
