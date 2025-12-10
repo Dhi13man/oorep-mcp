@@ -491,12 +491,18 @@ export class OOREPSDKClient {
   /**
    * List all available resources with their metadata
    */
-  listResources(): Array<{ uri: ResourceUri; name: string; description: string; mimeType: string }> {
+  listResources(): Array<{
+    uri: ResourceUri;
+    name: string;
+    description: string;
+    mimeType: string;
+  }> {
     return [
       {
         uri: RESOURCE_URIS.REMEDIES_LIST,
         name: 'Available Remedies List',
-        description: 'Complete list of all available homeopathic remedies with names and abbreviations',
+        description:
+          'Complete list of all available homeopathic remedies with names and abbreviations',
         mimeType: MIME_TYPES.JSON,
       },
       {
@@ -508,13 +514,15 @@ export class OOREPSDKClient {
       {
         uri: RESOURCE_URIS.MATERIA_MEDICAS_LIST,
         name: 'Available Materia Medicas List',
-        description: 'List of all accessible materia medicas with metadata (title, author, language)',
+        description:
+          'List of all accessible materia medicas with metadata (title, author, language)',
         mimeType: MIME_TYPES.JSON,
       },
       {
         uri: RESOURCE_URIS.SEARCH_SYNTAX_HELP,
         name: 'OOREP Search Syntax Help',
-        description: 'Guide to OOREP search syntax including wildcards, exclusions, and exact phrases',
+        description:
+          'Guide to OOREP search syntax including wildcards, exclusions, and exact phrases',
         mimeType: MIME_TYPES.MARKDOWN,
       },
     ];
