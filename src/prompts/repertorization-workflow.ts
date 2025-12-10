@@ -4,27 +4,8 @@
  * Step-by-step case taking and repertorization workflow for comprehensive case analysis.
  */
 
-import { PROMPT_NAMES, TOOL_NAMES, type PromptName } from '../sdk/constants.js';
-
-export interface PromptMessage {
-  role: 'user' | 'assistant';
-  content: {
-    type: 'text';
-    text: string;
-  };
-}
-
-export interface PromptResult {
-  name: PromptName;
-  description: string;
-  messages: PromptMessage[];
-}
-
-export interface PromptDefinition {
-  name: PromptName;
-  description: string;
-  arguments?: Array<{ name: string; description: string; required: boolean }>;
-}
+import { PROMPT_NAMES, TOOL_NAMES } from '../sdk/constants.js';
+import type { PromptResult, PromptDefinition } from './analyze-symptoms.js';
 
 export const repertorizationWorkflowDefinition: PromptDefinition = {
   name: PROMPT_NAMES.REPERTORIZATION_WORKFLOW,

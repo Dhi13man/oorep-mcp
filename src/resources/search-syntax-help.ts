@@ -5,20 +5,8 @@
  * This is a static resource that doesn't require API calls.
  */
 
-import { RESOURCE_URIS, MIME_TYPES, type ResourceUri } from '../sdk/constants.js';
-
-export interface ResourceContent {
-  uri: ResourceUri;
-  mimeType: string;
-  text: string;
-}
-
-export interface ResourceDefinition {
-  uri: ResourceUri;
-  name: string;
-  description: string;
-  mimeType: string;
-}
+import { RESOURCE_URIS, MIME_TYPES } from '../sdk/constants.js';
+import type { ResourceContent, ResourceDefinition } from './remedies-list.js';
 
 export const searchSyntaxHelpDefinition: ResourceDefinition = {
   uri: RESOURCE_URIS.SEARCH_SYNTAX_HELP,

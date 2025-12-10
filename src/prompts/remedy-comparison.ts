@@ -4,31 +4,12 @@
  * Compare multiple homeopathic remedies side-by-side to identify the best match.
  */
 
-import { PROMPT_NAMES, TOOL_NAMES, type PromptName } from '../sdk/constants.js';
+import { PROMPT_NAMES, TOOL_NAMES } from '../sdk/constants.js';
 import type { ILogger } from '../interfaces/ILogger.js';
+import type { PromptMessage, PromptResult, PromptDefinition } from './analyze-symptoms.js';
 
 export interface RemedyComparisonArgs {
   remedies: string;
-}
-
-export interface PromptMessage {
-  role: 'user' | 'assistant';
-  content: {
-    type: 'text';
-    text: string;
-  };
-}
-
-export interface PromptResult {
-  name: PromptName;
-  description: string;
-  messages: PromptMessage[];
-}
-
-export interface PromptDefinition {
-  name: PromptName;
-  description: string;
-  arguments?: Array<{ name: string; description: string; required: boolean }>;
 }
 
 export const remedyComparisonDefinition: PromptDefinition = {

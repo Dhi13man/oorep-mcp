@@ -5,6 +5,10 @@
  */
 
 import { PROMPT_NAMES, TOOL_NAMES, type PromptName } from '../sdk/constants.js';
+import {
+  type OOREPPromptDefinition,
+  type OOREPPromptArgument,
+} from '../sdk/prompts.js';
 
 export interface AnalyzeSymptomsArgs {
   symptom_description?: string;
@@ -24,10 +28,12 @@ export interface PromptResult {
   messages: PromptMessage[];
 }
 
-export interface PromptDefinition {
+/**
+ * MCP-specific prompt definition that extends SDK definition with typed name
+ */
+export interface PromptDefinition extends Omit<OOREPPromptDefinition, 'name' | 'arguments'> {
   name: PromptName;
-  description: string;
-  arguments?: Array<{ name: string; description: string; required: boolean }>;
+  arguments?: OOREPPromptArgument[];
 }
 
 export const analyzeSymptomsDefinition: PromptDefinition = {
