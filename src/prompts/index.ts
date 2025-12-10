@@ -1,34 +1,47 @@
-import { OOREPSDKClient } from '../sdk/client.js';
+/**
+ * Prompt Registry
+ *
+ * Provides access to MCP prompts for the OOREP server.
+ */
+
 import { PROMPT_NAMES, type PromptName } from '../sdk/constants.js';
 import { logger } from '../utils/logger.js';
 
-export interface PromptDefinition {
-  name: string;
-  description: string;
-  arguments?: Array<{
-    name: string;
-    description: string;
-    required: boolean;
-  }>;
-}
+import {
+  analyzeSymptomsDefinition,
+  buildAnalyzeSymptomsPrompt,
+  type AnalyzeSymptomsArgs,
+  type PromptMessage,
+  type PromptResult,
+  type PromptDefinition,
+} from './analyze-symptoms.js';
+import {
+  remedyComparisonDefinition,
+  buildRemedyComparisonPrompt,
+  type RemedyComparisonArgs,
+} from './remedy-comparison.js';
+import {
+  repertorizationWorkflowDefinition,
+  buildRepertorizationWorkflowPrompt,
+} from './repertorization-workflow.js';
 
-export interface PromptMessage {
-  role: 'user' | 'assistant';
-  content: {
-    type: 'text';
-    text: string;
-  };
-}
+export type {
+  AnalyzeSymptomsArgs,
+  RemedyComparisonArgs,
+  PromptMessage,
+  PromptResult,
+  PromptDefinition,
+};
+
+const promptDefinitions: PromptDefinition[] = [
+  analyzeSymptomsDefinition,
+  remedyComparisonDefinition,
+  repertorizationWorkflowDefinition,
+];
 
 export class PromptRegistry {
-  private sdk: OOREPSDKClient;
-
-  constructor() {
-    this.sdk = new OOREPSDKClient();
-  }
-
   getDefinitions(): PromptDefinition[] {
-    return this.sdk.listPrompts();
+    return promptDefinitions;
   }
 
   async getPrompt(
@@ -37,26 +50,29 @@ export class PromptRegistry {
   ): Promise<{ messages: PromptMessage[] }> {
     logger.info('Getting prompt', { name, args });
 
-    // Switch required to satisfy SDK's strict overload signatures
-    let result;
     switch (name as PromptName) {
-      case PROMPT_NAMES.ANALYZE_SYMPTOMS:
-        result = await this.sdk.getPrompt(PROMPT_NAMES.ANALYZE_SYMPTOMS, {
+      case PROMPT_NAMES.ANALYZE_SYMPTOMS: {
+        const result = buildAnalyzeSymptomsPrompt({
           symptom_description: args?.symptom_description,
         });
-        break;
-      case PROMPT_NAMES.REMEDY_COMPARISON:
-        result = await this.sdk.getPrompt(PROMPT_NAMES.REMEDY_COMPARISON, {
-          remedies: args?.remedies ?? '',
-        });
-        break;
-      case PROMPT_NAMES.REPERTORIZATION_WORKFLOW:
-        result = await this.sdk.getPrompt(PROMPT_NAMES.REPERTORIZATION_WORKFLOW);
-        break;
+        return { messages: result.messages };
+      }
+
+      case PROMPT_NAMES.REMEDY_COMPARISON: {
+        const result = buildRemedyComparisonPrompt(
+          { remedies: args?.remedies ?? '' },
+          logger
+        );
+        return { messages: result.messages };
+      }
+
+      case PROMPT_NAMES.REPERTORIZATION_WORKFLOW: {
+        const result = buildRepertorizationWorkflowPrompt();
+        return { messages: result.messages };
+      }
+
       default:
         throw new Error(`Unknown prompt: ${name}`);
     }
-
-    return { messages: result.messages };
   }
 }

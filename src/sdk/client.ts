@@ -32,62 +32,38 @@ import {
   type RepertoryMetadata,
   type MateriaMedicaMetadata,
 } from '../utils/schemas.js';
+import { RESOURCE_URIS, PROMPT_NAMES, DEFAULTS, type ResourceUri, type PromptName } from './constants.js';
+
+// Import from new modules
 import {
-  RESOURCE_URIS,
-  PROMPT_NAMES,
-  DEFAULTS,
-  MIME_TYPES,
-  type ResourceUri,
-  type PromptName,
-} from './constants.js';
+  fetchRemediesList,
+  fetchRepertoriesList,
+  fetchMateriaMedicasList,
+  getSearchSyntaxHelp as getSearchSyntaxHelpResource,
+  type ResourceContent,
+  type ResourceDefinition,
+} from '../resources/index.js';
+import {
+  buildAnalyzeSymptomsPrompt,
+  buildRemedyComparisonPrompt,
+  buildRepertorizationWorkflowPrompt,
+  type AnalyzeSymptomsArgs,
+  type RemedyComparisonArgs,
+  type PromptMessage,
+  type PromptResult,
+  type PromptDefinition,
+} from '../prompts/index.js';
 
-// Re-export types from constants for backward compatibility
+// Re-export types for backward compatibility
 export type { ResourceUri, PromptName } from './constants.js';
-
-/**
- * Resource content returned by getResource()
- */
-export interface ResourceContent {
-  uri: ResourceUri;
-  mimeType: string;
-  text: string;
-}
-
-/**
- * A single message in a prompt workflow
- */
-export interface PromptMessage {
-  role: 'user' | 'assistant';
-  content: {
-    type: 'text';
-    text: string;
-  };
-}
-
-/**
- * Prompt result containing workflow messages
- */
-export interface PromptResult {
-  name: PromptName;
-  description: string;
-  messages: PromptMessage[];
-}
-
-/**
- * Arguments for the analyze-symptoms prompt
- */
-export interface AnalyzeSymptomsArgs {
-  /** Optional initial symptom description to start the analysis */
-  symptom_description?: string;
-}
-
-/**
- * Arguments for the remedy-comparison prompt
- */
-export interface RemedyComparisonArgs {
-  /** Comma-separated list of remedy names to compare (e.g., "Aconite,Belladonna,Gelsemium") */
-  remedies: string;
-}
+export type { ResourceContent, ResourceDefinition } from '../resources/index.js';
+export type {
+  AnalyzeSymptomsArgs,
+  RemedyComparisonArgs,
+  PromptMessage,
+  PromptResult,
+  PromptDefinition,
+} from '../prompts/index.js';
 
 /**
  * Helper function for partial remedy name matching
@@ -390,10 +366,6 @@ export class OOREPSDKClient {
     return { ...this.config };
   }
 
-  // ==========================================================================
-  // Resource Access Methods
-  // ==========================================================================
-
   /**
    * Get a resource by URI
    *
@@ -413,47 +385,23 @@ export class OOREPSDKClient {
       let result: ResourceContent;
 
       switch (uri) {
-        case RESOURCE_URIS.REMEDIES_LIST: {
-          const remedies = await this.client.getAvailableRemedies();
-          result = {
-            uri,
-            mimeType: MIME_TYPES.JSON,
-            text: JSON.stringify(remedies, null, 2),
-          };
+        case RESOURCE_URIS.REMEDIES_LIST:
+          result = await fetchRemediesList(this.client);
           break;
-        }
 
-        case RESOURCE_URIS.REPERTORIES_LIST: {
-          const repertories = await this.client.getAvailableRepertories();
-          result = {
-            uri,
-            mimeType: MIME_TYPES.JSON,
-            text: JSON.stringify(repertories, null, 2),
-          };
+        case RESOURCE_URIS.REPERTORIES_LIST:
+          result = await fetchRepertoriesList(this.client);
           break;
-        }
 
-        case RESOURCE_URIS.MATERIA_MEDICAS_LIST: {
-          const materiaMedicas = await this.client.getAvailableMateriaMedicas();
-          result = {
-            uri,
-            mimeType: MIME_TYPES.JSON,
-            text: JSON.stringify(materiaMedicas, null, 2),
-          };
+        case RESOURCE_URIS.MATERIA_MEDICAS_LIST:
+          result = await fetchMateriaMedicasList(this.client);
           break;
-        }
 
-        case RESOURCE_URIS.SEARCH_SYNTAX_HELP: {
-          result = {
-            uri,
-            mimeType: MIME_TYPES.MARKDOWN,
-            text: this.getSearchSyntaxHelpText(),
-          };
+        case RESOURCE_URIS.SEARCH_SYNTAX_HELP:
+          result = getSearchSyntaxHelpResource();
           break;
-        }
 
         default: {
-          // TypeScript exhaustiveness check
           const _exhaustive: never = uri;
           throw new Error(`Unknown resource URI: ${_exhaustive}`);
         }
@@ -485,46 +433,16 @@ export class OOREPSDKClient {
   /**
    * List all available resources with their metadata
    */
-  listResources(): Array<{
-    uri: ResourceUri;
-    name: string;
-    description: string;
-    mimeType: string;
-  }> {
-    return [
-      {
-        uri: RESOURCE_URIS.REMEDIES_LIST,
-        name: 'Available Remedies List',
-        description:
-          'Complete list of all available homeopathic remedies with names and abbreviations',
-        mimeType: MIME_TYPES.JSON,
-      },
-      {
-        uri: RESOURCE_URIS.REPERTORIES_LIST,
-        name: 'Available Repertories List',
-        description: 'List of all accessible repertories with metadata (title, author, language)',
-        mimeType: MIME_TYPES.JSON,
-      },
-      {
-        uri: RESOURCE_URIS.MATERIA_MEDICAS_LIST,
-        name: 'Available Materia Medicas List',
-        description:
-          'List of all accessible materia medicas with metadata (title, author, language)',
-        mimeType: MIME_TYPES.JSON,
-      },
-      {
-        uri: RESOURCE_URIS.SEARCH_SYNTAX_HELP,
-        name: 'OOREP Search Syntax Help',
-        description:
-          'Guide to OOREP search syntax including wildcards, exclusions, and exact phrases',
-        mimeType: MIME_TYPES.MARKDOWN,
-      },
-    ];
+  listResources(): ResourceDefinition[] {
+    // Import dynamically to avoid circular dependency
+    const { ResourceRegistry } = require('../resources/index.js');
+    return new ResourceRegistry({
+      baseUrl: this.config.baseUrl,
+      timeoutMs: this.config.timeoutMs,
+      defaultRepertory: this.config.defaultRepertory,
+      defaultMateriaMedica: this.config.defaultMateriaMedica,
+    }).getDefinitions();
   }
-
-  // ==========================================================================
-  // Prompt Access Methods
-  // ==========================================================================
 
   /**
    * Get a prompt workflow by name
@@ -557,18 +475,18 @@ export class OOREPSDKClient {
   ): Promise<PromptResult> {
     switch (name) {
       case PROMPT_NAMES.ANALYZE_SYMPTOMS:
-        return this.getAnalyzeSymptomsPrompt(args as AnalyzeSymptomsArgs | undefined);
+        return buildAnalyzeSymptomsPrompt(args as AnalyzeSymptomsArgs | undefined);
 
       case PROMPT_NAMES.REMEDY_COMPARISON: {
         const compArgs = args as RemedyComparisonArgs | undefined;
         if (!compArgs?.remedies) {
           throw new Error('remedies argument is required for remedy-comparison prompt');
         }
-        return this.getRemedyComparisonPrompt(compArgs.remedies);
+        return buildRemedyComparisonPrompt(compArgs, this.logger);
       }
 
       case PROMPT_NAMES.REPERTORIZATION_WORKFLOW:
-        return this.getRepertorizationWorkflowPrompt();
+        return buildRepertorizationWorkflowPrompt();
 
       default: {
         const _exhaustive: never = name;
@@ -580,352 +498,9 @@ export class OOREPSDKClient {
   /**
    * List all available prompts with their metadata
    */
-  listPrompts(): Array<{
-    name: PromptName;
-    description: string;
-    arguments?: Array<{ name: string; description: string; required: boolean }>;
-  }> {
-    return [
-      {
-        name: PROMPT_NAMES.ANALYZE_SYMPTOMS,
-        description:
-          'Guide AI through structured symptom analysis workflow for homeopathic case taking. ' +
-          'Helps systematically analyze symptoms and find relevant remedies.',
-        arguments: [
-          {
-            name: 'symptom_description',
-            description: 'Optional initial symptom description to start the analysis',
-            required: false,
-          },
-        ],
-      },
-      {
-        name: PROMPT_NAMES.REMEDY_COMPARISON,
-        description:
-          'Compare multiple homeopathic remedies side-by-side to identify the best match. ' +
-          'Useful for differential diagnosis between similar remedies.',
-        arguments: [
-          {
-            name: 'remedies',
-            description:
-              'Comma-separated list of remedy names to compare (e.g., "Aconite,Belladonna,Gelsemium")',
-            required: true,
-          },
-        ],
-      },
-      {
-        name: PROMPT_NAMES.REPERTORIZATION_WORKFLOW,
-        description:
-          'Step-by-step case taking and repertorization workflow for comprehensive case analysis. ' +
-          'Guides through symptom gathering, repertorization, and remedy selection.',
-        arguments: [],
-      },
-    ];
-  }
-
-  // ==========================================================================
-  // Private Helper Methods for Resources and Prompts
-  // ==========================================================================
-
-  private getSearchSyntaxHelpText(): string {
-    return `# OOREP Search Syntax Guide
-
-## Basic Search
-
-Simple text searches match symptoms and rubrics:
-- \`headache\` - finds all entries containing "headache"
-- \`headache worse night\` - finds entries with these words
-
-## Wildcards
-
-Use asterisk (*) to match any characters:
-- \`head*\` - matches "headache", "head pain", "head pressure", etc.
-- \`*ache\` - matches "headache", "backache", "toothache", etc.
-
-**Note**: Wildcards should only be used at the beginning or end of words, not in the middle.
-
-## Exclusions
-
-Use minus sign (-) to exclude terms:
-- \`fever -night\` - finds fever entries but excludes those mentioning night
-- \`headache -migraine\` - headache entries excluding migraine
-
-## Exact Phrases
-
-Use quotation marks for exact phrase matching:
-- \`"worse from cold"\` - exact phrase match
-- \`"better from warmth"\` - exact phrase match
-
-## Combining Techniques
-
-You can combine these techniques:
-- \`head* -nausea "worse night"\` - headache-related entries, excluding nausea, with exact phrase "worse night"
-- \`fever -"worse night" better*\` - fever entries without "worse night" but including "better" variations
-
-## Examples
-
-### Symptom Searches
-- \`anxiety fear\` - general anxiety and fear symptoms
-- \`cough dry night\` - dry cough at night
-- \`pain shooting\` - shooting pains
-
-### Modality Searches
-- \`"worse from cold"\` - symptoms worse from cold
-- \`"better from motion"\` - symptoms better from motion
-- \`-"worse from heat"\` - exclude symptoms worse from heat
-
-### Advanced Searches
-- \`headache* "worse night" -nausea\` - comprehensive headache search
-- \`anxiety "fear of death" palpitation*\` - anxiety with specific symptoms
-
-## Tips
-
-1. Start with simple searches and refine with exclusions
-2. Use wildcards when unsure of exact wording
-3. Use exact phrases for modalities and specific symptom descriptions
-4. Combine techniques for precise repertorization
-
-## Note
-
-This is a search tool only. Always consult with a qualified homeopathic practitioner for case analysis and remedy selection.
-`;
-  }
-
-  private getAnalyzeSymptomsPrompt(args?: AnalyzeSymptomsArgs): PromptResult {
-    const initialSymptom = args?.symptom_description
-      ? `\n\nInitial symptom: ${args.symptom_description}\n\nPlease analyze this symptom using the workflow above.`
-      : '';
-
-    return {
-      name: PROMPT_NAMES.ANALYZE_SYMPTOMS,
-      description:
-        'Guide AI through structured symptom analysis workflow for homeopathic case taking.',
-      messages: [
-        {
-          role: 'user',
-          content: {
-            type: 'text',
-            text: `You are helping a user analyze homeopathic symptoms and find relevant remedies.
-
-Follow this workflow:
-
-1. **Gather Chief Complaint**
-   Ask the user to describe their main symptom in detail.
-
-2. **Search Repertory**
-   Use the search_repertory tool to find matching rubrics for the main symptom.
-   Review the top remedies that appear in the results.
-
-3. **Ask About Modalities**
-   Ask clarifying questions about what makes the symptom better or worse:
-   - Time of day (morning, evening, night)
-   - Temperature (cold, warmth, open air)
-   - Position (lying, sitting, motion)
-   - Food and drink
-   - Weather conditions
-
-4. **Refine Search**
-   Based on the modalities, perform additional repertory searches to narrow down remedies.
-
-5. **Present Top Remedies**
-   Identify the 3-5 remedies that appear most frequently across all rubrics.
-   For each remedy, show:
-   - Name and abbreviation
-   - Number of rubrics it appears in
-   - Cumulative weight/strength of association
-
-6. **Provide Detailed Information**
-   Use get_remedy_info and search_materia_medica to provide detailed information
-   about the top remedies, including their key characteristics and symptom pictures.
-
-7. **Important Reminders**
-   - This is for informational purposes only
-   - Always recommend consulting a qualified homeopathic practitioner
-   - Explain any homeopathic terminology in simple terms
-
-Guidelines:
-- Be thorough but concise
-- Ask one question at a time
-- Explain search results clearly
-- Help the user understand the remedy selection process${initialSymptom}`,
-          },
-        },
-      ],
-    };
-  }
-
-  private getRemedyComparisonPrompt(remedies: string): PromptResult {
-    const remedyList = remedies
-      .split(',')
-      .map((r) => r.trim())
-      .filter((r) => r.length > 0);
-
-    if (remedyList.length < 2) {
-      throw new Error(
-        'At least 2 remedies are required for comparison. Please provide remedies as a comma-separated list.'
-      );
-    }
-
-    // Limit to max 6 remedies for table readability
-    const maxRemedies = 6;
-    if (remedyList.length > maxRemedies) {
-      this.logger.warn(
-        `Limiting remedy comparison to ${maxRemedies} remedies (${remedyList.length} provided)`
-      );
-      remedyList.splice(maxRemedies);
-    }
-
-    const tableHeader = '| Aspect                | ' + remedyList.join(' | ') + ' |';
-    const tableSeparator =
-      '|----------------------|' + remedyList.map(() => '----------|').join('');
-    const tableRows = [
-      '| Key Mental Symptoms  | ' + remedyList.map(() => '...').join('      | ') + '      |',
-      '| Key Physical Symptoms| ' + remedyList.map(() => '...').join('      | ') + '      |',
-      '| Better From          | ' + remedyList.map(() => '...').join('      | ') + '      |',
-      '| Worse From           | ' + remedyList.map(() => '...').join('      | ') + '      |',
-      '| Time Modality        | ' + remedyList.map(() => '...').join('      | ') + '      |',
-      '| Distinctive Features | ' + remedyList.map(() => '...').join('      | ') + '      |',
-    ].join('\n   ');
-
-    return {
-      name: PROMPT_NAMES.REMEDY_COMPARISON,
-      description: 'Compare multiple homeopathic remedies side-by-side to identify the best match.',
-      messages: [
-        {
-          role: 'user',
-          content: {
-            type: 'text',
-            text: `You are comparing homeopathic remedies to help identify the best match.
-
-Remedies to compare: ${remedyList.join(', ')}
-
-For each remedy, perform the following steps:
-
-1. **Get Basic Information**
-   Use get_remedy_info for each remedy to gather:
-   - Full name and abbreviations
-   - Alternative names
-
-2. **Search Materia Medica**
-   Use search_materia_medica to find key symptoms for each remedy.
-   Focus on:
-   - Mental/emotional symptoms
-   - Physical keynote symptoms
-   - Modalities (better/worse from)
-   - Concomitant symptoms
-
-3. **Create Comparison Table**
-   Present the comparison in a clear table format:
-
-   ${tableHeader}
-   ${tableSeparator}
-   ${tableRows}
-
-4. **Analysis**
-   Provide:
-   - Similarities between the remedies
-   - Key differentiating factors
-   - Guidance on when to choose each remedy
-   - Clinical tips for differentiation
-
-5. **Summary**
-   Conclude with a clear summary of:
-   - Most important distinguishing characteristics
-   - Questions to ask to differentiate between these remedies
-   - Recommendation to consult a qualified practitioner
-
-Remember:
-- Focus on distinctive, differentiating features
-- Use clear, accessible language
-- Cite specific symptoms from materia medica sources
-- This is for educational purposes only`,
-          },
-        },
-      ],
-    };
-  }
-
-  private getRepertorizationWorkflowPrompt(): PromptResult {
-    return {
-      name: PROMPT_NAMES.REPERTORIZATION_WORKFLOW,
-      description:
-        'Step-by-step case taking and repertorization workflow for comprehensive case analysis.',
-      messages: [
-        {
-          role: 'user',
-          content: {
-            type: 'text',
-            text: `You are guiding a user through comprehensive homeopathic case repertorization.
-
-Follow this systematic workflow:
-
-**STEP 1: Chief Complaint**
-Ask: "What is the main symptom or health concern you'd like to address?"
-
-Wait for response, then move to Step 2.
-
-**STEP 2: Detailed Symptom Gathering**
-For each symptom mentioned, ask about the COMPLETE symptom picture:
-
-a) **Location**: Where exactly is the symptom? Does it radiate or move?
-b) **Sensation**: How does it feel? (sharp, dull, burning, throbbing, etc.)
-c) **Modalities** (CRITICAL):
-   - What makes it BETTER? (time, temperature, position, food, etc.)
-   - What makes it WORSE? (time, temperature, position, food, etc.)
-d) **Time**: When does it occur? What time of day? How often?
-e) **Concomitants**: What else happens at the same time?
-
-**STEP 3: Initial Repertorization**
-Use search_repertory for each KEY symptom identified:
-- Start with the most characteristic/unusual symptoms
-- Include modalities in your searches (e.g., "headache worse night")
-- Keep track of which remedies appear in multiple rubrics
-
-Create a running tally:
-"Remedy Name: appears in X rubrics, cumulative weight: Y"
-
-**STEP 4: Cross-Reference with Materia Medica**
-For the top 3-5 remedies appearing most frequently:
-- Use search_materia_medica to verify the complete symptom picture
-- Check if the TOTALITY of symptoms matches
-- Look for confirming keynotes and characteristics
-
-**STEP 5: Differentiation**
-If multiple remedies remain, ask additional questions to differentiate:
-- Mental/emotional state
-- General characteristics (hot/cold, thirsty/thirstless, etc.)
-- Sleep patterns
-- Food desires and aversions
-
-Use search_repertory for these additional symptoms.
-
-**STEP 6: Final Remedy Selection**
-Compare the final 1-3 remedies using get_remedy_info.
-
-Present:
-- The best matching remedy (or top 2-3 if close)
-- Why it matches this case
-- Expected potency range (suggest consulting practitioner for this)
-- Key symptoms that led to this selection
-
-**STEP 7: Recommendations**
-Always conclude with:
-- Reminder to consult a qualified homeopathic practitioner
-- Importance of professional case management
-- This is an educational exercise only
-
-**Important Guidelines:**
-- Take time with each step - don't rush
-- Document all symptoms before repertorizing
-- Look for the most CHARACTERISTIC and UNUSUAL symptoms
-- The totality of symptoms matters more than individual rubrics
-- When in doubt, ask more questions
-
-Begin with Step 1 now.`,
-          },
-        },
-      ],
-    };
+  listPrompts(): PromptDefinition[] {
+    const { PromptRegistry } = require('../prompts/index.js');
+    return new PromptRegistry().getDefinitions();
   }
 }
 
