@@ -15,7 +15,7 @@
  * const executors = createGeminiToolExecutors(client);
  *
  * const response = await ai.models.generateContent({
- *   model: 'gemini-2.0-flash',
+ *   model: 'gemini-2.5-flash',
  *   contents: 'Search for headache remedies in homeopathy',
  *   config: { tools: geminiTools },
  * });
@@ -29,6 +29,9 @@
 
 import { toolDefinitions, type OOREPToolDefinition } from '../tools.js';
 import type { OOREPSDKClient } from '../client.js';
+import type { ResourceContent } from '../resources.js';
+import type { PromptResult } from '../prompts.js';
+import { TOOL_NAMES, type ToolName } from '../constants.js';
 import type {
   SearchRepertoryArgs,
   SearchMateriaMedicaArgs,
@@ -131,15 +134,23 @@ export type GeminiToolExecutor<TArgs = unknown, TResult = unknown> = (
 ) => Promise<TResult>;
 
 /**
- * Map of tool executors
+ * Map of tool executors keyed by tool name
  */
-export interface GeminiToolExecutors {
-  search_repertory: GeminiToolExecutor<SearchRepertoryArgs>;
-  search_materia_medica: GeminiToolExecutor<SearchMateriaMedicaArgs>;
-  get_remedy_info: GeminiToolExecutor<GetRemedyInfoArgs>;
-  list_available_repertories: GeminiToolExecutor<ListRepertoriesArgs>;
-  list_available_materia_medicas: GeminiToolExecutor<ListMateriaMedicasArgs>;
-}
+export type GeminiToolExecutors = {
+  [K in ToolName]: GeminiToolExecutor<
+    K extends typeof TOOL_NAMES.SEARCH_REPERTORY
+      ? SearchRepertoryArgs
+      : K extends typeof TOOL_NAMES.SEARCH_MATERIA_MEDICA
+        ? SearchMateriaMedicaArgs
+        : K extends typeof TOOL_NAMES.GET_REMEDY_INFO
+          ? GetRemedyInfoArgs
+          : K extends typeof TOOL_NAMES.LIST_REPERTORIES
+            ? ListRepertoriesArgs
+            : K extends typeof TOOL_NAMES.LIST_MATERIA_MEDICAS
+              ? ListMateriaMedicasArgs
+              : never
+  >;
+};
 
 /**
  * Create tool executors for handling Gemini function calls
@@ -149,11 +160,12 @@ export interface GeminiToolExecutors {
  */
 export function createGeminiToolExecutors(client: OOREPSDKClient): GeminiToolExecutors {
   return {
-    search_repertory: (args: SearchRepertoryArgs) => client.searchRepertory(args),
-    search_materia_medica: (args: SearchMateriaMedicaArgs) => client.searchMateriaMedica(args),
-    get_remedy_info: (args: GetRemedyInfoArgs) => client.getRemedyInfo(args),
-    list_available_repertories: (args: ListRepertoriesArgs) => client.listRepertories(args),
-    list_available_materia_medicas: (args: ListMateriaMedicasArgs) =>
+    [TOOL_NAMES.SEARCH_REPERTORY]: (args: SearchRepertoryArgs) => client.searchRepertory(args),
+    [TOOL_NAMES.SEARCH_MATERIA_MEDICA]: (args: SearchMateriaMedicaArgs) =>
+      client.searchMateriaMedica(args),
+    [TOOL_NAMES.GET_REMEDY_INFO]: (args: GetRemedyInfoArgs) => client.getRemedyInfo(args),
+    [TOOL_NAMES.LIST_REPERTORIES]: (args: ListRepertoriesArgs) => client.listRepertories(args),
+    [TOOL_NAMES.LIST_MATERIA_MEDICAS]: (args: ListMateriaMedicasArgs) =>
       client.listMateriaMedicas(args),
   };
 }
@@ -181,7 +193,7 @@ export async function executeGeminiFunctionCall(
   executors: GeminiToolExecutors,
   functionCall: GeminiFunctionCall
 ): Promise<unknown> {
-  const executor = executors[functionCall.name as keyof GeminiToolExecutors];
+  const executor = executors[functionCall.name as ToolName];
 
   if (!executor) {
     throw new Error(
@@ -194,17 +206,149 @@ export async function executeGeminiFunctionCall(
 }
 
 /**
- * Tool name constants for type-safe tool references
+ * Format a resource as a system instruction string for Gemini
+ *
+ * Gemini uses a `systemInstruction` parameter that takes a plain string.
+ * This function extracts the text content from a resource for direct use.
+ *
+ * @param resource - Resource content from client.getResource()
+ * @returns Plain text content for the systemInstruction parameter
+ *
+ * @example
+ * ```typescript
+ * const searchSyntax = await client.getResource('oorep://help/search-syntax');
+ * const systemInstruction = geminiFormatResourceAsSystemInstruction(searchSyntax);
+ *
+ * const response = await ai.models.generateContent({
+ *   model: 'gemini-2.5-flash',
+ *   systemInstruction,
+ *   contents: 'Find remedies for headache',
+ *   config: { tools: geminiTools },
+ * });
+ * ```
  */
-export const GEMINI_TOOL_NAMES = {
-  SEARCH_REPERTORY: 'search_repertory',
-  SEARCH_MATERIA_MEDICA: 'search_materia_medica',
-  GET_REMEDY_INFO: 'get_remedy_info',
-  LIST_AVAILABLE_REPERTORIES: 'list_available_repertories',
-  LIST_AVAILABLE_MATERIA_MEDICAS: 'list_available_materia_medicas',
-} as const;
+export function geminiFormatResourceAsSystemInstruction(resource: ResourceContent): string {
+  return resource.text;
+}
 
 /**
- * Type for tool names
+ * Format multiple resources as a combined system instruction
+ *
+ * Useful when you need to combine multiple resources into a single system instruction.
+ *
+ * @param resources - Array of resource contents
+ * @returns Combined string with resource headers
+ *
+ * @example
+ * ```typescript
+ * const [searchHelp, remedies] = await Promise.all([
+ *   client.getResource('oorep://help/search-syntax'),
+ *   client.getResource('oorep://remedies/list'),
+ * ]);
+ * const systemInstruction = geminiFormatResourcesAsContext([searchHelp, remedies]);
+ * ```
  */
-export type GeminiToolName = (typeof GEMINI_TOOL_NAMES)[keyof typeof GEMINI_TOOL_NAMES];
+export function geminiFormatResourcesAsContext(resources: ResourceContent[]): string {
+  return resources.map((r) => `## Resource: ${r.uri}\n\n${r.text}`).join('\n\n---\n\n');
+}
+
+/**
+ * Gemini Content part format
+ */
+export interface GeminiPart {
+  text: string;
+}
+
+/**
+ * Gemini Content format for a single message
+ */
+export interface GeminiContent {
+  role: 'user' | 'model';
+  parts: GeminiPart[];
+}
+
+/**
+ * Convert an OOREP prompt to Gemini Content format
+ *
+ * Transforms PromptResult messages into the Content array format expected by
+ * Gemini's generateContent and chat APIs.
+ *
+ * Note: Gemini uses 'model' instead of 'assistant' for AI responses.
+ *
+ * @param prompt - Prompt result from client.getPrompt()
+ * @returns Array of Gemini Content objects
+ *
+ * @example
+ * ```typescript
+ * const workflow = await client.getPrompt('repertorization-workflow');
+ * const contents = convertPromptToGemini(workflow);
+ *
+ * const response = await ai.models.generateContent({
+ *   model: 'gemini-2.5-flash',
+ *   contents,
+ *   config: { tools: geminiTools },
+ * });
+ * ```
+ */
+export function convertPromptToGemini(prompt: PromptResult): GeminiContent[] {
+  return prompt.messages.map((msg) => ({
+    role: msg.role === 'user' ? 'user' : 'model',
+    parts: [{ text: msg.content.text }],
+  }));
+}
+
+/**
+ * Convert an OOREP prompt to Gemini format with system instruction
+ *
+ * Convenience function that returns both the system instruction and contents
+ * in a format ready for Gemini's generateContent.
+ *
+ * @param resource - Resource to use as system context
+ * @param prompt - Prompt workflow
+ * @returns Object with systemInstruction and contents for Gemini API
+ *
+ * @example
+ * ```typescript
+ * const searchSyntax = await client.getResource('oorep://help/search-syntax');
+ * const workflow = await client.getPrompt('analyze-symptoms', { symptom_description: 'headache' });
+ * const { systemInstruction, contents } = geminiConvertPromptWithContext(searchSyntax, workflow);
+ *
+ * const response = await ai.models.generateContent({
+ *   model: 'gemini-2.5-flash',
+ *   systemInstruction,
+ *   contents,
+ *   config: { tools: geminiTools },
+ * });
+ * ```
+ */
+export function geminiConvertPromptWithContext(
+  resource: ResourceContent,
+  prompt: PromptResult
+): { systemInstruction: string; contents: GeminiContent[] } {
+  return {
+    systemInstruction: resource.text,
+    contents: convertPromptToGemini(prompt),
+  };
+}
+
+/**
+ * Create a chat history from a prompt for use with Gemini's chat API
+ *
+ * @param prompt - Prompt result from client.getPrompt()
+ * @returns History array suitable for ai.chats.create({ history: ... })
+ *
+ * @example
+ * ```typescript
+ * const workflow = await client.getPrompt('repertorization-workflow');
+ * const history = geminiCreateChatHistory(workflow);
+ *
+ * const chat = ai.chats.create({
+ *   model: 'gemini-2.5-flash',
+ *   history,
+ *   config: { tools: geminiTools },
+ * });
+ * ```
+ */
+export function geminiCreateChatHistory(prompt: PromptResult): GeminiContent[] {
+  return convertPromptToGemini(prompt);
+}

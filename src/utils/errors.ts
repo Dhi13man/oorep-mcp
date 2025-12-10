@@ -80,6 +80,21 @@ export class OOREPAPIError extends OOREPError {
 }
 
 /**
+ * Error for when a requested resource, tool, or prompt is not found
+ */
+export class NotFoundError extends OOREPError {
+  constructor(
+    message: string,
+    public readonly resourceType: 'tool' | 'prompt' | 'resource',
+    public readonly resourceName: string,
+    cause?: Error
+  ) {
+    super(message, cause);
+    this.name = 'NotFoundError';
+  }
+}
+
+/**
  * Sanitizes errors before exposing to users
  * Hides internal implementation details
  */
@@ -87,6 +102,10 @@ export function sanitizeError(error: unknown): Error {
   if (error instanceof ValidationError || error instanceof RateLimitError) {
     // Safe to expose these errors to users
     return error;
+  }
+
+  if (error instanceof NotFoundError) {
+    return new Error(`${error.resourceType} not found: ${error.resourceName}`);
   }
 
   if (error instanceof NetworkError) {

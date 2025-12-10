@@ -2,35 +2,17 @@
  * Unit tests for list_available_repertories tool
  */
 
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { ListRepertoriesTool } from './list-repertories.js';
-import type { OOREPConfig } from '../config.js';
+import { createMockSDKClient } from './test-helpers.js';
 
 describe('ListRepertoriesTool', () => {
-  let mockTool: ListRepertoriesTool;
-  let mockConfig: OOREPConfig;
-  let mockListRepertories: ReturnType<typeof vi.fn>;
+  let tool: ListRepertoriesTool;
+  let mockClient: ReturnType<typeof createMockSDKClient>;
 
   beforeEach(() => {
-    mockConfig = {
-      baseUrl: 'https://test.oorep.com',
-      timeoutMs: 5000,
-      cacheTtlMs: 300000,
-      maxResults: 100,
-      logLevel: 'error',
-      defaultRepertory: 'test-rep',
-      defaultMateriaMedica: 'test-mm',
-    };
-
-    mockTool = new ListRepertoriesTool(mockConfig);
-
-    // Mock the OOREPSDKClient.listRepertories method
-    mockListRepertories = vi.fn();
-    (mockTool as any).client.listRepertories = mockListRepertories;
-  });
-
-  afterEach(() => {
-    mockTool.destroy();
+    mockClient = createMockSDKClient();
+    tool = new ListRepertoriesTool(mockClient);
   });
 
   describe('execute', () => {
@@ -49,9 +31,9 @@ describe('ListRepertoriesTool', () => {
           language: 'en',
         },
       ];
-      mockListRepertories.mockResolvedValue(mockRepertories);
+      mockClient.listRepertories.mockResolvedValue(mockRepertories);
 
-      const result = await mockTool.execute({});
+      const result = await tool.execute({});
 
       expect(result.repertories).toHaveLength(2);
       expect(result.repertories[0].abbreviation).toBe('kent');
@@ -66,13 +48,13 @@ describe('ListRepertoriesTool', () => {
           language: 'de',
         },
       ];
-      mockListRepertories.mockResolvedValue(mockRepertories);
+      mockClient.listRepertories.mockResolvedValue(mockRepertories);
 
-      const result = await mockTool.execute({ language: 'de' });
+      const result = await tool.execute({ language: 'de' });
 
       expect(result.repertories).toHaveLength(1);
       expect(result.repertories[0].abbreviation).toBe('german-rep');
-      expect(mockListRepertories).toHaveBeenCalledWith({ language: 'de' });
+      expect(mockClient.listRepertories).toHaveBeenCalledWith({ language: 'de' });
     });
 
     it('execute when language filter is case-insensitive then filters correctly', async () => {
@@ -83,17 +65,17 @@ describe('ListRepertoriesTool', () => {
           language: 'EN',
         },
       ];
-      mockListRepertories.mockResolvedValue(mockRepertories);
+      mockClient.listRepertories.mockResolvedValue(mockRepertories);
 
-      const result = await mockTool.execute({ language: 'en' });
+      const result = await tool.execute({ language: 'en' });
 
       expect(result.repertories).toHaveLength(1);
     });
 
     it('execute when no repertories match language then returns empty array', async () => {
-      mockListRepertories.mockResolvedValue([]);
+      mockClient.listRepertories.mockResolvedValue([]);
 
-      const result = await mockTool.execute({ language: 'fr' });
+      const result = await tool.execute({ language: 'fr' });
 
       expect(result.repertories).toHaveLength(0);
     });
@@ -112,9 +94,9 @@ describe('ListRepertoriesTool', () => {
           remedyCount: 1500,
         },
       ];
-      mockListRepertories.mockResolvedValue(mockRepertories);
+      mockClient.listRepertories.mockResolvedValue(mockRepertories);
 
-      const result = await mockTool.execute({});
+      const result = await tool.execute({});
 
       const rep = result.repertories[0];
       expect(rep.year).toBe(1905);
@@ -131,9 +113,9 @@ describe('ListRepertoriesTool', () => {
           title: 'Kent Repertory',
         },
       ];
-      mockListRepertories.mockResolvedValue(mockRepertories);
+      mockClient.listRepertories.mockResolvedValue(mockRepertories);
 
-      const result = await mockTool.execute({});
+      const result = await tool.execute({});
 
       const rep = result.repertories[0];
       expect(rep.year).toBeUndefined();
@@ -144,15 +126,15 @@ describe('ListRepertoriesTool', () => {
     });
 
     it('execute when invalid language code then throws ValidationError', async () => {
-      await expect(mockTool.execute({ language: 'invalid123' })).rejects.toThrow();
+      await expect(tool.execute({ language: 'invalid123' })).rejects.toThrow();
     });
 
     it('execute when language code too short then throws ValidationError', async () => {
-      await expect(mockTool.execute({ language: 'e' })).rejects.toThrow();
+      await expect(tool.execute({ language: 'e' })).rejects.toThrow();
     });
 
     it('execute when language code too long then throws ValidationError', async () => {
-      await expect(mockTool.execute({ language: 'engl' })).rejects.toThrow();
+      await expect(tool.execute({ language: 'engl' })).rejects.toThrow();
     });
 
     it('execute when called twice then SDK handles caching', async () => {
@@ -162,10 +144,10 @@ describe('ListRepertoriesTool', () => {
           title: 'Kent Repertory',
         },
       ];
-      mockListRepertories.mockResolvedValue(mockRepertories);
+      mockClient.listRepertories.mockResolvedValue(mockRepertories);
 
-      await mockTool.execute({});
-      const result = await mockTool.execute({});
+      await tool.execute({});
+      const result = await tool.execute({});
 
       // SDK handles caching internally
       expect(result.repertories).toHaveLength(1);
@@ -179,30 +161,30 @@ describe('ListRepertoriesTool', () => {
           language: 'en',
         },
       ];
-      mockListRepertories.mockResolvedValue(mockRepertories);
+      mockClient.listRepertories.mockResolvedValue(mockRepertories);
 
-      await mockTool.execute({ language: 'en' });
-      await mockTool.execute({ language: 'de' });
+      await tool.execute({ language: 'en' });
+      await tool.execute({ language: 'de' });
 
-      expect(mockListRepertories).toHaveBeenCalledTimes(2);
+      expect(mockClient.listRepertories).toHaveBeenCalledTimes(2);
     });
 
     it('execute when API returns empty array then returns empty array', async () => {
-      mockListRepertories.mockResolvedValue([]);
+      mockClient.listRepertories.mockResolvedValue([]);
 
-      const result = await mockTool.execute({});
+      const result = await tool.execute({});
 
       expect(result.repertories).toEqual([]);
     });
 
     it('execute when API error then sanitizes error', async () => {
-      mockListRepertories.mockRejectedValue(new Error('API Error'));
+      mockClient.listRepertories.mockRejectedValue(new Error('API Error'));
 
-      await expect(mockTool.execute({})).rejects.toThrow();
+      await expect(tool.execute({})).rejects.toThrow();
     });
 
     it('execute when invalid arguments then sanitizes error', async () => {
-      await expect(mockTool.execute({ invalid: 'field' })).rejects.toThrow();
+      await expect(tool.execute({ invalid: 'field' })).rejects.toThrow();
     });
   });
 });

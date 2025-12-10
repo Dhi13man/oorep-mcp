@@ -5,6 +5,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ToolRegistry } from './index.js';
 import type { OOREPConfig } from '../config.js';
+import { NotFoundError } from '../utils/errors.js';
 
 describe('ToolRegistry', () => {
   let mockRegistry: ToolRegistry;
@@ -116,15 +117,19 @@ describe('ToolRegistry', () => {
   });
 
   describe('executeTool', () => {
-    it('executeTool when tool not found then throws error', async () => {
-      await expect(mockRegistry.executeTool('nonexistent', {})).rejects.toThrow();
+    it('executeTool when tool not found then throws NotFoundError', async () => {
+      await expect(mockRegistry.executeTool('nonexistent', {})).rejects.toThrow(NotFoundError);
     });
 
-    it('executeTool when tool not found then error mentions tool name', async () => {
+    it('executeTool when tool not found then error has correct properties', async () => {
       try {
         await mockRegistry.executeTool('nonexistent_tool', {});
       } catch (error) {
-        expect((error as Error).message).toContain('nonexistent_tool');
+        expect(error).toBeInstanceOf(NotFoundError);
+        const notFoundError = error as NotFoundError;
+        expect(notFoundError.resourceType).toBe('tool');
+        expect(notFoundError.resourceName).toBe('nonexistent_tool');
+        expect(notFoundError.message).toContain('nonexistent_tool');
       }
     });
 

@@ -5,6 +5,12 @@
  * with different AI SDKs.
  */
 
+import { TOOL_NAMES } from './constants.js';
+
+// Re-export for convenience
+export type { ToolName } from './constants.js';
+export { TOOL_NAMES, ALL_TOOL_NAMES } from './constants.js';
+
 /**
  * Generic tool definition that can be converted to various formats
  */
@@ -33,7 +39,7 @@ export interface OOREPToolDefinition {
  */
 export const toolDefinitions: OOREPToolDefinition[] = [
   {
-    name: 'search_repertory',
+    name: TOOL_NAMES.SEARCH_REPERTORY,
     description:
       'Search for symptoms in homeopathic repertories. Returns matching rubrics with remedies and their weights. Useful for finding remedies associated with specific symptoms.',
     parameters: {
@@ -73,7 +79,7 @@ export const toolDefinitions: OOREPToolDefinition[] = [
     },
   },
   {
-    name: 'search_materia_medica',
+    name: TOOL_NAMES.SEARCH_MATERIA_MEDICA,
     description:
       'Search materia medica texts for remedy descriptions and symptoms. Returns sections from materia medica books that match the search term.',
     parameters: {
@@ -104,7 +110,7 @@ export const toolDefinitions: OOREPToolDefinition[] = [
     },
   },
   {
-    name: 'get_remedy_info',
+    name: TOOL_NAMES.GET_REMEDY_INFO,
     description:
       'Get detailed information about a specific homeopathic remedy including its full name, abbreviation, and alternative names.',
     parameters: {
@@ -120,7 +126,7 @@ export const toolDefinitions: OOREPToolDefinition[] = [
     },
   },
   {
-    name: 'list_available_repertories',
+    name: TOOL_NAMES.LIST_REPERTORIES,
     description:
       'List all available homeopathic repertories with their metadata including title, author, and language.',
     parameters: {
@@ -136,7 +142,7 @@ export const toolDefinitions: OOREPToolDefinition[] = [
     },
   },
   {
-    name: 'list_available_materia_medicas',
+    name: TOOL_NAMES.LIST_MATERIA_MEDICAS,
     description:
       'List all available materia medica texts with their metadata including title, author, and language.',
     parameters: {

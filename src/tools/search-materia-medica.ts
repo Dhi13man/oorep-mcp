@@ -3,7 +3,7 @@
  * Search materia medica texts for symptoms and return matching remedy sections
  */
 
-import { OOREPSDKClient, type OOREPSDKConfig } from '../sdk/client.js';
+import type { IOOREPSDKClient } from '../interfaces/IOOREPSDKClient.js';
 import {
   SearchMateriaMedicaArgsSchema,
   MateriaMedicaSearchResultSchema,
@@ -12,21 +12,10 @@ import {
 } from '../utils/schemas.js';
 import { sanitizeError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
-import type { OOREPConfig } from '../config.js';
+import { TOOL_NAMES } from '../sdk/constants.js';
 
 export class SearchMateriaMedicaTool {
-  private client: OOREPSDKClient;
-
-  constructor(config: OOREPConfig) {
-    const sdkConfig: OOREPSDKConfig = {
-      baseUrl: config.baseUrl,
-      timeoutMs: config.timeoutMs,
-      cacheTtlMs: config.cacheTtlMs,
-      defaultRepertory: config.defaultRepertory,
-      defaultMateriaMedica: config.defaultMateriaMedica,
-    };
-    this.client = new OOREPSDKClient(sdkConfig);
-  }
+  constructor(private client: IOOREPSDKClient) {}
 
   async execute(args: unknown): Promise<MateriaMedicaSearchResult> {
     try {
@@ -53,14 +42,10 @@ export class SearchMateriaMedicaTool {
       throw sanitizeError(error);
     }
   }
-
-  destroy(): void {
-    this.client.destroy();
-  }
 }
 
 export const searchMateriaMedicaToolDefinition = {
-  name: 'search_materia_medica',
+  name: TOOL_NAMES.SEARCH_MATERIA_MEDICA,
   description:
     'Search materia medica texts for symptoms and return matching remedy sections. ' +
     'Materia medicas provide detailed descriptions of remedy characteristics, symptoms, and clinical applications. ' +

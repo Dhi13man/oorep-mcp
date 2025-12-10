@@ -28,7 +28,11 @@
  */
 
 import type { OOREPSDKClient } from '../client.js';
+import type { ResourceContent } from '../resources.js';
+import type { PromptResult } from '../prompts.js';
 import { toolDefinitions } from '../tools.js';
+import { TOOL_NAMES } from '../constants.js';
+import { NotFoundError } from '../../utils/errors.js';
 
 /**
  * OpenAI tool definition format
@@ -77,6 +81,8 @@ export function getOpenAITools(toolNames?: string[]): OpenAITool[] {
  * @param functionName - Name of the function to execute
  * @param argumentsJson - JSON string of function arguments
  * @returns Tool result as a JSON-serializable object
+ * @throws {SyntaxError} If argumentsJson is not valid JSON
+ * @throws {NotFoundError} If functionName is not a recognized tool name
  */
 export async function executeOpenAITool(
   client: OOREPSDKClient,
@@ -94,6 +100,7 @@ export async function executeOpenAITool(
  * @param toolName - Name of the tool to execute
  * @param args - Parsed tool arguments
  * @returns Tool result
+ * @throws {NotFoundError} If toolName is not a recognized tool name
  */
 export async function executeOOREPTool(
   client: OOREPSDKClient,
@@ -101,7 +108,7 @@ export async function executeOOREPTool(
   args: Record<string, unknown>
 ): Promise<unknown> {
   switch (toolName) {
-    case 'search_repertory':
+    case TOOL_NAMES.SEARCH_REPERTORY:
       return client.searchRepertory({
         symptom: args.symptom as string,
         repertory: args.repertory as string | undefined,
@@ -110,7 +117,7 @@ export async function executeOOREPTool(
         includeRemedyStats: args.includeRemedyStats as boolean | undefined,
       });
 
-    case 'search_materia_medica':
+    case TOOL_NAMES.SEARCH_MATERIA_MEDICA:
       return client.searchMateriaMedica({
         symptom: args.symptom as string,
         materiamedica: args.materiamedica as string | undefined,
@@ -118,23 +125,23 @@ export async function executeOOREPTool(
         maxResults: args.maxResults as number | undefined,
       });
 
-    case 'get_remedy_info':
+    case TOOL_NAMES.GET_REMEDY_INFO:
       return client.getRemedyInfo({
         remedy: args.remedy as string,
       });
 
-    case 'list_available_repertories':
+    case TOOL_NAMES.LIST_REPERTORIES:
       return client.listRepertories({
         language: args.language as string | undefined,
       });
 
-    case 'list_available_materia_medicas':
+    case TOOL_NAMES.LIST_MATERIA_MEDICAS:
       return client.listMateriaMedicas({
         language: args.language as string | undefined,
       });
 
     default:
-      throw new Error(`Unknown tool: ${toolName}`);
+      throw new NotFoundError(`Unknown tool: ${toolName}`, 'tool', toolName);
   }
 }
 
@@ -215,4 +222,139 @@ export async function processToolCalls(
   );
 
   return results;
+}
+
+/**
+ * OpenAI system message format for resources
+ */
+export interface OpenAIResourceMessage {
+  role: 'system';
+  content: string;
+}
+
+/**
+ * Format a resource as an OpenAI system message
+ *
+ * Use this to inject resources (like search syntax help) into conversations
+ * as system context.
+ *
+ * @param resource - Resource content from getResource()
+ * @returns OpenAI-compatible system message
+ *
+ * @example
+ * ```typescript
+ * import { getResource } from 'oorep-mcp/sdk/resources';
+ *
+ * const searchSyntax = await getResource('oorep://help/search-syntax');
+ * const systemMessage = openAIFormatResourceAsSystemMessage(searchSyntax);
+ *
+ * const response = await openai.chat.completions.create({
+ *   model: 'gpt-5-mini',
+ *   messages: [systemMessage, { role: 'user', content: 'Find headache remedies' }],
+ *   tools: openAITools,
+ * });
+ * ```
+ */
+export function openAIFormatResourceAsSystemMessage(
+  resource: ResourceContent
+): OpenAIResourceMessage {
+  return {
+    role: 'system',
+    content: resource.text,
+  };
+}
+
+/**
+ * Format multiple resources as a combined context string
+ *
+ * Useful when you need to combine multiple resources into a single system message
+ * or when integrating with other context management systems.
+ *
+ * @param resources - Array of resource contents
+ * @returns Combined string with resource headers
+ *
+ * @example
+ * ```typescript
+ * import { getResource } from 'oorep-mcp/sdk/resources';
+ *
+ * const [searchHelp, remedies] = await Promise.all([
+ *   getResource('oorep://help/search-syntax'),
+ *   getResource('oorep://remedies/list', client.getClient()),
+ * ]);
+ * const context = openAIFormatResourcesAsContext([searchHelp, remedies]);
+ * ```
+ */
+export function openAIFormatResourcesAsContext(resources: ResourceContent[]): string {
+  return resources.map((r) => `## Resource: ${r.uri}\n\n${r.text}`).join('\n\n---\n\n');
+}
+
+/**
+ * OpenAI chat completion message format
+ */
+export interface OpenAIMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+/**
+ * Convert an OOREP prompt to OpenAI chat completion messages
+ *
+ * Transforms PromptResult messages into the format expected by
+ * OpenAI's chat completions API.
+ *
+ * @param prompt - Prompt result from getPrompt()
+ * @returns Array of OpenAI-compatible messages
+ *
+ * @example
+ * ```typescript
+ * import { getPrompt } from 'oorep-mcp/sdk/prompts';
+ *
+ * const workflow = getPrompt('repertorization-workflow');
+ * const messages = convertPromptToOpenAI(workflow);
+ *
+ * const response = await openai.chat.completions.create({
+ *   model: 'gpt-5-mini',
+ *   messages,
+ *   tools: openAITools,
+ * });
+ * ```
+ */
+export function convertPromptToOpenAI(prompt: PromptResult): OpenAIMessage[] {
+  return prompt.messages.map((msg) => ({
+    role: msg.role,
+    content: msg.content.text,
+  }));
+}
+
+/**
+ * Convert an OOREP prompt to OpenAI messages with a system context prefix
+ *
+ * Convenience function that combines a resource (as system message) with
+ * a prompt workflow.
+ *
+ * @param resource - Resource to use as system context
+ * @param prompt - Prompt workflow
+ * @returns Array of OpenAI-compatible messages starting with system context
+ *
+ * @example
+ * ```typescript
+ * import { getResource } from 'oorep-mcp/sdk/resources';
+ * import { getPrompt } from 'oorep-mcp/sdk/prompts';
+ *
+ * const searchSyntax = await getResource('oorep://help/search-syntax');
+ * const workflow = getPrompt('analyze-symptoms', { symptom_description: 'headache' });
+ * const messages = openAIConvertPromptWithContext(searchSyntax, workflow);
+ *
+ * const response = await openai.chat.completions.create({
+ *   model: 'gpt-5-mini',
+ *   messages,
+ *   tools: openAITools,
+ * });
+ * ```
+ */
+export function openAIConvertPromptWithContext(
+  resource: ResourceContent,
+  prompt: PromptResult
+): OpenAIMessage[] {
+  return [openAIFormatResourceAsSystemMessage(resource), ...convertPromptToOpenAI(prompt)];
 }

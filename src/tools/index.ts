@@ -1,8 +1,13 @@
 /**
  * Tool registration and exports
+ *
+ * This module manages MCP tools by delegating to a shared OOREPSDKClient instance.
+ * The SDK is the single source of truth for all tool logic.
  */
 
 import type { OOREPConfig } from '../config.js';
+import { OOREPSDKClient, type OOREPSDKConfig } from '../sdk/client.js';
+import { NotFoundError } from '../utils/errors.js';
 import { SearchRepertoryTool, searchRepertoryToolDefinition } from './search-repertory.js';
 import {
   SearchMateriaMedicaTool,
@@ -38,26 +43,28 @@ export interface ToolHandler {
 export class ToolRegistry {
   private tools = new Map<string, ToolHandler>();
   private definitions: ToolDefinition[] = [];
+  private sdk: OOREPSDKClient;
 
-  constructor(private config: OOREPConfig) {
+  constructor(config: OOREPConfig) {
+    // Create single shared SDK instance for all tools
+    const sdkConfig: OOREPSDKConfig = {
+      baseUrl: config.baseUrl,
+      timeoutMs: config.timeoutMs,
+      cacheTtlMs: config.cacheTtlMs,
+      defaultRepertory: config.defaultRepertory,
+      defaultMateriaMedica: config.defaultMateriaMedica,
+    };
+    this.sdk = new OOREPSDKClient(sdkConfig);
     this.registerAllTools();
   }
 
   private registerAllTools(): void {
-    // Register search_repertory
-    this.registerTool(searchRepertoryToolDefinition, new SearchRepertoryTool(this.config));
-
-    // Register search_materia_medica
-    this.registerTool(searchMateriaMedicaToolDefinition, new SearchMateriaMedicaTool(this.config));
-
-    // Register get_remedy_info
-    this.registerTool(getRemedyInfoToolDefinition, new GetRemedyInfoTool(this.config));
-
-    // Register list_available_repertories
-    this.registerTool(listRepertoriesToolDefinition, new ListRepertoriesTool(this.config));
-
-    // Register list_available_materia_medicas
-    this.registerTool(listMateriaMedicasToolDefinition, new ListMateriaMedicasTool(this.config));
+    // Register all tools with shared SDK instance
+    this.registerTool(searchRepertoryToolDefinition, new SearchRepertoryTool(this.sdk));
+    this.registerTool(searchMateriaMedicaToolDefinition, new SearchMateriaMedicaTool(this.sdk));
+    this.registerTool(getRemedyInfoToolDefinition, new GetRemedyInfoTool(this.sdk));
+    this.registerTool(listRepertoriesToolDefinition, new ListRepertoriesTool(this.sdk));
+    this.registerTool(listMateriaMedicasToolDefinition, new ListMateriaMedicasTool(this.sdk));
   }
 
   private registerTool(definition: ToolDefinition, handler: ToolHandler): void {
@@ -73,11 +80,26 @@ export class ToolRegistry {
     return this.definitions;
   }
 
+  /**
+   * Execute a tool by name with the provided arguments
+   *
+   * @param name - The tool name to execute
+   * @param args - The arguments to pass to the tool
+   * @returns Promise resolving to the tool result
+   * @throws {NotFoundError} If the tool name is not found
+   */
   async executeTool(name: string, args: unknown): Promise<unknown> {
     const tool = this.getTool(name);
     if (!tool) {
-      throw new Error(`Tool "${name}" not found`);
+      throw new NotFoundError(`Tool "${name}" not found`, 'tool', name);
     }
     return tool.execute(args);
+  }
+
+  /**
+   * Clean up resources - destroys the shared SDK instance
+   */
+  destroy(): void {
+    this.sdk.destroy();
   }
 }

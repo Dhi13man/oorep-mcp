@@ -5,6 +5,60 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-12-10
+
+### Added
+
+#### Standalone Resource and Prompt Functions
+
+- **Resource Functions** (`oorep-mcp/sdk/resources`): Programmatic access to MCP resources
+  - `getResource(uri, client?)`: Fetch resource by URI (client required for dynamic resources)
+  - `listResources()`: List all available resources with metadata
+  - `getSearchSyntaxHelp()`: Get search syntax guide as markdown text
+
+- **Prompt Functions** (`oorep-mcp/sdk/prompts`): Programmatic access to MCP prompts
+  - `getPrompt(name, args?)`: Get prompt workflows by name with type-safe overloads
+  - `listPrompts()`: List all available prompts with metadata
+
+- **Centralized Constants** (`src/sdk/constants.ts`): Typed constants for all MCP primitives
+  - `TOOL_NAMES`, `RESOURCE_URIS`, `PROMPT_NAMES`, `DEFAULTS`, `MIME_TYPES`
+  - Type exports: `ToolName`, `ResourceUri`, `PromptName`
+
+- **NotFoundError Class**: Specific error type for missing resources/tools/prompts
+
+- **Resource and Prompt Adapter Functions**: All SDK adapters support resource/prompt formatting
+  - OpenAI, Vercel AI, LangChain, Google Gemini adapters
+
+- **Security Policy**: Added `SECURITY.md` with vulnerability reporting guidelines
+
+### Changed
+
+- **SDK Client is Pure REST**: `OOREPSDKClient` now only handles REST operations
+  - Resource and prompt access moved to standalone functions
+  - Added `getClient()` method to get underlying `OOREPClient` for resource functions
+  - Cleaner separation of concerns
+
+- **Modular Resource Architecture**: Resources in `src/resources/`
+  - `remedies-list.ts`, `repertories-list.ts`, `materia-medicas-list.ts`, `search-syntax-help.ts`
+
+- **Modular Prompt Architecture**: Prompts in `src/prompts/`
+  - `analyze-symptoms.ts`, `remedy-comparison.ts`, `repertorization-workflow.ts`
+
+- **IOOREPSDKClient Interface Simplified**: Only REST methods, no MCP primitives
+
+- **Server Shutdown Cleanup**: Proper resource cleanup on shutdown
+
+### Improved
+
+- **Enhanced Search Syntax Help**: Vocabulary mapping, query optimization, tool selection guide
+
+- **CLAMS Method in Prompts**: Structured symptom analysis framework
+  - Character, Location, Accompanying, Modalities, Strange/Rare/Peculiar
+
+### Fixed
+
+- **Unused Imports**: Cleaned up across SDK files
+
 ## [1.0.3] - 2025-12-09
 
 ### Changed
@@ -253,6 +307,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - For full functionality, users should run a local OOREP instance or configure authentication
 - Public metadata endpoints work without authentication (remedies list, repertories list, materia medicas list)
 
+[1.1.0]: https://github.com/Dhi13man/oorep-mcp/compare/v1.0.3...v1.1.0
 [1.0.3]: https://github.com/Dhi13man/oorep-mcp/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/Dhi13man/oorep-mcp/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/Dhi13man/oorep-mcp/compare/v1.0.0...v1.0.1

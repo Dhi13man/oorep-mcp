@@ -12,9 +12,14 @@ import {
   createGetRemedyInfoTool,
   createListRepertoriesTool,
   createListMateriaMedicasTool,
+  vercelAIFormatResourceAsSystemMessage,
+  vercelAIFormatResourcesAsContext,
+  convertPromptToVercelAI,
+  vercelAIGetSystemInstruction,
+  vercelAICombinePromptWithContext,
   type OOREPTools,
 } from './vercel-ai.js';
-import type { OOREPSDKClient } from '../client.js';
+import type { OOREPSDKClient, ResourceContent, PromptResult } from '../client.js';
 
 describe('createOOREPTools', () => {
   let mockClient: OOREPSDKClient;
@@ -357,5 +362,316 @@ describe('individual tool creators', () => {
       // Assert
       expect(mockClient.listMateriaMedicas).toHaveBeenCalled();
     });
+  });
+});
+
+describe('vercelAIFormatResourceAsSystemMessage', () => {
+  it('when valid resource then returns system message with role and content', () => {
+    // Arrange
+    const mockResource: ResourceContent = {
+      uri: 'oorep://help/search-syntax',
+      mimeType: 'text/markdown',
+      text: 'Search syntax help content',
+    };
+
+    // Act
+    const result = vercelAIFormatResourceAsSystemMessage(mockResource);
+
+    // Assert
+    expect(result.role).toBe('system');
+    expect(result.content).toBe('Search syntax help content');
+  });
+
+  it('when resource has empty text then returns empty content', () => {
+    // Arrange
+    const mockResource: ResourceContent = {
+      uri: 'oorep://help/empty',
+      mimeType: 'text/plain',
+      text: '',
+    };
+
+    // Act
+    const result = vercelAIFormatResourceAsSystemMessage(mockResource);
+
+    // Assert
+    expect(result.role).toBe('system');
+    expect(result.content).toBe('');
+  });
+
+  it('when resource has multiline text then preserves formatting', () => {
+    // Arrange
+    const multilineText = 'Line 1\nLine 2\nLine 3';
+    const mockResource: ResourceContent = {
+      uri: 'oorep://help/multiline',
+      mimeType: 'text/markdown',
+      text: multilineText,
+    };
+
+    // Act
+    const result = vercelAIFormatResourceAsSystemMessage(mockResource);
+
+    // Assert
+    expect(result.content).toBe(multilineText);
+  });
+});
+
+describe('vercelAIFormatResourcesAsContext', () => {
+  it('when single resource then returns formatted string with header', () => {
+    // Arrange
+    const mockResource: ResourceContent = {
+      uri: 'oorep://help/syntax',
+      mimeType: 'text/markdown',
+      text: 'Help content here',
+    };
+
+    // Act
+    const result = vercelAIFormatResourcesAsContext([mockResource]);
+
+    // Assert
+    expect(result).toContain('## Resource: oorep://help/syntax');
+    expect(result).toContain('Help content here');
+  });
+
+  it('when multiple resources then joins with separator', () => {
+    // Arrange
+    const resource1: ResourceContent = {
+      uri: 'oorep://resource1',
+      mimeType: 'text/plain',
+      text: 'Content A',
+    };
+    const resource2: ResourceContent = {
+      uri: 'oorep://resource2',
+      mimeType: 'text/plain',
+      text: 'Content B',
+    };
+
+    // Act
+    const result = vercelAIFormatResourcesAsContext([resource1, resource2]);
+
+    // Assert
+    expect(result).toContain('## Resource: oorep://resource1');
+    expect(result).toContain('Content A');
+    expect(result).toContain('---');
+    expect(result).toContain('## Resource: oorep://resource2');
+    expect(result).toContain('Content B');
+  });
+
+  it('when empty array then returns empty string', () => {
+    // Act
+    const result = vercelAIFormatResourcesAsContext([]);
+
+    // Assert
+    expect(result).toBe('');
+  });
+});
+
+describe('convertPromptToVercelAI', () => {
+  it('when user message then converts with user role', () => {
+    // Arrange
+    const mockPrompt: PromptResult = {
+      name: 'analyze-symptoms',
+      description: 'Test prompt',
+      messages: [
+        {
+          role: 'user',
+          content: { type: 'text', text: 'User question here' },
+        },
+      ],
+    };
+
+    // Act
+    const result = convertPromptToVercelAI(mockPrompt);
+
+    // Assert
+    expect(result).toHaveLength(1);
+    expect(result[0].role).toBe('user');
+    expect(result[0].content).toBe('User question here');
+  });
+
+  it('when assistant message then converts with assistant role', () => {
+    // Arrange
+    const mockPrompt: PromptResult = {
+      name: 'test-prompt',
+      description: 'Test prompt',
+      messages: [
+        {
+          role: 'assistant',
+          content: { type: 'text', text: 'Assistant response here' },
+        },
+      ],
+    };
+
+    // Act
+    const result = convertPromptToVercelAI(mockPrompt);
+
+    // Assert
+    expect(result).toHaveLength(1);
+    expect(result[0].role).toBe('assistant');
+    expect(result[0].content).toBe('Assistant response here');
+  });
+
+  it('when mixed messages then converts all correctly', () => {
+    // Arrange
+    const mockPrompt: PromptResult = {
+      name: 'conversation',
+      description: 'Multi-turn conversation',
+      messages: [
+        { role: 'user', content: { type: 'text', text: 'Question 1' } },
+        { role: 'assistant', content: { type: 'text', text: 'Answer 1' } },
+        { role: 'user', content: { type: 'text', text: 'Question 2' } },
+        { role: 'assistant', content: { type: 'text', text: 'Answer 2' } },
+      ],
+    };
+
+    // Act
+    const result = convertPromptToVercelAI(mockPrompt);
+
+    // Assert
+    expect(result).toHaveLength(4);
+    expect(result[0].role).toBe('user');
+    expect(result[0].content).toBe('Question 1');
+    expect(result[1].role).toBe('assistant');
+    expect(result[1].content).toBe('Answer 1');
+    expect(result[2].role).toBe('user');
+    expect(result[2].content).toBe('Question 2');
+    expect(result[3].role).toBe('assistant');
+    expect(result[3].content).toBe('Answer 2');
+  });
+
+  it('when empty messages then returns empty array', () => {
+    // Arrange
+    const mockPrompt: PromptResult = {
+      name: 'empty',
+      description: 'Empty prompt',
+      messages: [],
+    };
+
+    // Act
+    const result = convertPromptToVercelAI(mockPrompt);
+
+    // Assert
+    expect(result).toHaveLength(0);
+  });
+});
+
+describe('vercelAIGetSystemInstruction', () => {
+  it('when valid resource then returns plain text content', () => {
+    // Arrange
+    const mockResource: ResourceContent = {
+      uri: 'oorep://help/syntax',
+      mimeType: 'text/markdown',
+      text: 'System instruction text',
+    };
+
+    // Act
+    const result = vercelAIGetSystemInstruction(mockResource);
+
+    // Assert
+    expect(result).toBe('System instruction text');
+  });
+
+  it('when empty text then returns empty string', () => {
+    // Arrange
+    const mockResource: ResourceContent = {
+      uri: 'oorep://empty',
+      mimeType: 'text/plain',
+      text: '',
+    };
+
+    // Act
+    const result = vercelAIGetSystemInstruction(mockResource);
+
+    // Assert
+    expect(result).toBe('');
+  });
+
+  it('when multiline text then preserves formatting', () => {
+    // Arrange
+    const multilineText = 'Line 1\nLine 2\nLine 3';
+    const mockResource: ResourceContent = {
+      uri: 'oorep://multiline',
+      mimeType: 'text/markdown',
+      text: multilineText,
+    };
+
+    // Act
+    const result = vercelAIGetSystemInstruction(mockResource);
+
+    // Assert
+    expect(result).toBe(multilineText);
+  });
+});
+
+describe('vercelAICombinePromptWithContext', () => {
+  it('when resource and prompt provided then returns object with system and messages', () => {
+    // Arrange
+    const mockResource: ResourceContent = {
+      uri: 'oorep://help/syntax',
+      mimeType: 'text/markdown',
+      text: 'System context here',
+    };
+    const mockPrompt: PromptResult = {
+      name: 'test',
+      description: 'Test',
+      messages: [{ role: 'user', content: { type: 'text', text: 'User message' } }],
+    };
+
+    // Act
+    const result = vercelAICombinePromptWithContext(mockResource, mockPrompt);
+
+    // Assert
+    expect(result.system).toBe('System context here');
+    expect(result.messages).toHaveLength(1);
+    expect(result.messages[0].role).toBe('user');
+    expect(result.messages[0].content).toBe('User message');
+  });
+
+  it('when prompt has multiple messages then preserves all in messages array', () => {
+    // Arrange
+    const mockResource: ResourceContent = {
+      uri: 'oorep://context',
+      mimeType: 'text/plain',
+      text: 'Context',
+    };
+    const mockPrompt: PromptResult = {
+      name: 'multi',
+      description: 'Multi-message prompt',
+      messages: [
+        { role: 'user', content: { type: 'text', text: 'Q1' } },
+        { role: 'assistant', content: { type: 'text', text: 'A1' } },
+        { role: 'user', content: { type: 'text', text: 'Q2' } },
+      ],
+    };
+
+    // Act
+    const result = vercelAICombinePromptWithContext(mockResource, mockPrompt);
+
+    // Assert
+    expect(result.system).toBe('Context');
+    expect(result.messages).toHaveLength(3);
+    expect(result.messages[0].role).toBe('user');
+    expect(result.messages[1].role).toBe('assistant');
+    expect(result.messages[2].role).toBe('user');
+  });
+
+  it('when prompt has no messages then returns system and empty messages array', () => {
+    // Arrange
+    const mockResource: ResourceContent = {
+      uri: 'oorep://only-context',
+      mimeType: 'text/plain',
+      text: 'Only context, no prompt',
+    };
+    const mockPrompt: PromptResult = {
+      name: 'empty',
+      description: 'Empty',
+      messages: [],
+    };
+
+    // Act
+    const result = vercelAICombinePromptWithContext(mockResource, mockPrompt);
+
+    // Assert
+    expect(result.system).toBe('Only context, no prompt');
+    expect(result.messages).toHaveLength(0);
   });
 });

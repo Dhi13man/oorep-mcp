@@ -2,34 +2,17 @@
  * Unit tests for search_materia_medica tool
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { SearchMateriaMedicaTool } from './search-materia-medica.js';
-import type { OOREPConfig } from '../config.js';
+import { createMockSDKClient } from './test-helpers.js';
 
 describe('SearchMateriaMedicaTool', () => {
-  let mockTool: SearchMateriaMedicaTool;
-  let mockConfig: OOREPConfig;
-  let mockSearchMateriaMedica: ReturnType<typeof vi.fn>;
+  let tool: SearchMateriaMedicaTool;
+  let mockClient: ReturnType<typeof createMockSDKClient>;
 
   beforeEach(() => {
-    mockConfig = {
-      baseUrl: 'https://test.oorep.com',
-      timeoutMs: 5000,
-      cacheTtlMs: 300000,
-      maxResults: 100,
-      logLevel: 'error',
-      defaultRepertory: 'test-rep',
-      defaultMateriaMedica: 'test-mm',
-    };
-
-    mockTool = new SearchMateriaMedicaTool(mockConfig);
-
-    mockSearchMateriaMedica = vi.fn();
-    (mockTool as any).client.searchMateriaMedica = mockSearchMateriaMedica;
-  });
-
-  afterEach(() => {
-    mockTool.destroy();
+    mockClient = createMockSDKClient();
+    tool = new SearchMateriaMedicaTool(mockClient);
   });
 
   describe('execute', () => {
@@ -49,9 +32,9 @@ describe('SearchMateriaMedicaTool', () => {
           },
         ],
       };
-      mockSearchMateriaMedica.mockResolvedValue(mockFormattedResponse);
+      mockClient.searchMateriaMedica.mockResolvedValue(mockFormattedResponse);
 
-      const result = await mockTool.execute({ symptom: 'anxiety' });
+      const result = await tool.execute({ symptom: 'anxiety' });
 
       expect(result.totalResults).toBe(5);
       expect(result.results).toHaveLength(1);
@@ -63,11 +46,11 @@ describe('SearchMateriaMedicaTool', () => {
         totalResults: 0,
         results: [],
       };
-      mockSearchMateriaMedica.mockResolvedValue(mockFormattedResponse);
+      mockClient.searchMateriaMedica.mockResolvedValue(mockFormattedResponse);
 
-      await mockTool.execute({ symptom: 'test', materiamedica: 'boericke' });
+      await tool.execute({ symptom: 'test', materiamedica: 'boericke' });
 
-      expect(mockSearchMateriaMedica).toHaveBeenCalledWith(
+      expect(mockClient.searchMateriaMedica).toHaveBeenCalledWith(
         expect.objectContaining({
           materiamedica: 'boericke',
         })
@@ -79,11 +62,11 @@ describe('SearchMateriaMedicaTool', () => {
         totalResults: 0,
         results: [],
       };
-      mockSearchMateriaMedica.mockResolvedValue(mockFormattedResponse);
+      mockClient.searchMateriaMedica.mockResolvedValue(mockFormattedResponse);
 
-      await mockTool.execute({ symptom: 'test', remedy: 'Aconite' });
+      await tool.execute({ symptom: 'test', remedy: 'Aconite' });
 
-      expect(mockSearchMateriaMedica).toHaveBeenCalledWith(
+      expect(mockClient.searchMateriaMedica).toHaveBeenCalledWith(
         expect.objectContaining({
           remedy: 'Aconite',
         })
@@ -91,37 +74,37 @@ describe('SearchMateriaMedicaTool', () => {
     });
 
     it('execute when symptom too short then throws ValidationError', async () => {
-      await expect(mockTool.execute({ symptom: 'ab' })).rejects.toThrow();
+      await expect(tool.execute({ symptom: 'ab' })).rejects.toThrow();
     });
 
     it('execute when symptom too long then throws ValidationError', async () => {
       const longSymptom = 'a'.repeat(201);
 
-      await expect(mockTool.execute({ symptom: longSymptom })).rejects.toThrow();
+      await expect(tool.execute({ symptom: longSymptom })).rejects.toThrow();
     });
 
     it('execute when symptom has invalid characters then throws ValidationError', async () => {
-      await expect(mockTool.execute({ symptom: 'test@symptom' })).rejects.toThrow();
+      await expect(tool.execute({ symptom: 'test@symptom' })).rejects.toThrow();
     });
 
     it('execute when remedy has invalid characters then throws ValidationError', async () => {
-      await expect(mockTool.execute({ symptom: 'test', remedy: 'Test@Remedy' })).rejects.toThrow();
+      await expect(tool.execute({ symptom: 'test', remedy: 'Test@Remedy' })).rejects.toThrow();
     });
 
     it('execute when remedy is too long then throws ValidationError', async () => {
       const longRemedy = 'a'.repeat(101);
 
-      await expect(mockTool.execute({ symptom: 'test', remedy: longRemedy })).rejects.toThrow();
+      await expect(tool.execute({ symptom: 'test', remedy: longRemedy })).rejects.toThrow();
     });
 
     it('execute when API error then sanitizes error', async () => {
-      mockSearchMateriaMedica.mockRejectedValue(new Error('API Error'));
+      mockClient.searchMateriaMedica.mockRejectedValue(new Error('API Error'));
 
-      await expect(mockTool.execute({ symptom: 'test' })).rejects.toThrow();
+      await expect(tool.execute({ symptom: 'test' })).rejects.toThrow();
     });
 
     it('execute when invalid arguments then sanitizes error', async () => {
-      await expect(mockTool.execute({ invalid: 'field' })).rejects.toThrow();
+      await expect(tool.execute({ invalid: 'field' })).rejects.toThrow();
     });
 
     it('execute when symptom has whitespace then trims it', async () => {
@@ -129,11 +112,11 @@ describe('SearchMateriaMedicaTool', () => {
         totalResults: 0,
         results: [],
       };
-      mockSearchMateriaMedica.mockResolvedValue(mockFormattedResponse);
+      mockClient.searchMateriaMedica.mockResolvedValue(mockFormattedResponse);
 
-      await mockTool.execute({ symptom: '  anxiety  ' });
+      await tool.execute({ symptom: '  anxiety  ' });
 
-      expect(mockSearchMateriaMedica).toHaveBeenCalledWith(
+      expect(mockClient.searchMateriaMedica).toHaveBeenCalledWith(
         expect.objectContaining({
           symptom: 'anxiety',
         })
@@ -145,17 +128,17 @@ describe('SearchMateriaMedicaTool', () => {
         totalResults: 0,
         results: [],
       };
-      mockSearchMateriaMedica.mockResolvedValue(mockFormattedResponse);
+      mockClient.searchMateriaMedica.mockResolvedValue(mockFormattedResponse);
 
-      await mockTool.execute({ symptom: 'test' });
+      await tool.execute({ symptom: 'test' });
 
-      expect(mockSearchMateriaMedica).toHaveBeenCalledWith(
+      expect(mockClient.searchMateriaMedica).toHaveBeenCalledWith(
         expect.objectContaining({
           symptom: 'test',
         })
       );
       // Verify remedy is not explicitly set to empty string
-      const callArgs = mockSearchMateriaMedica.mock.calls[0][0];
+      const callArgs = mockClient.searchMateriaMedica.mock.calls[0][0];
       expect(callArgs.remedy).toBeUndefined();
     });
   });

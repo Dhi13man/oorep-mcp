@@ -32,6 +32,7 @@ import {
   type RepertoryMetadata,
   type MateriaMedicaMetadata,
 } from '../utils/schemas.js';
+import { DEFAULTS } from './constants.js';
 
 /**
  * Helper function for partial remedy name matching
@@ -101,13 +102,13 @@ export class OOREPSDKClient {
   }
 
   constructor(config: OOREPSDKConfig = {}) {
-    // Set up core configuration
+    // Set up core configuration using constants as defaults
     this.config = {
-      baseUrl: config.baseUrl ?? 'https://www.oorep.com',
-      timeoutMs: config.timeoutMs ?? 30000,
-      cacheTtlMs: config.cacheTtlMs ?? 300000,
-      defaultRepertory: config.defaultRepertory ?? 'publicum',
-      defaultMateriaMedica: config.defaultMateriaMedica ?? 'boericke',
+      baseUrl: config.baseUrl ?? DEFAULTS.BASE_URL,
+      timeoutMs: config.timeoutMs ?? DEFAULTS.TIMEOUT_MS,
+      cacheTtlMs: config.cacheTtlMs ?? DEFAULTS.CACHE_TTL_MS,
+      defaultRepertory: config.defaultRepertory ?? DEFAULTS.REPERTORY,
+      defaultMateriaMedica: config.defaultMateriaMedica ?? DEFAULTS.MATERIA_MEDICA,
     };
 
     // Set up injectable dependencies with sensible defaults
@@ -332,6 +333,15 @@ export class OOREPSDKClient {
     Required<Omit<OOREPSDKConfig, 'cache' | 'deduplicator' | 'logger' | 'client'>>
   > {
     return { ...this.config };
+  }
+
+  /**
+   * Get the underlying OOREPClient instance
+   *
+   * Useful for passing to resource/prompt functions that require API access.
+   */
+  getClient(): OOREPClient {
+    return this.client;
   }
 }
 

@@ -23,6 +23,35 @@
 // Re-export the main client
 export { OOREPSDKClient, createOOREPClient, type OOREPSDKConfig } from './client.js';
 
+// Re-export constants (single source of truth)
+export {
+  // Tool constants
+  TOOL_NAMES,
+  ALL_TOOL_NAMES,
+  type ToolName,
+  // Resource constants
+  RESOURCE_URIS,
+  ALL_RESOURCE_URIS,
+  type ResourceUri,
+  // Prompt constants
+  PROMPT_NAMES,
+  ALL_PROMPT_NAMES,
+  type PromptName,
+  // Default values
+  DEFAULTS,
+  // MIME types
+  MIME_TYPES,
+} from './constants.js';
+
+// Re-export Resource types and functions
+export type { ResourceContent, ResourceDefinition } from './resources.js';
+export { listResources, getResource, getSearchSyntaxHelp } from './resources.js';
+
+// Re-export Prompt types and functions
+export type { PromptMessage, PromptResult, PromptDefinition } from './prompts.js';
+export type { AnalyzeSymptomsArgs, RemedyComparisonArgs } from '../prompts/index.js';
+export { listPrompts, getPrompt } from './prompts.js';
+
 // Re-export all types
 export type {
   // Input types
@@ -93,4 +122,26 @@ export {
 } from '../lib/data-formatter.js';
 
 // Export tool definitions for building custom integrations
-export { toolDefinitions, type OOREPToolDefinition } from './tools.js';
+export {
+  toolDefinitions,
+  getToolDefinition,
+  getToolNames,
+  type OOREPToolDefinition,
+} from './tools.js';
+
+// Export resource definitions for building custom integrations
+export {
+  resourceDefinitions,
+  getResourceDefinition,
+  getResourceUris,
+  type OOREPResourceDefinition,
+} from './resources.js';
+
+// Export prompt definitions for building custom integrations
+export {
+  promptDefinitions,
+  getPromptDefinition,
+  getPromptNames,
+  type OOREPPromptDefinition,
+  type OOREPPromptArgument,
+} from './prompts.js';
