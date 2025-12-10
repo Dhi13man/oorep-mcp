@@ -9,9 +9,15 @@ import {
   getLangChainTools,
   createLangGraphTools,
   isLangChainToolDefinition,
+  langChainFormatResourceAsSystemMessage,
+  langChainFormatResourceAsDocument,
+  langChainFormatResourcesAsDocuments,
+  langChainFormatResourcesAsContext,
+  convertPromptToLangChain,
+  langChainConvertPromptWithContext,
   type LangChainToolDefinition,
 } from './langchain.js';
-import type { OOREPSDKClient } from '../client.js';
+import type { OOREPSDKClient, ResourceContent, PromptResult } from '../client.js';
 
 describe('createLangChainTools', () => {
   let mockClient: OOREPSDKClient;
@@ -444,5 +450,366 @@ describe('isLangChainToolDefinition', () => {
     expect(isLangChainToolDefinition('string')).toBe(false);
     expect(isLangChainToolDefinition(123)).toBe(false);
     expect(isLangChainToolDefinition(true)).toBe(false);
+  });
+});
+
+describe('langChainFormatResourceAsSystemMessage', () => {
+  it('when valid resource then returns system message with type and content', () => {
+    // Arrange
+    const mockResource: ResourceContent = {
+      uri: 'oorep://help/search-syntax',
+      mimeType: 'text/markdown',
+      text: 'Search syntax help content',
+    };
+
+    // Act
+    const result = langChainFormatResourceAsSystemMessage(mockResource);
+
+    // Assert
+    expect(result.type).toBe('system');
+    expect(result.content).toBe('Search syntax help content');
+  });
+
+  it('when resource has empty text then returns empty content', () => {
+    // Arrange
+    const mockResource: ResourceContent = {
+      uri: 'oorep://help/empty',
+      mimeType: 'text/plain',
+      text: '',
+    };
+
+    // Act
+    const result = langChainFormatResourceAsSystemMessage(mockResource);
+
+    // Assert
+    expect(result.type).toBe('system');
+    expect(result.content).toBe('');
+  });
+
+  it('when resource has multiline text then preserves formatting', () => {
+    // Arrange
+    const multilineText = 'Line 1\nLine 2\nLine 3';
+    const mockResource: ResourceContent = {
+      uri: 'oorep://help/multiline',
+      mimeType: 'text/markdown',
+      text: multilineText,
+    };
+
+    // Act
+    const result = langChainFormatResourceAsSystemMessage(mockResource);
+
+    // Assert
+    expect(result.content).toBe(multilineText);
+  });
+});
+
+describe('langChainFormatResourceAsDocument', () => {
+  it('when valid resource then returns document with pageContent and metadata', () => {
+    // Arrange
+    const mockResource: ResourceContent = {
+      uri: 'oorep://remedies/list',
+      mimeType: 'application/json',
+      text: '{"remedies": []}',
+    };
+
+    // Act
+    const result = langChainFormatResourceAsDocument(mockResource);
+
+    // Assert
+    expect(result.pageContent).toBe('{"remedies": []}');
+    expect(result.metadata.uri).toBe('oorep://remedies/list');
+    expect(result.metadata.mimeType).toBe('application/json');
+    expect(result.metadata.source).toBe('oorep-mcp');
+  });
+
+  it('when resource has markdown content then preserves it', () => {
+    // Arrange
+    const markdownContent = '# Title\n\n## Section\n\nContent here';
+    const mockResource: ResourceContent = {
+      uri: 'oorep://help/syntax',
+      mimeType: 'text/markdown',
+      text: markdownContent,
+    };
+
+    // Act
+    const result = langChainFormatResourceAsDocument(mockResource);
+
+    // Assert
+    expect(result.pageContent).toBe(markdownContent);
+    expect(result.metadata.mimeType).toBe('text/markdown');
+  });
+});
+
+describe('langChainFormatResourcesAsDocuments', () => {
+  it('when single resource then returns array with one document', () => {
+    // Arrange
+    const mockResource: ResourceContent = {
+      uri: 'oorep://test',
+      mimeType: 'text/plain',
+      text: 'Test content',
+    };
+
+    // Act
+    const result = langChainFormatResourcesAsDocuments([mockResource]);
+
+    // Assert
+    expect(result).toHaveLength(1);
+    expect(result[0].pageContent).toBe('Test content');
+  });
+
+  it('when multiple resources then returns array with all documents', () => {
+    // Arrange
+    const resource1: ResourceContent = {
+      uri: 'oorep://resource1',
+      mimeType: 'text/plain',
+      text: 'Content 1',
+    };
+    const resource2: ResourceContent = {
+      uri: 'oorep://resource2',
+      mimeType: 'text/markdown',
+      text: 'Content 2',
+    };
+    const resource3: ResourceContent = {
+      uri: 'oorep://resource3',
+      mimeType: 'application/json',
+      text: '{"key": "value"}',
+    };
+
+    // Act
+    const result = langChainFormatResourcesAsDocuments([resource1, resource2, resource3]);
+
+    // Assert
+    expect(result).toHaveLength(3);
+    expect(result[0].pageContent).toBe('Content 1');
+    expect(result[1].pageContent).toBe('Content 2');
+    expect(result[2].pageContent).toBe('{"key": "value"}');
+    expect(result[0].metadata.uri).toBe('oorep://resource1');
+    expect(result[1].metadata.uri).toBe('oorep://resource2');
+    expect(result[2].metadata.uri).toBe('oorep://resource3');
+  });
+
+  it('when empty array then returns empty array', () => {
+    // Act
+    const result = langChainFormatResourcesAsDocuments([]);
+
+    // Assert
+    expect(result).toHaveLength(0);
+  });
+});
+
+describe('langChainFormatResourcesAsContext', () => {
+  it('when single resource then returns formatted string with header', () => {
+    // Arrange
+    const mockResource: ResourceContent = {
+      uri: 'oorep://help/syntax',
+      mimeType: 'text/markdown',
+      text: 'Help content here',
+    };
+
+    // Act
+    const result = langChainFormatResourcesAsContext([mockResource]);
+
+    // Assert
+    expect(result).toContain('## Resource: oorep://help/syntax');
+    expect(result).toContain('Help content here');
+  });
+
+  it('when multiple resources then joins with separator', () => {
+    // Arrange
+    const resource1: ResourceContent = {
+      uri: 'oorep://resource1',
+      mimeType: 'text/plain',
+      text: 'Content A',
+    };
+    const resource2: ResourceContent = {
+      uri: 'oorep://resource2',
+      mimeType: 'text/plain',
+      text: 'Content B',
+    };
+
+    // Act
+    const result = langChainFormatResourcesAsContext([resource1, resource2]);
+
+    // Assert
+    expect(result).toContain('## Resource: oorep://resource1');
+    expect(result).toContain('Content A');
+    expect(result).toContain('---');
+    expect(result).toContain('## Resource: oorep://resource2');
+    expect(result).toContain('Content B');
+  });
+
+  it('when empty array then returns empty string', () => {
+    // Act
+    const result = langChainFormatResourcesAsContext([]);
+
+    // Assert
+    expect(result).toBe('');
+  });
+});
+
+describe('convertPromptToLangChain', () => {
+  it('when user message then converts to human message type', () => {
+    // Arrange
+    const mockPrompt: PromptResult = {
+      name: 'analyze-symptoms',
+      description: 'Test prompt',
+      messages: [
+        {
+          role: 'user',
+          content: { type: 'text', text: 'User question here' },
+        },
+      ],
+    };
+
+    // Act
+    const result = convertPromptToLangChain(mockPrompt);
+
+    // Assert
+    expect(result).toHaveLength(1);
+    expect(result[0].type).toBe('human');
+    expect(result[0].content).toBe('User question here');
+  });
+
+  it('when assistant message then converts to ai message type', () => {
+    // Arrange
+    const mockPrompt: PromptResult = {
+      name: 'test-prompt',
+      description: 'Test prompt',
+      messages: [
+        {
+          role: 'assistant',
+          content: { type: 'text', text: 'Assistant response here' },
+        },
+      ],
+    };
+
+    // Act
+    const result = convertPromptToLangChain(mockPrompt);
+
+    // Assert
+    expect(result).toHaveLength(1);
+    expect(result[0].type).toBe('ai');
+    expect(result[0].content).toBe('Assistant response here');
+  });
+
+  it('when mixed messages then converts all correctly', () => {
+    // Arrange
+    const mockPrompt: PromptResult = {
+      name: 'conversation',
+      description: 'Multi-turn conversation',
+      messages: [
+        { role: 'user', content: { type: 'text', text: 'Question 1' } },
+        { role: 'assistant', content: { type: 'text', text: 'Answer 1' } },
+        { role: 'user', content: { type: 'text', text: 'Question 2' } },
+        { role: 'assistant', content: { type: 'text', text: 'Answer 2' } },
+      ],
+    };
+
+    // Act
+    const result = convertPromptToLangChain(mockPrompt);
+
+    // Assert
+    expect(result).toHaveLength(4);
+    expect(result[0].type).toBe('human');
+    expect(result[0].content).toBe('Question 1');
+    expect(result[1].type).toBe('ai');
+    expect(result[1].content).toBe('Answer 1');
+    expect(result[2].type).toBe('human');
+    expect(result[2].content).toBe('Question 2');
+    expect(result[3].type).toBe('ai');
+    expect(result[3].content).toBe('Answer 2');
+  });
+
+  it('when empty messages then returns empty array', () => {
+    // Arrange
+    const mockPrompt: PromptResult = {
+      name: 'empty',
+      description: 'Empty prompt',
+      messages: [],
+    };
+
+    // Act
+    const result = convertPromptToLangChain(mockPrompt);
+
+    // Assert
+    expect(result).toHaveLength(0);
+  });
+});
+
+describe('langChainConvertPromptWithContext', () => {
+  it('when resource and prompt provided then combines with system message first', () => {
+    // Arrange
+    const mockResource: ResourceContent = {
+      uri: 'oorep://help/syntax',
+      mimeType: 'text/markdown',
+      text: 'System context here',
+    };
+    const mockPrompt: PromptResult = {
+      name: 'test',
+      description: 'Test',
+      messages: [
+        { role: 'user', content: { type: 'text', text: 'User message' } },
+      ],
+    };
+
+    // Act
+    const result = langChainConvertPromptWithContext(mockResource, mockPrompt);
+
+    // Assert
+    expect(result).toHaveLength(2);
+    expect(result[0].type).toBe('system');
+    expect(result[0].content).toBe('System context here');
+    expect(result[1].type).toBe('human');
+    expect(result[1].content).toBe('User message');
+  });
+
+  it('when prompt has multiple messages then preserves order after system', () => {
+    // Arrange
+    const mockResource: ResourceContent = {
+      uri: 'oorep://context',
+      mimeType: 'text/plain',
+      text: 'Context',
+    };
+    const mockPrompt: PromptResult = {
+      name: 'multi',
+      description: 'Multi-message prompt',
+      messages: [
+        { role: 'user', content: { type: 'text', text: 'Q1' } },
+        { role: 'assistant', content: { type: 'text', text: 'A1' } },
+        { role: 'user', content: { type: 'text', text: 'Q2' } },
+      ],
+    };
+
+    // Act
+    const result = langChainConvertPromptWithContext(mockResource, mockPrompt);
+
+    // Assert
+    expect(result).toHaveLength(4);
+    expect(result[0].type).toBe('system');
+    expect(result[1].type).toBe('human');
+    expect(result[2].type).toBe('ai');
+    expect(result[3].type).toBe('human');
+  });
+
+  it('when prompt has no messages then returns only system message', () => {
+    // Arrange
+    const mockResource: ResourceContent = {
+      uri: 'oorep://only-context',
+      mimeType: 'text/plain',
+      text: 'Only context, no prompt',
+    };
+    const mockPrompt: PromptResult = {
+      name: 'empty',
+      description: 'Empty',
+      messages: [],
+    };
+
+    // Act
+    const result = langChainConvertPromptWithContext(mockResource, mockPrompt);
+
+    // Assert
+    expect(result).toHaveLength(1);
+    expect(result[0].type).toBe('system');
+    expect(result[0].content).toBe('Only context, no prompt');
   });
 });

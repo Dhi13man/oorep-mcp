@@ -11,9 +11,13 @@ import {
   createToolExecutor,
   formatToolResult,
   processToolCalls,
+  openAIFormatResourceAsSystemMessage,
+  openAIFormatResourcesAsContext,
+  convertPromptToOpenAI,
+  openAIConvertPromptWithContext,
   type OpenAITool,
 } from './openai.js';
-import type { OOREPSDKClient } from '../client.js';
+import type { OOREPSDKClient, ResourceContent, PromptResult } from '../client.js';
 
 describe('openAITools', () => {
   it('when accessed then contains all five tools', () => {
@@ -388,5 +392,272 @@ describe('processToolCalls', () => {
     // Assert
     const content = JSON.parse(results[0].content);
     expect(content.error).toBe('Unknown error');
+  });
+});
+
+describe('openAIFormatResourceAsSystemMessage', () => {
+  it('when valid resource then returns system message with role and content', () => {
+    // Arrange
+    const mockResource: ResourceContent = {
+      uri: 'oorep://help/search-syntax',
+      mimeType: 'text/markdown',
+      text: 'Search syntax help content',
+    };
+
+    // Act
+    const result = openAIFormatResourceAsSystemMessage(mockResource);
+
+    // Assert
+    expect(result.role).toBe('system');
+    expect(result.content).toBe('Search syntax help content');
+  });
+
+  it('when resource has empty text then returns empty content', () => {
+    // Arrange
+    const mockResource: ResourceContent = {
+      uri: 'oorep://help/empty',
+      mimeType: 'text/plain',
+      text: '',
+    };
+
+    // Act
+    const result = openAIFormatResourceAsSystemMessage(mockResource);
+
+    // Assert
+    expect(result.role).toBe('system');
+    expect(result.content).toBe('');
+  });
+
+  it('when resource has multiline text then preserves formatting', () => {
+    // Arrange
+    const multilineText = 'Line 1\nLine 2\nLine 3';
+    const mockResource: ResourceContent = {
+      uri: 'oorep://help/multiline',
+      mimeType: 'text/markdown',
+      text: multilineText,
+    };
+
+    // Act
+    const result = openAIFormatResourceAsSystemMessage(mockResource);
+
+    // Assert
+    expect(result.content).toBe(multilineText);
+  });
+});
+
+describe('openAIFormatResourcesAsContext', () => {
+  it('when single resource then returns formatted string with header', () => {
+    // Arrange
+    const mockResource: ResourceContent = {
+      uri: 'oorep://help/syntax',
+      mimeType: 'text/markdown',
+      text: 'Help content here',
+    };
+
+    // Act
+    const result = openAIFormatResourcesAsContext([mockResource]);
+
+    // Assert
+    expect(result).toContain('## Resource: oorep://help/syntax');
+    expect(result).toContain('Help content here');
+  });
+
+  it('when multiple resources then joins with separator', () => {
+    // Arrange
+    const resource1: ResourceContent = {
+      uri: 'oorep://resource1',
+      mimeType: 'text/plain',
+      text: 'Content A',
+    };
+    const resource2: ResourceContent = {
+      uri: 'oorep://resource2',
+      mimeType: 'text/plain',
+      text: 'Content B',
+    };
+
+    // Act
+    const result = openAIFormatResourcesAsContext([resource1, resource2]);
+
+    // Assert
+    expect(result).toContain('## Resource: oorep://resource1');
+    expect(result).toContain('Content A');
+    expect(result).toContain('---');
+    expect(result).toContain('## Resource: oorep://resource2');
+    expect(result).toContain('Content B');
+  });
+
+  it('when empty array then returns empty string', () => {
+    // Act
+    const result = openAIFormatResourcesAsContext([]);
+
+    // Assert
+    expect(result).toBe('');
+  });
+});
+
+describe('convertPromptToOpenAI', () => {
+  it('when user message then converts with user role', () => {
+    // Arrange
+    const mockPrompt: PromptResult = {
+      name: 'analyze-symptoms',
+      description: 'Test prompt',
+      messages: [
+        {
+          role: 'user',
+          content: { type: 'text', text: 'User question here' },
+        },
+      ],
+    };
+
+    // Act
+    const result = convertPromptToOpenAI(mockPrompt);
+
+    // Assert
+    expect(result).toHaveLength(1);
+    expect(result[0].role).toBe('user');
+    expect(result[0].content).toBe('User question here');
+  });
+
+  it('when assistant message then converts with assistant role', () => {
+    // Arrange
+    const mockPrompt: PromptResult = {
+      name: 'test-prompt',
+      description: 'Test prompt',
+      messages: [
+        {
+          role: 'assistant',
+          content: { type: 'text', text: 'Assistant response here' },
+        },
+      ],
+    };
+
+    // Act
+    const result = convertPromptToOpenAI(mockPrompt);
+
+    // Assert
+    expect(result).toHaveLength(1);
+    expect(result[0].role).toBe('assistant');
+    expect(result[0].content).toBe('Assistant response here');
+  });
+
+  it('when mixed messages then converts all correctly', () => {
+    // Arrange
+    const mockPrompt: PromptResult = {
+      name: 'conversation',
+      description: 'Multi-turn conversation',
+      messages: [
+        { role: 'user', content: { type: 'text', text: 'Question 1' } },
+        { role: 'assistant', content: { type: 'text', text: 'Answer 1' } },
+        { role: 'user', content: { type: 'text', text: 'Question 2' } },
+        { role: 'assistant', content: { type: 'text', text: 'Answer 2' } },
+      ],
+    };
+
+    // Act
+    const result = convertPromptToOpenAI(mockPrompt);
+
+    // Assert
+    expect(result).toHaveLength(4);
+    expect(result[0].role).toBe('user');
+    expect(result[0].content).toBe('Question 1');
+    expect(result[1].role).toBe('assistant');
+    expect(result[1].content).toBe('Answer 1');
+    expect(result[2].role).toBe('user');
+    expect(result[2].content).toBe('Question 2');
+    expect(result[3].role).toBe('assistant');
+    expect(result[3].content).toBe('Answer 2');
+  });
+
+  it('when empty messages then returns empty array', () => {
+    // Arrange
+    const mockPrompt: PromptResult = {
+      name: 'empty',
+      description: 'Empty prompt',
+      messages: [],
+    };
+
+    // Act
+    const result = convertPromptToOpenAI(mockPrompt);
+
+    // Assert
+    expect(result).toHaveLength(0);
+  });
+});
+
+describe('openAIConvertPromptWithContext', () => {
+  it('when resource and prompt provided then combines with system message first', () => {
+    // Arrange
+    const mockResource: ResourceContent = {
+      uri: 'oorep://help/syntax',
+      mimeType: 'text/markdown',
+      text: 'System context here',
+    };
+    const mockPrompt: PromptResult = {
+      name: 'test',
+      description: 'Test',
+      messages: [
+        { role: 'user', content: { type: 'text', text: 'User message' } },
+      ],
+    };
+
+    // Act
+    const result = openAIConvertPromptWithContext(mockResource, mockPrompt);
+
+    // Assert
+    expect(result).toHaveLength(2);
+    expect(result[0].role).toBe('system');
+    expect(result[0].content).toBe('System context here');
+    expect(result[1].role).toBe('user');
+    expect(result[1].content).toBe('User message');
+  });
+
+  it('when prompt has multiple messages then preserves order after system', () => {
+    // Arrange
+    const mockResource: ResourceContent = {
+      uri: 'oorep://context',
+      mimeType: 'text/plain',
+      text: 'Context',
+    };
+    const mockPrompt: PromptResult = {
+      name: 'multi',
+      description: 'Multi-message prompt',
+      messages: [
+        { role: 'user', content: { type: 'text', text: 'Q1' } },
+        { role: 'assistant', content: { type: 'text', text: 'A1' } },
+        { role: 'user', content: { type: 'text', text: 'Q2' } },
+      ],
+    };
+
+    // Act
+    const result = openAIConvertPromptWithContext(mockResource, mockPrompt);
+
+    // Assert
+    expect(result).toHaveLength(4);
+    expect(result[0].role).toBe('system');
+    expect(result[1].role).toBe('user');
+    expect(result[2].role).toBe('assistant');
+    expect(result[3].role).toBe('user');
+  });
+
+  it('when prompt has no messages then returns only system message', () => {
+    // Arrange
+    const mockResource: ResourceContent = {
+      uri: 'oorep://only-context',
+      mimeType: 'text/plain',
+      text: 'Only context, no prompt',
+    };
+    const mockPrompt: PromptResult = {
+      name: 'empty',
+      description: 'Empty',
+      messages: [],
+    };
+
+    // Act
+    const result = openAIConvertPromptWithContext(mockResource, mockPrompt);
+
+    // Assert
+    expect(result).toHaveLength(1);
+    expect(result[0].role).toBe('system');
+    expect(result[0].content).toBe('Only context, no prompt');
   });
 });
