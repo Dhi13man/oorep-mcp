@@ -65,7 +65,7 @@ client.destroy();
 
 ## Framework Adapters
 
-### OpenAI
+### OpenAI Adapters
 
 ```typescript
 import OpenAI from 'openai';
@@ -103,7 +103,7 @@ try {
 }
 ```
 
-### Vercel AI SDK
+### Vercel AI SDK Adapters
 
 ```typescript
 import { generateText } from 'ai';
@@ -135,7 +135,7 @@ try {
 }
 ```
 
-### LangChain / LangGraph
+### LangChain / LangGraph Adapters
 
 ```typescript
 import { ChatOpenAI } from '@langchain/openai';
@@ -174,7 +174,7 @@ try {
 }
 ```
 
-### Google Gemini
+### Google Gemini Adapters
 
 ```typescript
 import { GoogleGenAI } from '@google/genai';
@@ -325,7 +325,7 @@ interface PromptResult {
 
 Each adapter provides functions to convert prompts and resources into SDK-specific formats.
 
-#### OpenAI
+#### OpenAI Prompts
 
 ```typescript
 import {
@@ -355,7 +355,7 @@ const response = await openai.chat.completions.create({
 const messagesWithContext = openaiConvertPromptWithContext(searchSyntax, workflow);
 ```
 
-#### Vercel AI SDK
+#### Vercel AI SDK Prompts
 
 ```typescript
 import { createOOREPClient } from 'oorep-mcp/sdk/client';
@@ -394,7 +394,7 @@ const { system: sys, messages: msgs } = vercelaiCombinePromptWithContext(searchS
 client.destroy();
 ```
 
-#### LangChain
+#### LangChain Prompts
 
 ```typescript
 import { SystemMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
@@ -433,7 +433,7 @@ const remediesDoc = langchainFormatResourceAsDocument(
 client.destroy();
 ```
 
-#### Google Gemini
+#### Google Gemini Prompts
 
 ```typescript
 import { GoogleGenAI } from '@google/genai';
@@ -498,7 +498,7 @@ All adapters provide these tools:
 | **LangChain** | `DynamicStructuredTool` compatible | `func()` |
 | **Google Gemini** | `{ parametersJsonSchema: {...} }` | `executeGeminiFunctionCall()` |
 
-### Resources
+### Resources Comparison
 
 | Adapter | System Message | Multi-Resource | Additional |
 |---------|---------------|----------------|------------|
@@ -507,7 +507,7 @@ All adapters provide these tools:
 | **LangChain** | `langChainFormatResourceAsSystemMessage()` | `langChainFormatResourcesAsContext()` | `langChainFormatResourceAsDocument()` |
 | **Google Gemini** | `geminiFormatResourceAsSystemInstruction()` | `geminiFormatResourcesAsContext()` | - |
 
-### Prompts
+### Prompts Comparison
 
 | Adapter | Convert Function | With Context |
 |---------|-----------------|--------------|
