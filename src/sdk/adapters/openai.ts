@@ -7,7 +7,7 @@
  * @example
  * ```typescript
  * import OpenAI from 'openai';
- * import { createOOREPClient } from 'oorep-mcp/sdk';
+ * import { createOOREPClient } from 'oorep-mcp';
  * import { openAITools, executeOpenAITool } from 'oorep-mcp/sdk/openai';
  *
  * const openai = new OpenAI();
@@ -243,7 +243,7 @@ export interface OpenAIResourceMessage {
  *
  * @example
  * ```typescript
- * import { getResource } from 'oorep-mcp/sdk/resources';
+ * import { getResource } from 'oorep-mcp';
  *
  * const searchSyntax = await getResource('oorep://help/search-syntax');
  * const systemMessage = openAIFormatResourceAsSystemMessage(searchSyntax);
@@ -275,7 +275,7 @@ export function openAIFormatResourceAsSystemMessage(
  *
  * @example
  * ```typescript
- * import { getResource } from 'oorep-mcp/sdk/resources';
+ * import { getResource } from 'oorep-mcp';
  *
  * const [searchHelp, remedies] = await Promise.all([
  *   getResource('oorep://help/search-syntax'),
@@ -307,7 +307,7 @@ export interface OpenAIMessage {
  *
  * @example
  * ```typescript
- * import { getPrompt } from 'oorep-mcp/sdk/prompts';
+ * import { getPrompt } from 'oorep-mcp';
  *
  * const workflow = getPrompt('repertorization-workflow');
  * const messages = convertPromptToOpenAI(workflow);
@@ -338,8 +338,8 @@ export function convertPromptToOpenAI(prompt: PromptResult): OpenAIMessage[] {
  *
  * @example
  * ```typescript
- * import { getResource } from 'oorep-mcp/sdk/resources';
- * import { getPrompt } from 'oorep-mcp/sdk/prompts';
+ * import { getResource } from 'oorep-mcp';
+ * import { getPrompt } from 'oorep-mcp';
  *
  * const searchSyntax = await getResource('oorep://help/search-syntax');
  * const workflow = getPrompt('analyze-symptoms', { symptom_description: 'headache' });

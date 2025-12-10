@@ -7,7 +7,7 @@
  * ```typescript
  * import { ChatOpenAI } from '@langchain/openai';
  * import { createReactAgent } from '@langchain/langgraph/prebuilt';
- * import { createOOREPClient } from 'oorep-mcp/sdk';
+ * import { createOOREPClient } from 'oorep-mcp';
  * import { createLangChainTools } from 'oorep-mcp/sdk/langchain';
  *
  * const client = createOOREPClient();
@@ -254,7 +254,7 @@ export interface LangChainDocument {
  * @example
  * ```typescript
  * import { SystemMessage } from '@langchain/core/messages';
- * import { getResource } from 'oorep-mcp/sdk/resources';
+ * import { getResource } from 'oorep-mcp';
  *
  * const searchSyntax = await getResource('oorep://help/search-syntax');
  * const sysMsg = langChainFormatResourceAsSystemMessage(searchSyntax);
@@ -282,7 +282,7 @@ export function langChainFormatResourceAsSystemMessage(
  * @example
  * ```typescript
  * import { Document } from '@langchain/core/documents';
- * import { getResource } from 'oorep-mcp/sdk/resources';
+ * import { getResource } from 'oorep-mcp';
  *
  * const searchSyntax = await getResource('oorep://help/search-syntax');
  * const doc = langChainFormatResourceAsDocument(searchSyntax);

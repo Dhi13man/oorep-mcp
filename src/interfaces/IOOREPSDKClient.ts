@@ -6,8 +6,8 @@
  * - Easy mocking in unit tests without type casting
  * - Swappable implementations (e.g., mock client for testing)
  *
- * Note: Resource and prompt access are now standalone functions in
- * `oorep-mcp/sdk/resources` and `oorep-mcp/sdk/prompts`.
+ * Note: Resource and prompt access are now standalone functions exported
+ * from the main `oorep-mcp` package.
  */
 
 import type {

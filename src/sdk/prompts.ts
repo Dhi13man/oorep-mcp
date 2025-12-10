@@ -91,7 +91,7 @@ export function getPromptNames(): string[] {
  *
  * @example
  * ```typescript
- * import { listPrompts } from 'oorep-mcp/sdk/prompts';
+ * import { listPrompts } from 'oorep-mcp';
  *
  * const prompts = listPrompts();
  * console.log(prompts);
@@ -123,7 +123,7 @@ export function listPrompts(): PromptDefinition[] {
  *
  * @example
  * ```typescript
- * import { getPrompt } from 'oorep-mcp/sdk/prompts';
+ * import { getPrompt } from 'oorep-mcp';
  *
  * // Get the repertorization workflow
  * const workflow = getPrompt('repertorization-workflow');
