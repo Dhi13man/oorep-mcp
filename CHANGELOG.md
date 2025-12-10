@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.3] - 2025-12-10
+
+### Fixed
+
+- **Tool Descriptions**: Removed hardcoded repertory/materia medica abbreviation examples to prevent AI model bias
+  - `search_repertory`: `repertory` parameter now references `list_available_repertories` for dynamic discovery
+  - `search_materia_medica`: `materiamedica` parameter now references `list_available_materia_medicas` for dynamic discovery
+  - Fixes incorrect suggestion of "kent" as a materia medica (it's a repertory)
+  - Updated across all SDK locations: `src/sdk/tools.ts`, `src/utils/schemas.ts`, `src/tools/search-repertory.ts`, `src/tools/search-materia-medica.ts`, `src/sdk/adapters/vercel-ai.ts`
+  - Aligns with MCP best practices for cross-tool referencing (used by Salesforce, Gong MCP servers)
+
 ## [1.1.2] - 2025-12-10
 
 ### Fixed
@@ -338,6 +349,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - For full functionality, users should run a local OOREP instance or configure authentication
 - Public metadata endpoints work without authentication (remedies list, repertories list, materia medicas list)
 
+[1.1.3]: https://github.com/Dhi13man/oorep-mcp/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/Dhi13man/oorep-mcp/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/Dhi13man/oorep-mcp/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/Dhi13man/oorep-mcp/compare/v1.0.3...v1.1.0
