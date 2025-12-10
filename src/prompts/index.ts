@@ -35,9 +35,12 @@ export type {
 };
 
 // Re-export build functions for use in SDK client
-export { buildAnalyzeSymptomsPrompt } from './analyze-symptoms.js';
-export { buildRemedyComparisonPrompt } from './remedy-comparison.js';
-export { buildRepertorizationWorkflowPrompt } from './repertorization-workflow.js';
+export { buildAnalyzeSymptomsPrompt, analyzeSymptomsDefinition } from './analyze-symptoms.js';
+export { buildRemedyComparisonPrompt, remedyComparisonDefinition } from './remedy-comparison.js';
+export {
+  buildRepertorizationWorkflowPrompt,
+  repertorizationWorkflowDefinition,
+} from './repertorization-workflow.js';
 
 const promptDefinitions: PromptDefinition[] = [
   analyzeSymptomsDefinition,

@@ -27,11 +27,14 @@ export type {
   PromptDefinition,
 } from '../prompts/index.js';
 
-// Import build functions from prompts module
+// Import build functions and definitions from prompts module
 import {
   buildAnalyzeSymptomsPrompt,
   buildRemedyComparisonPrompt,
   buildRepertorizationWorkflowPrompt,
+  analyzeSymptomsDefinition,
+  remedyComparisonDefinition,
+  repertorizationWorkflowDefinition,
   type AnalyzeSymptomsArgs,
   type RemedyComparisonArgs,
   type PromptResult,
@@ -57,44 +60,17 @@ export interface OOREPPromptDefinition {
 }
 
 /**
- * All OOREP prompt definitions
+ * All OOREP prompt definitions (imported from source modules to avoid duplication)
  */
 export const promptDefinitions: OOREPPromptDefinition[] = [
-  {
-    name: PROMPT_NAMES.ANALYZE_SYMPTOMS,
-    description:
-      'Guide AI through structured symptom analysis workflow for homeopathic case taking. ' +
-      'Helps systematically analyze symptoms and find relevant remedies.',
-    arguments: [
-      {
-        name: 'symptom_description',
-        description: 'Optional initial symptom description to start the analysis',
-        required: false,
-      },
-    ],
-  },
-  {
-    name: PROMPT_NAMES.REMEDY_COMPARISON,
-    description:
-      'Compare multiple homeopathic remedies side-by-side to identify the best match. ' +
-      'Useful for differential diagnosis between similar remedies.',
-    arguments: [
-      {
-        name: 'remedies',
-        description:
-          'Comma-separated list of remedy names to compare (e.g., "Aconite,Belladonna,Gelsemium")',
-        required: true,
-      },
-    ],
-  },
-  {
-    name: PROMPT_NAMES.REPERTORIZATION_WORKFLOW,
-    description:
-      'Step-by-step case taking and repertorization workflow for comprehensive case analysis. ' +
-      'Guides through symptom gathering, repertorization, and remedy selection.',
-    arguments: [],
-  },
-];
+  analyzeSymptomsDefinition,
+  remedyComparisonDefinition,
+  repertorizationWorkflowDefinition,
+].map((def) => ({
+  name: def.name,
+  description: def.description,
+  arguments: def.arguments ?? [],
+}));
 
 /**
  * Get a prompt definition by name

@@ -25,11 +25,11 @@ import { searchSyntaxHelpDefinition, getSearchSyntaxHelp } from './search-syntax
 
 export type { ResourceContent, ResourceDefinition };
 
-// Re-export fetch functions for use in SDK client
-export { fetchRemediesList } from './remedies-list.js';
-export { fetchRepertoriesList } from './repertories-list.js';
-export { fetchMateriaMedicasList } from './materia-medicas-list.js';
-export { getSearchSyntaxHelp } from './search-syntax-help.js';
+// Re-export fetch functions and definitions for use in SDK client
+export { fetchRemediesList, remediesListDefinition } from './remedies-list.js';
+export { fetchRepertoriesList, repertoriesListDefinition } from './repertories-list.js';
+export { fetchMateriaMedicasList, materiaMedicasListDefinition } from './materia-medicas-list.js';
+export { getSearchSyntaxHelp, searchSyntaxHelpDefinition } from './search-syntax-help.js';
 
 const resourceDefinitions: ResourceDefinition[] = [
   remediesListDefinition,
