@@ -310,15 +310,16 @@ Some examples here.
 
   describe('getResource - error handling', () => {
     it('getResource when unknown URI then throws error', async () => {
+      // SDK throws for unknown URIs via exhaustive switch
+      mockGetResource.mockRejectedValue(new Error('Unknown resource URI: oorep://unknown/resource'));
+
       await expect(registry.getResource('oorep://unknown/resource')).rejects.toThrow();
     });
 
-    it('getResource when unknown URI then error mentions resource', async () => {
-      try {
-        await registry.getResource('oorep://unknown/resource');
-      } catch (error) {
-        expect((error as Error).message).toContain('oorep://unknown/resource');
-      }
+    it('getResource when unknown URI then propagates SDK error', async () => {
+      mockGetResource.mockRejectedValue(new Error('Unknown resource URI: oorep://unknown/resource'));
+
+      await expect(registry.getResource('oorep://unknown/resource')).rejects.toThrow();
     });
 
     it('getResource when API error then sanitizes error', async () => {

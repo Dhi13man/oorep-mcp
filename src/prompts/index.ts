@@ -1,12 +1,5 @@
-/**
- * Prompt registration and exports
- *
- * This module provides MCP prompt access by delegating to OOREPSDKClient.
- * The SDK is the single source of truth for all prompt logic.
- */
-
 import { OOREPSDKClient } from '../sdk/client.js';
-import { ALL_PROMPT_NAMES, PROMPT_NAMES, type PromptName } from '../sdk/constants.js';
+import { PROMPT_NAMES, type PromptName } from '../sdk/constants.js';
 import { logger } from '../utils/logger.js';
 
 export interface PromptDefinition {
@@ -31,7 +24,6 @@ export class PromptRegistry {
   private sdk: OOREPSDKClient;
 
   constructor() {
-    // Prompts are static content - no API calls needed, so minimal config
     this.sdk = new OOREPSDKClient();
   }
 
@@ -45,33 +37,24 @@ export class PromptRegistry {
   ): Promise<{ messages: PromptMessage[] }> {
     logger.info('Getting prompt', { name, args });
 
-    // Validate prompt name using constants
-    if (!ALL_PROMPT_NAMES.includes(name as PromptName)) {
-      throw new Error(`Prompt not found: ${name}`);
-    }
-
-    // Delegate to SDK based on prompt type
-    const promptName = name as PromptName;
-
-    // SDK getPrompt has overloaded signatures, handle each case
+    // Switch required to satisfy SDK's strict overload signatures
     let result;
-    switch (promptName) {
+    switch (name as PromptName) {
       case PROMPT_NAMES.ANALYZE_SYMPTOMS:
         result = await this.sdk.getPrompt(PROMPT_NAMES.ANALYZE_SYMPTOMS, {
           symptom_description: args?.symptom_description,
         });
         break;
       case PROMPT_NAMES.REMEDY_COMPARISON:
-        if (!args?.remedies) {
-          throw new Error('remedies argument is required for remedy-comparison prompt');
-        }
         result = await this.sdk.getPrompt(PROMPT_NAMES.REMEDY_COMPARISON, {
-          remedies: args.remedies,
+          remedies: args?.remedies ?? '',
         });
         break;
       case PROMPT_NAMES.REPERTORIZATION_WORKFLOW:
         result = await this.sdk.getPrompt(PROMPT_NAMES.REPERTORIZATION_WORKFLOW);
         break;
+      default:
+        throw new Error(`Unknown prompt: ${name}`);
     }
 
     return { messages: result.messages };
