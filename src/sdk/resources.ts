@@ -28,8 +28,7 @@ export const resourceDefinitions: OOREPResourceDefinition[] = [
   {
     uri: RESOURCE_URIS.REMEDIES_LIST,
     name: 'Available Remedies List',
-    description:
-      'Complete list of all available homeopathic remedies with names and abbreviations',
+    description: 'Complete list of all available homeopathic remedies with names and abbreviations',
     mimeType: MIME_TYPES.JSON,
   },
   {
@@ -47,8 +46,7 @@ export const resourceDefinitions: OOREPResourceDefinition[] = [
   {
     uri: RESOURCE_URIS.SEARCH_SYNTAX_HELP,
     name: 'OOREP Search Syntax Help',
-    description:
-      'Guide to OOREP search syntax including wildcards, exclusions, and exact phrases',
+    description: 'Guide to OOREP search syntax including wildcards, exclusions, and exact phrases',
     mimeType: MIME_TYPES.MARKDOWN,
   },
 ];

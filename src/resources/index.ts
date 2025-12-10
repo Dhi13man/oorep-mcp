@@ -20,10 +20,7 @@ import {
   type ResourceDefinition,
 } from './remedies-list.js';
 import { repertoriesListDefinition, fetchRepertoriesList } from './repertories-list.js';
-import {
-  materiaMedicasListDefinition,
-  fetchMateriaMedicasList,
-} from './materia-medicas-list.js';
+import { materiaMedicasListDefinition, fetchMateriaMedicasList } from './materia-medicas-list.js';
 import { searchSyntaxHelpDefinition, getSearchSyntaxHelp } from './search-syntax-help.js';
 
 export type { ResourceContent, ResourceDefinition };

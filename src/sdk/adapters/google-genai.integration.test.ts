@@ -124,7 +124,9 @@ function createRepertoriesResponse(): Response {
 function createMateriaMedicasResponse(): Response {
   return createMockResponse(
     [
-      { mminfo: { id: 1, abbrev: 'boericke', displaytitle: 'Boericke Materia Medica', lang: 'en' } },
+      {
+        mminfo: { id: 1, abbrev: 'boericke', displaytitle: 'Boericke Materia Medica', lang: 'en' },
+      },
       { mminfo: { id: 2, abbrev: 'hering', displaytitle: 'Guiding Symptoms', lang: 'en' } },
     ],
     200,

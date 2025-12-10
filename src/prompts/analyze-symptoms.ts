@@ -5,10 +5,7 @@
  */
 
 import { PROMPT_NAMES, TOOL_NAMES, type PromptName } from '../sdk/constants.js';
-import {
-  type OOREPPromptDefinition,
-  type OOREPPromptArgument,
-} from '../sdk/prompts.js';
+import { type OOREPPromptDefinition, type OOREPPromptArgument } from '../sdk/prompts.js';
 
 export interface AnalyzeSymptomsArgs {
   symptom_description?: string;

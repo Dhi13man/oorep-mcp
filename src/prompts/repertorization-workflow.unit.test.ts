@@ -22,7 +22,9 @@ describe('repertorizationWorkflowDefinition', () => {
   });
 
   it('when accessed then description mentions repertorization', () => {
-    expect(repertorizationWorkflowDefinition.description.toLowerCase()).toContain('repertorization');
+    expect(repertorizationWorkflowDefinition.description.toLowerCase()).toContain(
+      'repertorization'
+    );
   });
 
   it('when accessed then description mentions case taking', () => {

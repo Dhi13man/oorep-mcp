@@ -258,7 +258,9 @@ export interface LangChainDocument {
  * const systemMessage = new SystemMessage(sysMsg.content);
  * ```
  */
-export function langChainFormatResourceAsSystemMessage(resource: ResourceContent): LangChainSystemMessage {
+export function langChainFormatResourceAsSystemMessage(
+  resource: ResourceContent
+): LangChainSystemMessage {
   return {
     type: 'system',
     content: resource.text,
@@ -309,7 +311,9 @@ export function langChainFormatResourceAsDocument(resource: ResourceContent): La
  * const documents = langChainFormatResourcesAsDocuments(resources);
  * ```
  */
-export function langChainFormatResourcesAsDocuments(resources: ResourceContent[]): LangChainDocument[] {
+export function langChainFormatResourcesAsDocuments(
+  resources: ResourceContent[]
+): LangChainDocument[] {
   return resources.map(langChainFormatResourceAsDocument);
 }
 
@@ -322,9 +326,7 @@ export function langChainFormatResourcesAsDocuments(resources: ResourceContent[]
  * @returns Combined string with resource headers
  */
 export function langChainFormatResourcesAsContext(resources: ResourceContent[]): string {
-  return resources
-    .map((r) => `## Resource: ${r.uri}\n\n${r.text}`)
-    .join('\n\n---\n\n');
+  return resources.map((r) => `## Resource: ${r.uri}\n\n${r.text}`).join('\n\n---\n\n');
 }
 
 /**
@@ -399,8 +401,5 @@ export function langChainConvertPromptWithContext(
   resource: ResourceContent,
   prompt: PromptResult
 ): LangChainMessage[] {
-  return [
-    langChainFormatResourceAsSystemMessage(resource),
-    ...convertPromptToLangChain(prompt),
-  ];
+  return [langChainFormatResourceAsSystemMessage(resource), ...convertPromptToLangChain(prompt)];
 }

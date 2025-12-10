@@ -102,9 +102,7 @@ describe('promptDefinitions', () => {
   });
 
   describe('repertorization-workflow prompt', () => {
-    const prompt = promptDefinitions.find(
-      (p) => p.name === PROMPT_NAMES.REPERTORIZATION_WORKFLOW
-    )!;
+    const prompt = promptDefinitions.find((p) => p.name === PROMPT_NAMES.REPERTORIZATION_WORKFLOW)!;
 
     it('when accessed then has correct name', () => {
       // Assert

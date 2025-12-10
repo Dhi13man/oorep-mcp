@@ -59,8 +59,7 @@ export function buildRemedyComparisonPrompt(
   }
 
   const tableHeader = '| Aspect                | ' + remedyList.join(' | ') + ' |';
-  const tableSeparator =
-    '|----------------------|' + remedyList.map(() => '----------|').join('');
+  const tableSeparator = '|----------------------|' + remedyList.map(() => '----------|').join('');
   const tableRows = [
     '| Key Mental Symptoms  | ' + remedyList.map(() => '...').join('      | ') + '      |',
     '| Key Physical Symptoms| ' + remedyList.map(() => '...').join('      | ') + '      |',

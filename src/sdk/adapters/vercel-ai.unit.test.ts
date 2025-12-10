@@ -613,9 +613,7 @@ describe('vercelAICombinePromptWithContext', () => {
     const mockPrompt: PromptResult = {
       name: 'test',
       description: 'Test',
-      messages: [
-        { role: 'user', content: { type: 'text', text: 'User message' } },
-      ],
+      messages: [{ role: 'user', content: { type: 'text', text: 'User message' } }],
     };
 
     // Act

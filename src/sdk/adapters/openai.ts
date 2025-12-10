@@ -251,7 +251,9 @@ export interface OpenAIResourceMessage {
  * });
  * ```
  */
-export function openAIFormatResourceAsSystemMessage(resource: ResourceContent): OpenAIResourceMessage {
+export function openAIFormatResourceAsSystemMessage(
+  resource: ResourceContent
+): OpenAIResourceMessage {
   return {
     role: 'system',
     content: resource.text,
@@ -277,9 +279,7 @@ export function openAIFormatResourceAsSystemMessage(resource: ResourceContent): 
  * ```
  */
 export function openAIFormatResourcesAsContext(resources: ResourceContent[]): string {
-  return resources
-    .map((r) => `## Resource: ${r.uri}\n\n${r.text}`)
-    .join('\n\n---\n\n');
+  return resources.map((r) => `## Resource: ${r.uri}\n\n${r.text}`).join('\n\n---\n\n');
 }
 
 /**
@@ -345,8 +345,5 @@ export function openAIConvertPromptWithContext(
   resource: ResourceContent,
   prompt: PromptResult
 ): OpenAIMessage[] {
-  return [
-    openAIFormatResourceAsSystemMessage(resource),
-    ...convertPromptToOpenAI(prompt),
-  ];
+  return [openAIFormatResourceAsSystemMessage(resource), ...convertPromptToOpenAI(prompt)];
 }

@@ -33,9 +33,15 @@ import {
   type RepertoryMetadata,
   type MateriaMedicaMetadata,
 } from '../utils/schemas.js';
-import { RESOURCE_URIS, PROMPT_NAMES, DEFAULTS, type ResourceUri, type PromptName } from './constants.js';
-import { resourceDefinitions as sdkResourceDefinitions } from './resources.js';
-import { promptDefinitions as sdkPromptDefinitions } from './prompts.js';
+import {
+  RESOURCE_URIS,
+  PROMPT_NAMES,
+  DEFAULTS,
+  type ResourceUri,
+  type PromptName,
+} from './constants.js';
+import { resourceDefinitions } from './resources.js';
+import { promptDefinitions } from './prompts.js';
 
 // Import from new modules
 import {
@@ -439,7 +445,7 @@ export class OOREPSDKClient {
    */
   listResources(): ResourceDefinition[] {
     // Map from SDK definitions to ResourceDefinition format
-    return sdkResourceDefinitions.map((def) => ({
+    return resourceDefinitions.map((def) => ({
       uri: def.uri as ResourceUri,
       name: def.name,
       description: def.description,
@@ -505,7 +511,7 @@ export class OOREPSDKClient {
    */
   listPrompts(): PromptDefinition[] {
     // Map from SDK definitions to PromptDefinition format
-    return sdkPromptDefinitions.map((def) => ({
+    return promptDefinitions.map((def) => ({
       name: def.name as PromptName,
       description: def.description,
       arguments: def.arguments,

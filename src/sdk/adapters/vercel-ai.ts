@@ -220,7 +220,9 @@ export interface VercelAIResourceMessage {
  * });
  * ```
  */
-export function vercelAIFormatResourceAsSystemMessage(resource: ResourceContent): VercelAIResourceMessage {
+export function vercelAIFormatResourceAsSystemMessage(
+  resource: ResourceContent
+): VercelAIResourceMessage {
   return {
     role: 'system',
     content: resource.text,
@@ -246,9 +248,7 @@ export function vercelAIFormatResourceAsSystemMessage(resource: ResourceContent)
  * ```
  */
 export function vercelAIFormatResourcesAsContext(resources: ResourceContent[]): string {
-  return resources
-    .map((r) => `## Resource: ${r.uri}\n\n${r.text}`)
-    .join('\n\n---\n\n');
+  return resources.map((r) => `## Resource: ${r.uri}\n\n${r.text}`).join('\n\n---\n\n');
 }
 
 /**

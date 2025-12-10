@@ -74,10 +74,7 @@ export class PromptRegistry {
       }
 
       case PROMPT_NAMES.REMEDY_COMPARISON: {
-        const result = buildRemedyComparisonPrompt(
-          { remedies: args?.remedies ?? '' },
-          logger
-        );
+        const result = buildRemedyComparisonPrompt({ remedies: args?.remedies ?? '' }, logger);
         return { messages: result.messages };
       }
 

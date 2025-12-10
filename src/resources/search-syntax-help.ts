@@ -11,8 +11,7 @@ import type { ResourceContent, ResourceDefinition } from './remedies-list.js';
 export const searchSyntaxHelpDefinition: ResourceDefinition = {
   uri: RESOURCE_URIS.SEARCH_SYNTAX_HELP,
   name: 'OOREP Search Syntax Help',
-  description:
-    'Guide to OOREP search syntax including wildcards, exclusions, and exact phrases',
+  description: 'Guide to OOREP search syntax including wildcards, exclusions, and exact phrases',
   mimeType: MIME_TYPES.MARKDOWN,
 };
 

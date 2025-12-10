@@ -81,9 +81,7 @@ describe('resourceDefinitions', () => {
   });
 
   describe('materia medicas list resource', () => {
-    const resource = resourceDefinitions.find(
-      (r) => r.uri === RESOURCE_URIS.MATERIA_MEDICAS_LIST
-    )!;
+    const resource = resourceDefinitions.find((r) => r.uri === RESOURCE_URIS.MATERIA_MEDICAS_LIST)!;
 
     it('when accessed then has correct URI', () => {
       // Assert

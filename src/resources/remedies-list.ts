@@ -24,8 +24,7 @@ export interface ResourceDefinition extends Omit<OOREPResourceDefinition, 'uri'>
 export const remediesListDefinition: ResourceDefinition = {
   uri: RESOURCE_URIS.REMEDIES_LIST,
   name: 'Available Remedies List',
-  description:
-    'Complete list of all available homeopathic remedies with names and abbreviations',
+  description: 'Complete list of all available homeopathic remedies with names and abbreviations',
   mimeType: MIME_TYPES.JSON,
 };
 

@@ -11,8 +11,7 @@ import type { ResourceContent, ResourceDefinition } from './remedies-list.js';
 export const materiaMedicasListDefinition: ResourceDefinition = {
   uri: RESOURCE_URIS.MATERIA_MEDICAS_LIST,
   name: 'Available Materia Medicas List',
-  description:
-    'List of all accessible materia medicas with metadata (title, author, language)',
+  description: 'List of all accessible materia medicas with metadata (title, author, language)',
   mimeType: MIME_TYPES.JSON,
 };
 
