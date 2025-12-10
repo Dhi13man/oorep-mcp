@@ -64,8 +64,8 @@ export const searchMateriaMedicaToolDefinition = {
       materiamedica: {
         type: 'string',
         description:
-          'Optional: Filter by specific materia medica abbreviation (e.g., "hering", "clarke", "boericke"). ' +
-          'If not specified, uses the configured default materia medica (OOREP_MCP_DEFAULT_MATERIA_MEDICA, default "boericke").',
+          'Optional: Filter by specific materia medica abbreviation. Use list_available_materia_medicas to discover options. ' +
+          'If not specified, uses the configured default materia medica (OOREP_MCP_DEFAULT_MATERIA_MEDICA).',
       },
       remedy: {
         type: 'string',

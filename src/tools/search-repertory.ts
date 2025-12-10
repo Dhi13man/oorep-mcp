@@ -66,8 +66,8 @@ export const searchRepertoryToolDefinition = {
       repertory: {
         type: 'string',
         description:
-          'Optional: Filter by specific repertory abbreviation (e.g., "kent", "boger"). ' +
-          'If not specified, uses the configured default repertory (OOREP_MCP_DEFAULT_REPERTORY, default "publicum").',
+          'Optional: Filter by specific repertory abbreviation. Use list_available_repertories to discover options. ' +
+          'If not specified, uses the configured default repertory (OOREP_MCP_DEFAULT_REPERTORY).',
       },
       minWeight: {
         type: 'number',
