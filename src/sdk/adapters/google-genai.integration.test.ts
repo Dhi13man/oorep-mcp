@@ -108,24 +108,24 @@ function createMateriaMedicaResponse(): Response {
   );
 }
 
-// Helper for repertories list response
+// Helper for repertories list response (matches /api/available_rems_and_reps format)
 function createRepertoriesResponse(): Response {
   return createMockResponse(
     [
-      { abbreviation: 'kent', title: 'Kent Repertory', language: 'en' },
-      { abbreviation: 'publicum', title: 'Repertorium Publicum', language: 'en' },
+      { info: { abbrev: 'kent', title: 'Kent Repertory', language: 'en' } },
+      { info: { abbrev: 'publicum', title: 'Repertorium Publicum', language: 'en' } },
     ],
     200,
     { 'set-cookie': 'session=test123' }
   );
 }
 
-// Helper for materia medicas list response
+// Helper for materia medicas list response (matches /api/available_rems_and_mms format)
 function createMateriaMedicasResponse(): Response {
   return createMockResponse(
     [
-      { abbreviation: 'boericke', title: 'Boericke Materia Medica', language: 'en' },
-      { abbreviation: 'hering', title: 'Guiding Symptoms', language: 'en' },
+      { mminfo: { id: 1, abbrev: 'boericke', displaytitle: 'Boericke Materia Medica', lang: 'en' } },
+      { mminfo: { id: 2, abbrev: 'hering', displaytitle: 'Guiding Symptoms', lang: 'en' } },
     ],
     200,
     { 'set-cookie': 'session=test123' }
