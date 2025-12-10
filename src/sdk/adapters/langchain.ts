@@ -22,7 +22,9 @@
  */
 
 import { z } from '../../utils/schemas.js';
-import type { OOREPSDKClient, ResourceContent, PromptResult } from '../client.js';
+import type { OOREPSDKClient } from '../client.js';
+import type { ResourceContent } from '../resources.js';
+import type { PromptResult } from '../prompts.js';
 import { TOOL_NAMES } from '../constants.js';
 
 /**
@@ -246,14 +248,15 @@ export interface LangChainDocument {
  * as system context. The returned object can be passed to LangChain's
  * SystemMessage constructor or used directly with compatible APIs.
  *
- * @param resource - Resource content from client.getResource()
+ * @param resource - Resource content from getResource()
  * @returns LangChain SystemMessage-compatible object
  *
  * @example
  * ```typescript
  * import { SystemMessage } from '@langchain/core/messages';
+ * import { getResource } from 'oorep-mcp/sdk/resources';
  *
- * const searchSyntax = await client.getResource('oorep://help/search-syntax');
+ * const searchSyntax = await getResource('oorep://help/search-syntax');
  * const sysMsg = langChainFormatResourceAsSystemMessage(searchSyntax);
  * const systemMessage = new SystemMessage(sysMsg.content);
  * ```
@@ -273,14 +276,15 @@ export function langChainFormatResourceAsSystemMessage(
  * This is useful when you want to include resources in a vector store
  * or use them with LangChain's retrieval-augmented generation patterns.
  *
- * @param resource - Resource content from client.getResource()
+ * @param resource - Resource content from getResource()
  * @returns LangChain Document-compatible object
  *
  * @example
  * ```typescript
  * import { Document } from '@langchain/core/documents';
+ * import { getResource } from 'oorep-mcp/sdk/resources';
  *
- * const searchSyntax = await client.getResource('oorep://help/search-syntax');
+ * const searchSyntax = await getResource('oorep://help/search-syntax');
  * const doc = langChainFormatResourceAsDocument(searchSyntax);
  * // Use with vector stores or retrievers
  * ```

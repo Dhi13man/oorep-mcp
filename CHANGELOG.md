@@ -9,94 +9,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-#### SDK as Single Source of Truth Architecture
+#### Standalone Resource and Prompt Functions
 
-- **Resource Methods on SDK Client**: Added programmatic access to MCP resources
-  - `getResource(uri)`: Fetch any resource by URI with caching and deduplication
+- **Resource Functions** (`oorep-mcp/sdk/resources`): Programmatic access to MCP resources
+  - `getResource(uri, client?)`: Fetch resource by URI (client required for dynamic resources)
   - `listResources()`: List all available resources with metadata
-  - `getSearchSyntaxHelp()`: Convenience method to get search syntax guide as markdown
+  - `getSearchSyntaxHelp()`: Get search syntax guide as markdown text
 
-- **Prompt Methods on SDK Client**: Added programmatic access to MCP prompts
+- **Prompt Functions** (`oorep-mcp/sdk/prompts`): Programmatic access to MCP prompts
   - `getPrompt(name, args?)`: Get prompt workflows by name with type-safe overloads
   - `listPrompts()`: List all available prompts with metadata
 
 - **Centralized Constants** (`src/sdk/constants.ts`): Typed constants for all MCP primitives
-  - `TOOL_NAMES`: All tool name constants
-  - `RESOURCE_URIS`: All resource URI constants
-  - `PROMPT_NAMES`: All prompt name constants
-  - `DEFAULTS`: Default configuration values
-  - `MIME_TYPES`: Content type constants
+  - `TOOL_NAMES`, `RESOURCE_URIS`, `PROMPT_NAMES`, `DEFAULTS`, `MIME_TYPES`
   - Type exports: `ToolName`, `ResourceUri`, `PromptName`
 
-- **IOOREPSDKClient Interface**: Interface for dependency injection and testing
-  - Enables mocking SDK client in tests without type casting
-  - Supports custom implementations
-
 - **NotFoundError Class**: Specific error type for missing resources/tools/prompts
-  - Includes `resourceType` and `resourceName` properties
-  - Better error messages for debugging
 
-- **Resource and Prompt Adapter Functions**: All SDK adapters now support resources and prompts
-  - **OpenAI**: `formatResourceAsSystemMessage()`, `convertPromptToOpenAI()`, `convertPromptWithContext()`
-  - **Vercel AI**: `getSystemInstruction()`, `convertPromptToVercelAI()`, `combinePromptWithContext()`
-  - **LangChain**: `formatResourceAsSystemMessage()`, `formatResourceAsDocument()`, `convertPromptToLangChain()`
-  - **Google Gemini**: `formatResourceAsSystemInstruction()`, `convertPromptToGemini()`, `convertPromptWithContext()`
+- **Resource and Prompt Adapter Functions**: All SDK adapters support resource/prompt formatting
+  - OpenAI, Vercel AI, LangChain, Google Gemini adapters
 
 - **Security Policy**: Added `SECURITY.md` with vulnerability reporting guidelines
 
 ### Changed
 
-- **Modular Resource Architecture**: Resources refactored into separate modules
-  - `src/resources/remedies-list.ts`: Remedies list resource
-  - `src/resources/repertories-list.ts`: Repertories list resource
-  - `src/resources/materia-medicas-list.ts`: Materia medicas list resource
-  - `src/resources/search-syntax-help.ts`: Search syntax help resource
+- **SDK Client is Pure REST**: `OOREPSDKClient` now only handles REST operations
+  - Resource and prompt access moved to standalone functions
+  - Added `getClient()` method to get underlying `OOREPClient` for resource functions
+  - Cleaner separation of concerns
 
-- **Modular Prompt Architecture**: Prompts refactored into separate modules
-  - `src/prompts/analyze-symptoms.ts`: Symptom analysis workflow
-  - `src/prompts/remedy-comparison.ts`: Remedy comparison prompt
-  - `src/prompts/repertorization-workflow.ts`: 7-step repertorization workflow
+- **Modular Resource Architecture**: Resources in `src/resources/`
+  - `remedies-list.ts`, `repertories-list.ts`, `materia-medicas-list.ts`, `search-syntax-help.ts`
 
-- **Tools Accept IOOREPSDKClient**: Tools now use interface instead of concrete config
-  - Enables easier testing with mock clients
-  - Single shared SDK instance per ToolRegistry
+- **Modular Prompt Architecture**: Prompts in `src/prompts/`
+  - `analyze-symptoms.ts`, `remedy-comparison.ts`, `repertorization-workflow.ts`
 
-- **Server Shutdown Cleanup**: Added proper resource cleanup on shutdown
-  - `createServer()` returns `ServerContext` with all registries
-  - Shutdown handler calls `destroy()` on ToolRegistry and ResourceRegistry
-  - Prevents resource leaks (unclosed connections, timers)
+- **IOOREPSDKClient Interface Simplified**: Only REST methods, no MCP primitives
 
-- **ResourceRegistry.destroy()**: Added cleanup method for cache resources
+- **Server Shutdown Cleanup**: Proper resource cleanup on shutdown
 
 ### Improved
 
-- **Enhanced Search Syntax Help**: Comprehensive `oorep://help/search-syntax` resource
-  - Rubric structure explanation (Location > Symptom > Modality)
-  - Vocabulary mapping table (common terms → repertory terms)
-  - Query optimization tips with examples of what works/fails
-  - Tool selection guide for choosing the right tool
-  - "No results" troubleshooting steps
+- **Enhanced Search Syntax Help**: Vocabulary mapping, query optimization, tool selection guide
 
-- **CLAMS Method in Prompts**: Added structured symptom analysis framework
-  - **C**haracter, **L**ocation, **A**ccompanying, **M**odalities, **S**trange/Rare/Peculiar
-  - Vocabulary mapping guidance in prompt workflows
-  - Query best practices (2-3 words, location first, use wildcards)
-  - Iteration guidance (5-8 quality searches, not many vague ones)
-
-- **Test Coverage**: Added 332 new tests (805 → 1137 total)
-  - Unit tests for all new resource modules
-  - Unit tests for all new prompt modules
-  - Integration tests for resource/prompt adapter functions
-  - Tests for SDK client resource and prompt methods
-
-- **Type Safety**: Enhanced TypeScript types throughout
-  - Exhaustive switch checks with `never` type
-  - Type-safe prompt method overloads
-  - Stricter resource URI typing
+- **CLAMS Method in Prompts**: Structured symptom analysis framework
+  - Character, Location, Accompanying, Modalities, Strange/Rare/Peculiar
 
 ### Fixed
 
-- **Unused Imports**: Cleaned up unused type imports across SDK files
+- **Unused Imports**: Cleaned up across SDK files
 
 ## [1.0.3] - 2025-12-09
 

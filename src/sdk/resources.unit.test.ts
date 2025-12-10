@@ -1,190 +1,104 @@
 /**
- * Unit tests for OOREP SDK Resource Definitions
+ * Unit tests for SDK resource functions
  */
 
-import { describe, it, expect } from 'vitest';
-import {
-  resourceDefinitions,
-  getResourceDefinition,
-  getResourceUris,
-  RESOURCE_URIS,
-  type OOREPResourceDefinition,
-} from './resources.js';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { listResources, getResource, getSearchSyntaxHelp } from './resources.js';
 
-describe('resourceDefinitions', () => {
-  it('when accessed then contains all four resources', () => {
-    // Assert
-    expect(resourceDefinitions).toHaveLength(4);
+// Mock client for dynamic resources
+const mockGetAvailableRemedies = vi.fn();
+const mockGetAvailableRepertories = vi.fn();
+const mockGetAvailableMateriaMedicas = vi.fn();
+
+const mockOOREPClient = {
+  getAvailableRemedies: mockGetAvailableRemedies,
+  getAvailableRepertories: mockGetAvailableRepertories,
+  getAvailableMateriaMedicas: mockGetAvailableMateriaMedicas,
+};
+
+describe('listResources', () => {
+  it('returns all available resource definitions', () => {
+    const resources = listResources();
+
+    expect(resources).toHaveLength(4);
+    expect(resources.map((r) => r.uri)).toContain('oorep://remedies/list');
+    expect(resources.map((r) => r.uri)).toContain('oorep://repertories/list');
+    expect(resources.map((r) => r.uri)).toContain('oorep://materia-medicas/list');
+    expect(resources.map((r) => r.uri)).toContain('oorep://help/search-syntax');
   });
 
-  it.each([
-    RESOURCE_URIS.REMEDIES_LIST,
-    RESOURCE_URIS.REPERTORIES_LIST,
-    RESOURCE_URIS.MATERIA_MEDICAS_LIST,
-    RESOURCE_URIS.SEARCH_SYNTAX_HELP,
-  ])('when accessed then contains resource %s', (uri) => {
-    // Act
-    const resource = resourceDefinitions.find((r) => r.uri === uri);
+  it('includes metadata for each resource', () => {
+    const resources = listResources();
+    const searchSyntax = resources.find((r) => r.uri === 'oorep://help/search-syntax');
 
-    // Assert
-    expect(resource).toBeDefined();
-  });
-
-  describe('resource structure validation', () => {
-    it.each(resourceDefinitions.map((r) => [r.uri, r]))(
-      'when resource %s then has required fields',
-      (_uri, resource) => {
-        // Assert
-        expect(resource.uri).toBeDefined();
-        expect(typeof resource.uri).toBe('string');
-        expect(resource.name).toBeDefined();
-        expect(typeof resource.name).toBe('string');
-        expect(resource.description).toBeDefined();
-        expect(typeof resource.description).toBe('string');
-        expect(resource.mimeType).toBeDefined();
-        expect(typeof resource.mimeType).toBe('string');
-      }
-    );
-  });
-
-  describe('remedies list resource', () => {
-    const resource = resourceDefinitions.find((r) => r.uri === RESOURCE_URIS.REMEDIES_LIST)!;
-
-    it('when accessed then has correct URI', () => {
-      // Assert
-      expect(resource.uri).toBe('oorep://remedies/list');
-    });
-
-    it('when accessed then has JSON mime type', () => {
-      // Assert
-      expect(resource.mimeType).toBe('application/json');
-    });
-
-    it('when accessed then has descriptive name', () => {
-      // Assert
-      expect(resource.name).toContain('Remedies');
-    });
-  });
-
-  describe('repertories list resource', () => {
-    const resource = resourceDefinitions.find((r) => r.uri === RESOURCE_URIS.REPERTORIES_LIST)!;
-
-    it('when accessed then has correct URI', () => {
-      // Assert
-      expect(resource.uri).toBe('oorep://repertories/list');
-    });
-
-    it('when accessed then has JSON mime type', () => {
-      // Assert
-      expect(resource.mimeType).toBe('application/json');
-    });
-  });
-
-  describe('materia medicas list resource', () => {
-    const resource = resourceDefinitions.find((r) => r.uri === RESOURCE_URIS.MATERIA_MEDICAS_LIST)!;
-
-    it('when accessed then has correct URI', () => {
-      // Assert
-      expect(resource.uri).toBe('oorep://materia-medicas/list');
-    });
-
-    it('when accessed then has JSON mime type', () => {
-      // Assert
-      expect(resource.mimeType).toBe('application/json');
-    });
-  });
-
-  describe('search syntax help resource', () => {
-    const resource = resourceDefinitions.find((r) => r.uri === RESOURCE_URIS.SEARCH_SYNTAX_HELP)!;
-
-    it('when accessed then has correct URI', () => {
-      // Assert
-      expect(resource.uri).toBe('oorep://help/search-syntax');
-    });
-
-    it('when accessed then has markdown mime type', () => {
-      // Assert
-      expect(resource.mimeType).toBe('text/markdown');
-    });
+    expect(searchSyntax).toBeDefined();
+    expect(searchSyntax!.name).toBe('OOREP Search Syntax Help');
+    expect(searchSyntax!.mimeType).toBe('text/markdown');
+    expect(searchSyntax!.description).toContain('search syntax');
   });
 });
 
-describe('getResourceDefinition', () => {
-  it.each([
-    RESOURCE_URIS.REMEDIES_LIST,
-    RESOURCE_URIS.REPERTORIES_LIST,
-    RESOURCE_URIS.MATERIA_MEDICAS_LIST,
-    RESOURCE_URIS.SEARCH_SYNTAX_HELP,
-  ])('when valid URI %s then returns resource definition', (uri) => {
-    // Act
-    const resource = getResourceDefinition(uri);
-
-    // Assert
-    expect(resource).toBeDefined();
-    expect(resource?.uri).toBe(uri);
+describe('getResource', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  it('when unknown URI then returns undefined', () => {
-    // Act
-    const resource = getResourceDefinition('oorep://nonexistent/resource');
+  it('returns search syntax help resource without client', async () => {
+    const result = await getResource('oorep://help/search-syntax');
 
-    // Assert
-    expect(resource).toBeUndefined();
+    expect(result.uri).toBe('oorep://help/search-syntax');
+    expect(result.mimeType).toBe('text/markdown');
+    expect(result.text).toContain('# OOREP Search Syntax Guide');
+    expect(result.text).toContain('Wildcards');
   });
 
-  it('when valid URI then returns complete definition', () => {
-    // Act
-    const resource = getResourceDefinition(RESOURCE_URIS.REMEDIES_LIST);
+  it('returns remedies list resource with client', async () => {
+    mockGetAvailableRemedies.mockResolvedValue([
+      { id: 1, nameAbbrev: 'Acon.', nameLong: 'Aconitum napellus', namealt: [] },
+      { id: 2, nameAbbrev: 'Bell.', nameLong: 'Belladonna', namealt: [] },
+    ]);
 
-    // Assert
-    expect(resource).toMatchObject<Partial<OOREPResourceDefinition>>({
-      uri: RESOURCE_URIS.REMEDIES_LIST,
-      name: expect.any(String),
-      description: expect.any(String),
-      mimeType: expect.any(String),
-    });
+    const result = await getResource('oorep://remedies/list', mockOOREPClient as any);
+
+    expect(result.uri).toBe('oorep://remedies/list');
+    expect(result.mimeType).toBe('application/json');
+    expect(JSON.parse(result.text)).toHaveLength(2);
+  });
+
+  it('returns repertories list resource with client', async () => {
+    mockGetAvailableRepertories.mockResolvedValue([
+      { abbreviation: 'kent', title: 'Kent', language: 'en', author: 'Kent' },
+    ]);
+
+    const result = await getResource('oorep://repertories/list', mockOOREPClient as any);
+
+    expect(result.uri).toBe('oorep://repertories/list');
+    expect(result.mimeType).toBe('application/json');
+    expect(JSON.parse(result.text)).toHaveLength(1);
+  });
+
+  it('returns materia medicas list resource with client', async () => {
+    mockGetAvailableMateriaMedicas.mockResolvedValue([
+      { abbreviation: 'boericke', title: 'Boericke', language: 'en', author: 'Boericke' },
+    ]);
+
+    const result = await getResource('oorep://materia-medicas/list', mockOOREPClient as any);
+
+    expect(result.uri).toBe('oorep://materia-medicas/list');
+    expect(result.mimeType).toBe('application/json');
+    expect(JSON.parse(result.text)).toHaveLength(1);
+  });
+
+  it('throws error when client required but not provided', async () => {
+    await expect(getResource('oorep://remedies/list')).rejects.toThrow('OOREPClient is required');
   });
 });
 
-describe('getResourceUris', () => {
-  it('when called then returns array of all resource URIs', () => {
-    // Act
-    const uris = getResourceUris();
+describe('getSearchSyntaxHelp', () => {
+  it('returns markdown text directly', () => {
+    const result = getSearchSyntaxHelp();
 
-    // Assert
-    expect(uris).toHaveLength(4);
-    expect(uris).toContain(RESOURCE_URIS.REMEDIES_LIST);
-    expect(uris).toContain(RESOURCE_URIS.REPERTORIES_LIST);
-    expect(uris).toContain(RESOURCE_URIS.MATERIA_MEDICAS_LIST);
-    expect(uris).toContain(RESOURCE_URIS.SEARCH_SYNTAX_HELP);
-  });
-
-  it('when called then returns strings only', () => {
-    // Act
-    const uris = getResourceUris();
-
-    // Assert
-    uris.forEach((uri) => {
-      expect(typeof uri).toBe('string');
-    });
-  });
-
-  it('when called then returns unique URIs', () => {
-    // Act
-    const uris = getResourceUris();
-    const uniqueUris = new Set(uris);
-
-    // Assert
-    expect(uniqueUris.size).toBe(uris.length);
-  });
-
-  it('when called then all URIs follow oorep:// protocol', () => {
-    // Act
-    const uris = getResourceUris();
-
-    // Assert
-    uris.forEach((uri) => {
-      expect(uri).toMatch(/^oorep:\/\//);
-    });
+    expect(typeof result).toBe('string');
+    expect(result).toContain('# OOREP Search Syntax Guide');
   });
 });

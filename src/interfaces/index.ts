@@ -18,8 +18,6 @@ export type {
   SearchMateriaMedicaArgs,
   GetRemedyInfoArgs,
   ListByLanguageArgs,
-  ResourceDefinition,
-  PromptDefinition,
 } from './IOOREPSDKClient.js';
 
 // Export NoOp implementations for disabling features

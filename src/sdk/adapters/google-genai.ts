@@ -28,7 +28,9 @@
  */
 
 import { toolDefinitions, type OOREPToolDefinition } from '../tools.js';
-import type { OOREPSDKClient, ResourceContent, PromptResult } from '../client.js';
+import type { OOREPSDKClient } from '../client.js';
+import type { ResourceContent } from '../resources.js';
+import type { PromptResult } from '../prompts.js';
 import { TOOL_NAMES, type ToolName } from '../constants.js';
 import type {
   SearchRepertoryArgs,

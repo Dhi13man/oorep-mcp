@@ -7,6 +7,8 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { OOREPSDKClient } from '../client.js';
+import { getResource, getSearchSyntaxHelp } from '../resources.js';
+import { getPrompt } from '../prompts.js';
 import {
   createGeminiToolExecutors,
   executeGeminiFunctionCall,
@@ -265,7 +267,7 @@ describe('Google Gemini Integration - Resource Formatting', () => {
 
   describe('geminiFormatResourceAsSystemInstruction', () => {
     it('when called with search syntax help then returns text content', async () => {
-      const resource = await client.getResource('oorep://help/search-syntax');
+      const resource = await getResource('oorep://help/search-syntax');
 
       const instruction = geminiFormatResourceAsSystemInstruction(resource);
 
@@ -277,7 +279,7 @@ describe('Google Gemini Integration - Resource Formatting', () => {
 
   describe('geminiFormatResourcesAsContext', () => {
     it('when called with multiple resources then combines with headers', async () => {
-      const resource1 = await client.getResource('oorep://help/search-syntax');
+      const resource1 = await getResource('oorep://help/search-syntax');
       const resource2 = {
         uri: 'oorep://test/resource' as const,
         mimeType: 'text/plain',
@@ -294,27 +296,9 @@ describe('Google Gemini Integration - Resource Formatting', () => {
 });
 
 describe('Google Gemini Integration - Prompt Conversion', () => {
-  let client: OOREPSDKClient;
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    global.fetch = mockFetch;
-    mockFetch.mockResolvedValue(createSessionResponse());
-
-    client = new OOREPSDKClient({
-      baseUrl: 'https://test.oorep.com',
-      timeoutMs: 5000,
-      cacheTtlMs: 0,
-    });
-  });
-
-  afterEach(() => {
-    global.fetch = originalFetch;
-  });
-
   describe('convertPromptToGemini', () => {
-    it('when called with analyze-symptoms then converts to Gemini format', async () => {
-      const prompt = await client.getPrompt('analyze-symptoms');
+    it('when called with analyze-symptoms then converts to Gemini format', () => {
+      const prompt = getPrompt('analyze-symptoms');
 
       const geminiContents = convertPromptToGemini(prompt);
 
@@ -324,8 +308,8 @@ describe('Google Gemini Integration - Prompt Conversion', () => {
       expect(geminiContents[0].parts[0].text).toContain('search_repertory');
     });
 
-    it('when called with repertorization-workflow then converts to Gemini format', async () => {
-      const prompt = await client.getPrompt('repertorization-workflow');
+    it('when called with repertorization-workflow then converts to Gemini format', () => {
+      const prompt = getPrompt('repertorization-workflow');
 
       const geminiContents = convertPromptToGemini(prompt);
 
@@ -333,7 +317,7 @@ describe('Google Gemini Integration - Prompt Conversion', () => {
       expect(geminiContents[0].parts[0].text).toContain('STEP 1');
     });
 
-    it('when prompt has assistant role then converts to model', async () => {
+    it('when prompt has assistant role then converts to model', () => {
       // Create a mock prompt with assistant role
       const mockPrompt = {
         name: 'test' as const,
@@ -351,8 +335,8 @@ describe('Google Gemini Integration - Prompt Conversion', () => {
 
   describe('geminiConvertPromptWithContext', () => {
     it('when called then returns systemInstruction and contents', async () => {
-      const resource = await client.getResource('oorep://help/search-syntax');
-      const prompt = await client.getPrompt('analyze-symptoms');
+      const resource = await getResource('oorep://help/search-syntax');
+      const prompt = getPrompt('analyze-symptoms');
 
       const result = geminiConvertPromptWithContext(resource, prompt);
 
@@ -364,8 +348,8 @@ describe('Google Gemini Integration - Prompt Conversion', () => {
   });
 
   describe('geminiCreateChatHistory', () => {
-    it('when called then returns Gemini Content array', async () => {
-      const prompt = await client.getPrompt('repertorization-workflow');
+    it('when called then returns Gemini Content array', () => {
+      const prompt = getPrompt('repertorization-workflow');
 
       const history = geminiCreateChatHistory(prompt);
 
@@ -399,12 +383,12 @@ describe('Google Gemini Integration - Full Flow', () => {
 
   it('when simulating Gemini workflow then all components work together', async () => {
     // 1. Get system instruction from resource
-    const searchSyntax = await client.getResource('oorep://help/search-syntax');
+    const searchSyntax = await getResource('oorep://help/search-syntax');
     const systemInstruction = geminiFormatResourceAsSystemInstruction(searchSyntax);
     expect(systemInstruction).toContain('Wildcard');
 
     // 2. Get prompt and convert to Gemini format
-    const workflow = await client.getPrompt('analyze-symptoms', {
+    const workflow = getPrompt('analyze-symptoms', {
       symptom_description: 'headache',
     });
     const contents = convertPromptToGemini(workflow);

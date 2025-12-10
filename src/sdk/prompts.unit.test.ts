@@ -1,199 +1,87 @@
 /**
- * Unit tests for OOREP SDK Prompt Definitions
+ * Unit tests for SDK prompt functions
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  promptDefinitions,
-  getPromptDefinition,
-  getPromptNames,
-  PROMPT_NAMES,
-  type OOREPPromptDefinition,
-} from './prompts.js';
+import { listPrompts, getPrompt } from './prompts.js';
 
-describe('promptDefinitions', () => {
-  it('when accessed then contains all three prompts', () => {
-    // Assert
-    expect(promptDefinitions).toHaveLength(3);
+describe('listPrompts', () => {
+  it('returns all available prompt definitions', () => {
+    const prompts = listPrompts();
+
+    expect(prompts).toHaveLength(3);
+    expect(prompts.map((p) => p.name)).toContain('analyze-symptoms');
+    expect(prompts.map((p) => p.name)).toContain('remedy-comparison');
+    expect(prompts.map((p) => p.name)).toContain('repertorization-workflow');
   });
 
-  it.each([
-    PROMPT_NAMES.ANALYZE_SYMPTOMS,
-    PROMPT_NAMES.REMEDY_COMPARISON,
-    PROMPT_NAMES.REPERTORIZATION_WORKFLOW,
-  ])('when accessed then contains prompt %s', (name) => {
-    // Act
-    const prompt = promptDefinitions.find((p) => p.name === name);
+  it('includes arguments metadata for each prompt', () => {
+    const prompts = listPrompts();
+    const comparison = prompts.find((p) => p.name === 'remedy-comparison');
 
-    // Assert
-    expect(prompt).toBeDefined();
+    expect(comparison).toBeDefined();
+    expect(comparison!.arguments).toHaveLength(1);
+    expect(comparison!.arguments![0].name).toBe('remedies');
+    expect(comparison!.arguments![0].required).toBe(true);
   });
 
-  describe('prompt structure validation', () => {
-    it.each(promptDefinitions.map((p) => [p.name, p]))(
-      'when prompt %s then has required fields',
-      (_name, prompt) => {
-        // Assert
-        expect(prompt.name).toBeDefined();
-        expect(typeof prompt.name).toBe('string');
-        expect(prompt.description).toBeDefined();
-        expect(typeof prompt.description).toBe('string');
-        expect(prompt.arguments).toBeDefined();
-        expect(Array.isArray(prompt.arguments)).toBe(true);
-      }
-    );
+  it('marks repertorization-workflow as having no arguments', () => {
+    const prompts = listPrompts();
+    const workflow = prompts.find((p) => p.name === 'repertorization-workflow');
 
-    it.each(promptDefinitions.map((p) => [p.name, p]))(
-      'when prompt %s then arguments have correct structure',
-      (_name, prompt) => {
-        // Assert
-        prompt.arguments.forEach((arg) => {
-          expect(arg.name).toBeDefined();
-          expect(typeof arg.name).toBe('string');
-          expect(arg.description).toBeDefined();
-          expect(typeof arg.description).toBe('string');
-          expect(typeof arg.required).toBe('boolean');
-        });
-      }
-    );
-  });
-
-  describe('analyze-symptoms prompt', () => {
-    const prompt = promptDefinitions.find((p) => p.name === PROMPT_NAMES.ANALYZE_SYMPTOMS)!;
-
-    it('when accessed then has correct name', () => {
-      // Assert
-      expect(prompt.name).toBe('analyze-symptoms');
-    });
-
-    it('when accessed then has one optional argument', () => {
-      // Assert
-      expect(prompt.arguments).toHaveLength(1);
-      expect(prompt.arguments[0].name).toBe('symptom_description');
-      expect(prompt.arguments[0].required).toBe(false);
-    });
-
-    it('when accessed then description mentions symptom analysis', () => {
-      // Assert
-      expect(prompt.description.toLowerCase()).toContain('symptom');
-      expect(prompt.description.toLowerCase()).toContain('analysis');
-    });
-  });
-
-  describe('remedy-comparison prompt', () => {
-    const prompt = promptDefinitions.find((p) => p.name === PROMPT_NAMES.REMEDY_COMPARISON)!;
-
-    it('when accessed then has correct name', () => {
-      // Assert
-      expect(prompt.name).toBe('remedy-comparison');
-    });
-
-    it('when accessed then has one required argument', () => {
-      // Assert
-      expect(prompt.arguments).toHaveLength(1);
-      expect(prompt.arguments[0].name).toBe('remedies');
-      expect(prompt.arguments[0].required).toBe(true);
-    });
-
-    it('when accessed then description mentions comparison', () => {
-      // Assert
-      expect(prompt.description.toLowerCase()).toContain('compare');
-    });
-  });
-
-  describe('repertorization-workflow prompt', () => {
-    const prompt = promptDefinitions.find((p) => p.name === PROMPT_NAMES.REPERTORIZATION_WORKFLOW)!;
-
-    it('when accessed then has correct name', () => {
-      // Assert
-      expect(prompt.name).toBe('repertorization-workflow');
-    });
-
-    it('when accessed then has no arguments', () => {
-      // Assert
-      expect(prompt.arguments).toHaveLength(0);
-    });
-
-    it('when accessed then description mentions workflow', () => {
-      // Assert
-      expect(prompt.description.toLowerCase()).toContain('workflow');
-    });
+    expect(workflow).toBeDefined();
+    expect(workflow!.arguments).toHaveLength(0);
   });
 });
 
-describe('getPromptDefinition', () => {
-  it.each([
-    PROMPT_NAMES.ANALYZE_SYMPTOMS,
-    PROMPT_NAMES.REMEDY_COMPARISON,
-    PROMPT_NAMES.REPERTORIZATION_WORKFLOW,
-  ])('when valid prompt name %s then returns prompt definition', (name) => {
-    // Act
-    const prompt = getPromptDefinition(name);
+describe('getPrompt', () => {
+  it('returns analyze-symptoms prompt without args', () => {
+    const result = getPrompt('analyze-symptoms');
 
-    // Assert
-    expect(prompt).toBeDefined();
-    expect(prompt?.name).toBe(name);
+    expect(result.name).toBe('analyze-symptoms');
+    expect(result.messages).toHaveLength(1);
+    expect(result.messages[0].role).toBe('user');
+    expect(result.messages[0].content.text).toContain('Gather Chief Complaint');
+    expect(result.messages[0].content.text).toContain('Search Repertory');
   });
 
-  it('when unknown prompt name then returns undefined', () => {
-    // Act
-    const prompt = getPromptDefinition('nonexistent-prompt');
-
-    // Assert
-    expect(prompt).toBeUndefined();
-  });
-
-  it('when valid prompt name then returns complete definition', () => {
-    // Act
-    const prompt = getPromptDefinition(PROMPT_NAMES.ANALYZE_SYMPTOMS);
-
-    // Assert
-    expect(prompt).toMatchObject<Partial<OOREPPromptDefinition>>({
-      name: PROMPT_NAMES.ANALYZE_SYMPTOMS,
-      description: expect.any(String),
-      arguments: expect.any(Array),
+  it('returns analyze-symptoms prompt with initial symptom', () => {
+    const result = getPrompt('analyze-symptoms', {
+      symptom_description: 'throbbing headache',
     });
-  });
-});
 
-describe('getPromptNames', () => {
-  it('when called then returns array of all prompt names', () => {
-    // Act
-    const names = getPromptNames();
-
-    // Assert
-    expect(names).toHaveLength(3);
-    expect(names).toContain(PROMPT_NAMES.ANALYZE_SYMPTOMS);
-    expect(names).toContain(PROMPT_NAMES.REMEDY_COMPARISON);
-    expect(names).toContain(PROMPT_NAMES.REPERTORIZATION_WORKFLOW);
+    expect(result.messages[0].content.text).toContain('throbbing headache');
+    expect(result.messages[0].content.text).toContain('Initial symptom:');
   });
 
-  it('when called then returns strings only', () => {
-    // Act
-    const names = getPromptNames();
-
-    // Assert
-    names.forEach((name) => {
-      expect(typeof name).toBe('string');
+  it('returns remedy-comparison prompt with remedies', () => {
+    const result = getPrompt('remedy-comparison', {
+      remedies: 'Aconite,Belladonna,Gelsemium',
     });
+
+    expect(result.name).toBe('remedy-comparison');
+    expect(result.messages[0].content.text).toContain('Aconite, Belladonna, Gelsemium');
+    expect(result.messages[0].content.text).toContain('Comparison Table');
   });
 
-  it('when called then returns unique names', () => {
-    // Act
-    const names = getPromptNames();
-    const uniqueNames = new Set(names);
-
-    // Assert
-    expect(uniqueNames.size).toBe(names.length);
+  it('throws error for remedy-comparison without remedies', () => {
+    expect(() => getPrompt('remedy-comparison', {} as any)).toThrow(
+      'remedies argument is required'
+    );
   });
 
-  it('when called then all names follow kebab-case convention', () => {
-    // Act
-    const names = getPromptNames();
+  it('throws error for remedy-comparison with only one remedy', () => {
+    expect(() => getPrompt('remedy-comparison', { remedies: 'Aconite' })).toThrow(
+      'At least 2 remedies are required'
+    );
+  });
 
-    // Assert
-    names.forEach((name) => {
-      expect(name).toMatch(/^[a-z]+(-[a-z]+)*$/);
-    });
+  it('returns repertorization-workflow prompt', () => {
+    const result = getPrompt('repertorization-workflow');
+
+    expect(result.name).toBe('repertorization-workflow');
+    expect(result.messages[0].content.text).toContain('STEP 1: Chief Complaint');
+    expect(result.messages[0].content.text).toContain('STEP 7: Recommendations');
+    expect(result.messages[0].content.text).toContain('Detailed Symptom Gathering');
   });
 });

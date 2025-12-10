@@ -27,7 +27,9 @@
  * ```
  */
 
-import type { OOREPSDKClient, ResourceContent, PromptResult } from '../client.js';
+import type { OOREPSDKClient } from '../client.js';
+import type { ResourceContent } from '../resources.js';
+import type { PromptResult } from '../prompts.js';
 import { toolDefinitions } from '../tools.js';
 import { TOOL_NAMES } from '../constants.js';
 import { NotFoundError } from '../../utils/errors.js';
@@ -236,12 +238,14 @@ export interface OpenAIResourceMessage {
  * Use this to inject resources (like search syntax help) into conversations
  * as system context.
  *
- * @param resource - Resource content from client.getResource()
+ * @param resource - Resource content from getResource()
  * @returns OpenAI-compatible system message
  *
  * @example
  * ```typescript
- * const searchSyntax = await client.getResource('oorep://help/search-syntax');
+ * import { getResource } from 'oorep-mcp/sdk/resources';
+ *
+ * const searchSyntax = await getResource('oorep://help/search-syntax');
  * const systemMessage = openAIFormatResourceAsSystemMessage(searchSyntax);
  *
  * const response = await openai.chat.completions.create({
@@ -271,9 +275,11 @@ export function openAIFormatResourceAsSystemMessage(
  *
  * @example
  * ```typescript
+ * import { getResource } from 'oorep-mcp/sdk/resources';
+ *
  * const [searchHelp, remedies] = await Promise.all([
- *   client.getResource('oorep://help/search-syntax'),
- *   client.getResource('oorep://remedies/list'),
+ *   getResource('oorep://help/search-syntax'),
+ *   getResource('oorep://remedies/list', client.getClient()),
  * ]);
  * const context = openAIFormatResourcesAsContext([searchHelp, remedies]);
  * ```
@@ -296,12 +302,14 @@ export interface OpenAIMessage {
  * Transforms PromptResult messages into the format expected by
  * OpenAI's chat completions API.
  *
- * @param prompt - Prompt result from client.getPrompt()
+ * @param prompt - Prompt result from getPrompt()
  * @returns Array of OpenAI-compatible messages
  *
  * @example
  * ```typescript
- * const workflow = await client.getPrompt('repertorization-workflow');
+ * import { getPrompt } from 'oorep-mcp/sdk/prompts';
+ *
+ * const workflow = getPrompt('repertorization-workflow');
  * const messages = convertPromptToOpenAI(workflow);
  *
  * const response = await openai.chat.completions.create({
@@ -330,8 +338,11 @@ export function convertPromptToOpenAI(prompt: PromptResult): OpenAIMessage[] {
  *
  * @example
  * ```typescript
- * const searchSyntax = await client.getResource('oorep://help/search-syntax');
- * const workflow = await client.getPrompt('analyze-symptoms', { symptom_description: 'headache' });
+ * import { getResource } from 'oorep-mcp/sdk/resources';
+ * import { getPrompt } from 'oorep-mcp/sdk/prompts';
+ *
+ * const searchSyntax = await getResource('oorep://help/search-syntax');
+ * const workflow = getPrompt('analyze-symptoms', { symptom_description: 'headache' });
  * const messages = openAIConvertPromptWithContext(searchSyntax, workflow);
  *
  * const response = await openai.chat.completions.create({

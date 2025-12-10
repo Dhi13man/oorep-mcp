@@ -20,7 +20,6 @@ import {
   generateCacheKey,
 } from '../lib/data-formatter.js';
 import { validateSymptom, validateRemedyName, validateLanguage } from '../utils/validation.js';
-import { NotFoundError } from '../utils/errors.js';
 import {
   SearchRepertoryArgsSchema,
   SearchMateriaMedicaArgsSchema,
@@ -33,45 +32,7 @@ import {
   type RepertoryMetadata,
   type MateriaMedicaMetadata,
 } from '../utils/schemas.js';
-import {
-  RESOURCE_URIS,
-  PROMPT_NAMES,
-  DEFAULTS,
-  type ResourceUri,
-  type PromptName,
-} from './constants.js';
-import { resourceDefinitions } from './resources.js';
-import { promptDefinitions } from './prompts.js';
-
-// Import from new modules
-import {
-  fetchRemediesList,
-  fetchRepertoriesList,
-  fetchMateriaMedicasList,
-  getSearchSyntaxHelp as getSearchSyntaxHelpResource,
-  type ResourceContent,
-  type ResourceDefinition,
-} from '../resources/index.js';
-import {
-  buildAnalyzeSymptomsPrompt,
-  buildRemedyComparisonPrompt,
-  buildRepertorizationWorkflowPrompt,
-  type AnalyzeSymptomsArgs,
-  type RemedyComparisonArgs,
-  type PromptResult,
-  type PromptDefinition,
-} from '../prompts/index.js';
-
-// Re-export types for backward compatibility
-export type { ResourceUri, PromptName } from './constants.js';
-export type { ResourceContent, ResourceDefinition } from '../resources/index.js';
-export type {
-  AnalyzeSymptomsArgs,
-  RemedyComparisonArgs,
-  PromptMessage,
-  PromptResult,
-  PromptDefinition,
-} from '../prompts/index.js';
+import { DEFAULTS } from './constants.js';
 
 /**
  * Helper function for partial remedy name matching
@@ -375,147 +336,12 @@ export class OOREPSDKClient {
   }
 
   /**
-   * Get a resource by URI
+   * Get the underlying OOREPClient instance
    *
-   * @example
-   * ```typescript
-   * const client = createOOREPClient();
-   * const searchHelp = await client.getResource('oorep://help/search-syntax');
-   * console.log(searchHelp.text); // Markdown search syntax guide
-   * ```
+   * Useful for passing to resource/prompt functions that require API access.
    */
-  async getResource(uri: ResourceUri): Promise<ResourceContent> {
-    const cacheKey = generateCacheKey('resource', { uri });
-    const cached = (await this.cache.get(cacheKey)) as ResourceContent | null;
-    if (cached) return cached;
-
-    return this.deduplicator.deduplicate(cacheKey, async () => {
-      let result: ResourceContent;
-
-      switch (uri) {
-        case RESOURCE_URIS.REMEDIES_LIST:
-          result = await fetchRemediesList(this.client);
-          break;
-
-        case RESOURCE_URIS.REPERTORIES_LIST:
-          result = await fetchRepertoriesList(this.client);
-          break;
-
-        case RESOURCE_URIS.MATERIA_MEDICAS_LIST:
-          result = await fetchMateriaMedicasList(this.client);
-          break;
-
-        case RESOURCE_URIS.SEARCH_SYNTAX_HELP:
-          result = getSearchSyntaxHelpResource();
-          break;
-
-        default: {
-          const _exhaustive: never = uri;
-          throw new NotFoundError(`Unknown resource URI: ${_exhaustive}`, 'resource', uri);
-        }
-      }
-
-      await this.cache.set(cacheKey, result);
-      return result;
-    });
-  }
-
-  /**
-   * Get the search syntax help guide as markdown text
-   *
-   * Convenience method that returns just the text content.
-   * Equivalent to `(await getResource('oorep://help/search-syntax')).text`
-   *
-   * @example
-   * ```typescript
-   * const client = createOOREPClient();
-   * const searchGuide = await client.getSearchSyntaxHelp();
-   * // Inject into system prompt for better search accuracy
-   * ```
-   */
-  async getSearchSyntaxHelp(): Promise<string> {
-    const resource = await this.getResource('oorep://help/search-syntax');
-    return resource.text;
-  }
-
-  /**
-   * List all available resources with their metadata
-   *
-   * Uses SDK resource definitions as the single source of truth.
-   */
-  listResources(): ResourceDefinition[] {
-    // Map from SDK definitions to ResourceDefinition format
-    return resourceDefinitions.map((def) => ({
-      uri: def.uri as ResourceUri,
-      name: def.name,
-      description: def.description,
-      mimeType: def.mimeType,
-    }));
-  }
-
-  /**
-   * Get a prompt workflow by name
-   *
-   * Available prompts:
-   * - `analyze-symptoms` - Guided workflow for systematic symptom analysis
-   * - `remedy-comparison` - Compare multiple remedies side-by-side
-   * - `repertorization-workflow` - Step-by-step case taking and repertorization (7 steps)
-   *
-   * @example
-   * ```typescript
-   * const client = createOOREPClient();
-   *
-   * // Get the repertorization workflow
-   * const workflow = await client.getPrompt('repertorization-workflow');
-   * console.log(workflow.messages[0].content.text);
-   *
-   * // Compare remedies
-   * const comparison = await client.getPrompt('remedy-comparison', {
-   *   remedies: 'Aconite,Belladonna,Gelsemium'
-   * });
-   * ```
-   */
-  async getPrompt(name: 'analyze-symptoms', args?: AnalyzeSymptomsArgs): Promise<PromptResult>;
-  async getPrompt(name: 'remedy-comparison', args: RemedyComparisonArgs): Promise<PromptResult>;
-  async getPrompt(name: 'repertorization-workflow'): Promise<PromptResult>;
-  async getPrompt(
-    name: PromptName,
-    args?: AnalyzeSymptomsArgs | RemedyComparisonArgs
-  ): Promise<PromptResult> {
-    switch (name) {
-      case PROMPT_NAMES.ANALYZE_SYMPTOMS:
-        return buildAnalyzeSymptomsPrompt(args as AnalyzeSymptomsArgs | undefined);
-
-      case PROMPT_NAMES.REMEDY_COMPARISON: {
-        const compArgs = args as RemedyComparisonArgs | undefined;
-        if (!compArgs?.remedies) {
-          throw new Error('remedies argument is required for remedy-comparison prompt');
-        }
-        return buildRemedyComparisonPrompt(compArgs, this.logger);
-      }
-
-      case PROMPT_NAMES.REPERTORIZATION_WORKFLOW:
-        return buildRepertorizationWorkflowPrompt();
-
-      default: {
-        const _exhaustive: never = name;
-        throw new NotFoundError(`Unknown prompt: ${_exhaustive}`, 'prompt', name);
-      }
-    }
-  }
-
-  /**
-   * List all available prompts with their metadata
-   *
-   * Uses SDK prompt definitions as the single source of truth.
-   */
-  listPrompts(): PromptDefinition[] {
-    // Map from SDK definitions to PromptDefinition format
-    return promptDefinitions.map((def) => ({
-      name: def.name as PromptName,
-      description: def.description,
-      arguments: def.arguments,
-    }));
+  getClient(): OOREPClient {
+    return this.client;
   }
 }
 

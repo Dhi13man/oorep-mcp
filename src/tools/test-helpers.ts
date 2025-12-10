@@ -16,10 +16,6 @@ export function createMockSDKClient(): IOOREPSDKClient & { [K in keyof IOOREPSDK
     getRemedyInfo: vi.fn(),
     listRepertories: vi.fn(),
     listMateriaMedicas: vi.fn(),
-    listResources: vi.fn(),
-    getResource: vi.fn(),
-    listPrompts: vi.fn(),
-    getPrompt: vi.fn(),
     clearCache: vi.fn(),
     destroy: vi.fn(),
   };

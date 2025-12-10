@@ -23,7 +23,9 @@
  */
 
 import { z } from '../../utils/schemas.js';
-import type { OOREPSDKClient, ResourceContent, PromptResult } from '../client.js';
+import type { OOREPSDKClient } from '../client.js';
+import type { ResourceContent } from '../resources.js';
+import type { PromptResult } from '../prompts.js';
 import { TOOL_NAMES } from '../constants.js';
 
 /**

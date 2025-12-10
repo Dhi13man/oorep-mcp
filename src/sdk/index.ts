@@ -43,16 +43,14 @@ export {
   MIME_TYPES,
 } from './constants.js';
 
-// Re-export Resource types
-export type { ResourceContent } from './client.js';
+// Re-export Resource types and functions
+export type { ResourceContent, ResourceDefinition } from './resources.js';
+export { listResources, getResource, getSearchSyntaxHelp } from './resources.js';
 
-// Re-export Prompt types
-export type {
-  PromptMessage,
-  PromptResult,
-  AnalyzeSymptomsArgs,
-  RemedyComparisonArgs,
-} from './client.js';
+// Re-export Prompt types and functions
+export type { PromptMessage, PromptResult, PromptDefinition } from './prompts.js';
+export type { AnalyzeSymptomsArgs, RemedyComparisonArgs } from '../prompts/index.js';
+export { listPrompts, getPrompt } from './prompts.js';
 
 // Re-export all types
 export type {
