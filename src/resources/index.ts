@@ -121,4 +121,11 @@ export class ResourceRegistry {
       throw sanitizeError(error);
     }
   }
+
+  /**
+   * Clean up resources - clears cache and releases connections
+   */
+  destroy(): void {
+    this.cache.destroy?.();
+  }
 }

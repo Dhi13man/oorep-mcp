@@ -23,7 +23,14 @@ import { sanitizeError } from './utils/errors.js';
 // Import package.json for version info - TypeScript will handle this correctly during compilation
 import packageJson from '../package.json' with { type: 'json' };
 
-export async function createServer() {
+export interface ServerContext {
+  server: Server;
+  toolRegistry: ToolRegistry;
+  resourceRegistry: ResourceRegistry;
+  promptRegistry: PromptRegistry;
+}
+
+export async function createServer(): Promise<ServerContext> {
   // Load configuration
   const config = getConfig();
   logger.setLevel(config.logLevel as LogLevel);
@@ -150,20 +157,25 @@ export async function createServer() {
     prompts: promptRegistry.getDefinitions().length,
   });
 
-  return server;
+  return { server, toolRegistry, resourceRegistry, promptRegistry };
 }
 
 export async function runServer() {
   logger.info('Starting OOREP MCP Server...');
 
   try {
-    const server = await createServer();
+    const { server, toolRegistry, resourceRegistry } = await createServer();
     const transport = new StdioServerTransport();
 
     // Set up graceful shutdown handlers
     const shutdown = async (signal: string) => {
       logger.info(`Received ${signal}, shutting down gracefully...`);
       try {
+        // Clean up registries
+        toolRegistry.destroy();
+        resourceRegistry.destroy();
+        // PromptRegistry is stateless, no cleanup needed
+
         await server.close();
         logger.info('Server closed successfully');
         process.exit(0);

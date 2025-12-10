@@ -38,7 +38,7 @@ describe('createServer', () => {
 
   describe('server initialization', () => {
     it('createServer when called then returns server instance', async () => {
-      const server = await createServer();
+      const { server } = await createServer();
 
       expect(server).toBeDefined();
       expect(server).toHaveProperty('setRequestHandler');
@@ -46,7 +46,7 @@ describe('createServer', () => {
     });
 
     it('createServer when called then sets up tool handlers', async () => {
-      const server = await createServer();
+      const { server } = await createServer();
 
       // Server should have the setRequestHandler method available
       expect(server.setRequestHandler).toBeDefined();
@@ -54,7 +54,7 @@ describe('createServer', () => {
     });
 
     it('createServer when called then sets up resource handlers', async () => {
-      const server = await createServer();
+      const { server } = await createServer();
 
       // Server should have the setRequestHandler method available
       expect(server.setRequestHandler).toBeDefined();
@@ -62,7 +62,7 @@ describe('createServer', () => {
     });
 
     it('createServer when called then sets up prompt handlers', async () => {
-      const server = await createServer();
+      const { server } = await createServer();
 
       // Server should have the setRequestHandler method available
       expect(server.setRequestHandler).toBeDefined();
@@ -72,35 +72,35 @@ describe('createServer', () => {
 
   describe('server capabilities', () => {
     it('createServer when initialized then has tool capability', async () => {
-      const server = await createServer();
+      const { server } = await createServer();
 
       // Server is initialized successfully, capabilities are set internally
       expect(server).toBeDefined();
     });
 
     it('createServer when initialized then has resource capability', async () => {
-      const server = await createServer();
+      const { server } = await createServer();
 
       // Server is initialized successfully, capabilities are set internally
       expect(server).toBeDefined();
     });
 
     it('createServer when initialized then has prompt capability', async () => {
-      const server = await createServer();
+      const { server } = await createServer();
 
       // Server is initialized successfully, capabilities are set internally
       expect(server).toBeDefined();
     });
 
     it('createServer when initialized then has correct server name', async () => {
-      const server = await createServer();
+      const { server } = await createServer();
 
       // Server is initialized successfully with correct configuration
       expect(server).toBeDefined();
     });
 
     it('createServer when initialized then has version', async () => {
-      const server = await createServer();
+      const { server } = await createServer();
 
       // Server is initialized successfully with version
       expect(server).toBeDefined();
@@ -130,7 +130,7 @@ describe('createServer', () => {
 
   describe('request handlers', () => {
     it('createServer when called then registers tool handlers', async () => {
-      const server = await createServer();
+      const { server } = await createServer();
 
       // Server should have setRequestHandler method called during creation
       expect(server).toBeDefined();
@@ -138,14 +138,14 @@ describe('createServer', () => {
     });
 
     it('createServer when called then registers resource handlers', async () => {
-      const server = await createServer();
+      const { server } = await createServer();
 
       expect(server).toBeDefined();
       expect(server).toHaveProperty('setRequestHandler');
     });
 
     it('createServer when called then registers prompt handlers', async () => {
-      const server = await createServer();
+      const { server } = await createServer();
 
       expect(server).toBeDefined();
       expect(server).toHaveProperty('setRequestHandler');
@@ -154,7 +154,7 @@ describe('createServer', () => {
 
   describe('tool execution', () => {
     it('createServer when called then tool call handler is registered', async () => {
-      const server = await createServer();
+      const { server } = await createServer();
 
       expect(server).toBeDefined();
       expect(server).toHaveProperty('setRequestHandler');
@@ -170,7 +170,7 @@ describe('createServer', () => {
       });
 
       // Create server with mocked setRequestHandler
-      const server = await createServer();
+      const { server } = await createServer();
       // Re-spy to capture handlers
       vi.spyOn(server, 'setRequestHandler').mockImplementation(mockSetRequestHandler);
       await createServer();
@@ -195,7 +195,7 @@ describe('createServer', () => {
         }
       });
 
-      const server = await createServer();
+      const { server } = await createServer();
       vi.spyOn(server, 'setRequestHandler').mockImplementation(mockSetRequestHandler);
       await createServer();
 
@@ -226,7 +226,7 @@ describe('createServer', () => {
         }
       });
 
-      const server = await createServer();
+      const { server } = await createServer();
       vi.spyOn(server, 'setRequestHandler').mockImplementation(mockSetRequestHandler);
       await createServer();
 
@@ -246,7 +246,7 @@ describe('createServer', () => {
 
   describe('resource reading', () => {
     it('createServer when read resource succeeds then returns content', async () => {
-      const server = await createServer();
+      const { server } = await createServer();
       let readResourceHandler: ((request: any) => Promise<any>) | null = null;
 
       const mockSetRequestHandler = vi.spyOn(server, 'setRequestHandler');
@@ -270,7 +270,7 @@ describe('createServer', () => {
     });
 
     it('createServer when read resource fails then throws sanitized error', async () => {
-      const server = await createServer();
+      const { server } = await createServer();
       let readResourceHandler: ((request: any) => Promise<any>) | null = null;
 
       const mockSetRequestHandler = vi.spyOn(server, 'setRequestHandler');
@@ -296,7 +296,7 @@ describe('createServer', () => {
 
   describe('prompt retrieval', () => {
     it('createServer when called then prompt get handler is registered', async () => {
-      const server = await createServer();
+      const { server } = await createServer();
 
       expect(server).toBeDefined();
       expect(server).toHaveProperty('setRequestHandler');
@@ -311,7 +311,7 @@ describe('createServer', () => {
         }
       });
 
-      const server = await createServer();
+      const { server } = await createServer();
       vi.spyOn(server, 'setRequestHandler').mockImplementation(mockSetRequestHandler);
       await createServer();
 
@@ -332,7 +332,7 @@ describe('createServer', () => {
         }
       });
 
-      const server = await createServer();
+      const { server } = await createServer();
       vi.spyOn(server, 'setRequestHandler').mockImplementation(mockSetRequestHandler);
       await createServer();
 
@@ -358,7 +358,7 @@ describe('createServer', () => {
         }
       });
 
-      const server = await createServer();
+      const { server } = await createServer();
       vi.spyOn(server, 'setRequestHandler').mockImplementation(mockSetRequestHandler);
       await createServer();
 
@@ -383,7 +383,7 @@ describe('createServer', () => {
         }
       });
 
-      const server = await createServer();
+      const { server } = await createServer();
       vi.spyOn(server, 'setRequestHandler').mockImplementation(mockSetRequestHandler);
       await createServer();
 
@@ -397,13 +397,17 @@ describe('createServer', () => {
   });
 
   describe('registry initialization', () => {
-    it('createServer when initialized then server is properly configured', async () => {
-      const server = await createServer();
+    it('createServer when initialized then server context is properly configured', async () => {
+      const context = await createServer();
 
-      // Server should be created with all handlers registered
-      expect(server).toBeDefined();
-      expect(server).toHaveProperty('setRequestHandler');
-      expect(server).toHaveProperty('connect');
+      // Server context should contain all registries
+      expect(context).toBeDefined();
+      expect(context.server).toBeDefined();
+      expect(context.server).toHaveProperty('setRequestHandler');
+      expect(context.server).toHaveProperty('connect');
+      expect(context.toolRegistry).toBeDefined();
+      expect(context.resourceRegistry).toBeDefined();
+      expect(context.promptRegistry).toBeDefined();
     });
   });
 });

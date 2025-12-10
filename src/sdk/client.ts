@@ -34,14 +34,8 @@ import {
   type MateriaMedicaMetadata,
 } from '../utils/schemas.js';
 import { RESOURCE_URIS, PROMPT_NAMES, DEFAULTS, type ResourceUri, type PromptName } from './constants.js';
-import {
-  resourceDefinitions as sdkResourceDefinitions,
-  type OOREPResourceDefinition,
-} from './resources.js';
-import {
-  promptDefinitions as sdkPromptDefinitions,
-  type OOREPPromptDefinition,
-} from './prompts.js';
+import { resourceDefinitions as sdkResourceDefinitions } from './resources.js';
+import { promptDefinitions as sdkPromptDefinitions } from './prompts.js';
 
 // Import from new modules
 import {

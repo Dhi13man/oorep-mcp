@@ -6,7 +6,7 @@
 
 import { PROMPT_NAMES, TOOL_NAMES } from '../sdk/constants.js';
 import type { ILogger } from '../interfaces/ILogger.js';
-import type { PromptMessage, PromptResult, PromptDefinition } from './analyze-symptoms.js';
+import type { PromptResult, PromptDefinition } from './analyze-symptoms.js';
 
 export interface RemedyComparisonArgs {
   remedies: string;
