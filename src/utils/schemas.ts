@@ -21,7 +21,7 @@ export const SearchRepertoryArgsSchema = z.object({
     .string()
     .optional()
     .describe(
-      'Repertory abbreviation (e.g., "kent"). Defaults to OOREP_MCP_DEFAULT_REPERTORY when omitted.'
+      'Repertory abbreviation. Use list_available_repertories to discover options. Defaults to OOREP_MCP_DEFAULT_REPERTORY when omitted.'
     ),
   minWeight: z.number().int().min(1).max(4).optional().describe('Minimum remedy weight (1-4)'),
   maxResults: z
@@ -49,7 +49,7 @@ export const SearchMateriaMedicaArgsSchema = z.object({
     .string()
     .optional()
     .describe(
-      'Materia medica abbreviation (e.g., "boericke"). Defaults to OOREP_MCP_DEFAULT_MATERIA_MEDICA when omitted.'
+      'Materia medica abbreviation. Use list_available_materia_medicas to discover options. Defaults to OOREP_MCP_DEFAULT_MATERIA_MEDICA when omitted.'
     ),
   remedy: z.string().optional().describe('Filter by specific remedy name'),
   maxResults: z

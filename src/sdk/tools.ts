@@ -53,7 +53,7 @@ export const toolDefinitions: OOREPToolDefinition[] = [
         repertory: {
           type: 'string',
           description:
-            'Repertory abbreviation to search in (e.g., "kent", "publicum"). If not specified, uses the default repertory.',
+            'Repertory abbreviation to search in. Use list_available_repertories to discover available options dynamically.',
         },
         minWeight: {
           type: 'number',
@@ -92,7 +92,7 @@ export const toolDefinitions: OOREPToolDefinition[] = [
         materiamedica: {
           type: 'string',
           description:
-            'Materia medica abbreviation to search in (e.g., "boericke", "kent"). If not specified, uses the default.',
+            'Materia medica abbreviation to search in. Use list_available_materia_medicas to discover available options dynamically.',
         },
         remedy: {
           type: 'string',

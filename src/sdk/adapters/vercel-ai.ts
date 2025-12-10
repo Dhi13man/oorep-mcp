@@ -70,7 +70,7 @@ export function createOOREPTools(client: OOREPSDKClient) {
         repertory: z
           .string()
           .optional()
-          .describe('Repertory abbreviation (e.g., "kent", "publicum")'),
+          .describe('Repertory abbreviation. Use list_available_repertories to discover options.'),
         minWeight: z.number().min(1).max(4).optional().describe('Minimum remedy weight (1-4)'),
         maxResults: z.number().min(1).max(100).optional().default(20).describe('Maximum results'),
         includeRemedyStats: z
@@ -95,7 +95,9 @@ export function createOOREPTools(client: OOREPSDKClient) {
         materiamedica: z
           .string()
           .optional()
-          .describe('Materia medica abbreviation (e.g., "boericke")'),
+          .describe(
+            'Materia medica abbreviation. Use list_available_materia_medicas to discover options.'
+          ),
         remedy: z.string().optional().describe('Filter to specific remedy'),
         maxResults: z.number().min(1).max(50).optional().default(10).describe('Maximum results'),
       }),
