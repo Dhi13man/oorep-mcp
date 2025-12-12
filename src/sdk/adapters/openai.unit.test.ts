@@ -17,7 +17,7 @@ import {
   openAIConvertPromptWithContext,
   type OpenAITool,
 } from './openai.js';
-import type { OOREPSDKClient, ResourceContent, PromptResult } from '../client.js';
+import type { OOREPClient, ResourceContent, PromptResult } from '../client.js';
 import { NotFoundError } from '../../utils/errors.js';
 
 describe('openAITools', () => {
@@ -111,7 +111,7 @@ describe('getOpenAITools', () => {
 });
 
 describe('executeOOREPTool', () => {
-  let mockClient: OOREPSDKClient;
+  let mockClient: OOREPClient;
 
   beforeEach(() => {
     mockClient = {
@@ -120,7 +120,7 @@ describe('executeOOREPTool', () => {
       getRemedyInfo: vi.fn().mockResolvedValue({ id: 1, nameAbbrev: 'Acon.' }),
       listRepertories: vi.fn().mockResolvedValue([{ abbreviation: 'kent' }]),
       listMateriaMedicas: vi.fn().mockResolvedValue([{ abbreviation: 'boericke' }]),
-    } as unknown as OOREPSDKClient;
+    } as unknown as OOREPClient;
   });
 
   it('when search_repertory then calls client.searchRepertory', async () => {
@@ -214,12 +214,12 @@ describe('executeOOREPTool', () => {
 });
 
 describe('executeOpenAITool', () => {
-  let mockClient: OOREPSDKClient;
+  let mockClient: OOREPClient;
 
   beforeEach(() => {
     mockClient = {
       searchRepertory: vi.fn().mockResolvedValue({ totalResults: 1 }),
-    } as unknown as OOREPSDKClient;
+    } as unknown as OOREPClient;
   });
 
   it('when valid JSON then parses and executes', async () => {
@@ -251,7 +251,7 @@ describe('createToolExecutor', () => {
     // Arrange
     const mockClient = {
       searchRepertory: vi.fn().mockResolvedValue({ totalResults: 5 }),
-    } as unknown as OOREPSDKClient;
+    } as unknown as OOREPClient;
 
     // Act
     const executor = createToolExecutor(mockClient);
@@ -297,13 +297,13 @@ describe('formatToolResult', () => {
 });
 
 describe('processToolCalls', () => {
-  let mockClient: OOREPSDKClient;
+  let mockClient: OOREPClient;
 
   beforeEach(() => {
     mockClient = {
       searchRepertory: vi.fn().mockResolvedValue({ totalResults: 1 }),
       getRemedyInfo: vi.fn().mockResolvedValue({ id: 1, nameAbbrev: 'Acon.' }),
-    } as unknown as OOREPSDKClient;
+    } as unknown as OOREPClient;
   });
 
   it('when undefined then returns empty array', async () => {

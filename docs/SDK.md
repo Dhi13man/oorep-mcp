@@ -28,6 +28,7 @@ const client = createOOREPClient({
   baseUrl: 'https://www.oorep.com',  // OOREP API base URL
   timeoutMs: 30000,                   // Request timeout (ms)
   cacheTtlMs: 300000,                 // Cache TTL (ms, 0 to disable)
+  remoteUser: '123',                  // Optional: X-Remote-User member ID (self-hosted OOREP)
   defaultRepertory: 'publicum',       // Default repertory
   defaultMateriaMedica: 'boericke',   // Default materia medica
 });

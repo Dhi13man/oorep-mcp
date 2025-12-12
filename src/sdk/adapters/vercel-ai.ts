@@ -23,7 +23,7 @@
  */
 
 import { z } from '../../utils/schemas.js';
-import type { OOREPSDKClient } from '../client.js';
+import type { OOREPClient } from '../client.js';
 import type { ResourceContent } from '../resources.js';
 import type { PromptResult } from '../prompts.js';
 import { TOOL_NAMES } from '../constants.js';
@@ -58,7 +58,7 @@ export interface VercelAITool<TInput, TOutput> {
  * });
  * ```
  */
-export function createOOREPTools(client: OOREPSDKClient) {
+export function createOOREPTools(client: OOREPClient) {
   return {
     [TOOL_NAMES.SEARCH_REPERTORY]: {
       description:
@@ -153,7 +153,7 @@ export type OOREPTools = ReturnType<typeof createOOREPTools>;
  * ```
  */
 export function getOOREPTools<K extends keyof OOREPTools>(
-  client: OOREPSDKClient,
+  client: OOREPClient,
   toolNames: K[]
 ): Pick<OOREPTools, K> {
   const allTools = createOOREPTools(client);
@@ -174,23 +174,23 @@ export function getOOREPTools<K extends keyof OOREPTools>(
  * const searchTool = createSearchRepertoryTool(client);
  * ```
  */
-export function createSearchRepertoryTool(client: OOREPSDKClient) {
+export function createSearchRepertoryTool(client: OOREPClient) {
   return createOOREPTools(client).search_repertory;
 }
 
-export function createSearchMateriaMedicaTool(client: OOREPSDKClient) {
+export function createSearchMateriaMedicaTool(client: OOREPClient) {
   return createOOREPTools(client).search_materia_medica;
 }
 
-export function createGetRemedyInfoTool(client: OOREPSDKClient) {
+export function createGetRemedyInfoTool(client: OOREPClient) {
   return createOOREPTools(client).get_remedy_info;
 }
 
-export function createListRepertoriesTool(client: OOREPSDKClient) {
+export function createListRepertoriesTool(client: OOREPClient) {
   return createOOREPTools(client).list_available_repertories;
 }
 
-export function createListMateriaMedicasTool(client: OOREPSDKClient) {
+export function createListMateriaMedicasTool(client: OOREPClient) {
   return createOOREPTools(client).list_available_materia_medicas;
 }
 

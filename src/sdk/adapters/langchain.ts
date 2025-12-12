@@ -22,7 +22,7 @@
  */
 
 import { z } from '../../utils/schemas.js';
-import type { OOREPSDKClient } from '../client.js';
+import type { OOREPClient } from '../client.js';
 import type { ResourceContent } from '../resources.js';
 import type { PromptResult } from '../prompts.js';
 import { TOOL_NAMES } from '../constants.js';
@@ -56,7 +56,7 @@ export interface LangChainToolDefinition {
  * const tools = toolDefs.map(def => new DynamicStructuredTool(def));
  * ```
  */
-export function createLangChainTools(client: OOREPSDKClient): LangChainToolDefinition[] {
+export function createLangChainTools(client: OOREPClient): LangChainToolDefinition[] {
   return [
     {
       name: TOOL_NAMES.SEARCH_REPERTORY,
@@ -149,7 +149,7 @@ export function createLangChainTools(client: OOREPSDKClient): LangChainToolDefin
  * @returns Filtered array of tool definitions
  */
 export function getLangChainTools(
-  client: OOREPSDKClient,
+  client: OOREPClient,
   toolNames: string[]
 ): LangChainToolDefinition[] {
   const allTools = createLangChainTools(client);
@@ -168,7 +168,7 @@ export function getLangChainTools(
  * // Use with LangGraph
  * ```
  */
-export function createLangGraphTools(client: OOREPSDKClient) {
+export function createLangGraphTools(client: OOREPClient) {
   const tools = createLangChainTools(client);
 
   return {

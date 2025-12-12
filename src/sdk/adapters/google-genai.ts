@@ -8,10 +8,10 @@
  * ```typescript
  * import { GoogleGenAI } from '@google/genai';
  * import { geminiTools, createGeminiToolExecutors, executeGeminiFunctionCall } from 'oorep-mcp/sdk/adapters/google-genai';
- * import { OOREPSDKClient } from 'oorep-mcp';
+ * import { OOREPClient } from 'oorep-mcp';
  *
  * const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
- * const client = new OOREPSDKClient({ baseUrl: 'https://api.oorep.com' });
+ * const client = new OOREPClient({ baseUrl: 'https://api.oorep.com' });
  * const executors = createGeminiToolExecutors(client);
  *
  * const response = await ai.models.generateContent({
@@ -28,7 +28,7 @@
  */
 
 import { toolDefinitions, type OOREPToolDefinition } from '../tools.js';
-import type { OOREPSDKClient } from '../client.js';
+import type { OOREPClient } from '../client.js';
 import type { ResourceContent } from '../resources.js';
 import type { PromptResult } from '../prompts.js';
 import { TOOL_NAMES, type ToolName } from '../constants.js';
@@ -158,7 +158,7 @@ export type GeminiToolExecutors = {
  * @param client - Configured OOREP SDK client instance
  * @returns Map of tool name to executor function
  */
-export function createGeminiToolExecutors(client: OOREPSDKClient): GeminiToolExecutors {
+export function createGeminiToolExecutors(client: OOREPClient): GeminiToolExecutors {
   return {
     [TOOL_NAMES.SEARCH_REPERTORY]: (args: SearchRepertoryArgs) => client.searchRepertory(args),
     [TOOL_NAMES.SEARCH_MATERIA_MEDICA]: (args: SearchMateriaMedicaArgs) =>

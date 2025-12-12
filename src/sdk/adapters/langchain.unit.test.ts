@@ -17,10 +17,10 @@ import {
   langChainConvertPromptWithContext,
   type LangChainToolDefinition,
 } from './langchain.js';
-import type { OOREPSDKClient, ResourceContent, PromptResult } from '../client.js';
+import type { OOREPClient, ResourceContent, PromptResult } from '../client.js';
 
 describe('createLangChainTools', () => {
-  let mockClient: OOREPSDKClient;
+  let mockClient: OOREPClient;
 
   beforeEach(() => {
     mockClient = {
@@ -29,7 +29,7 @@ describe('createLangChainTools', () => {
       getRemedyInfo: vi.fn().mockResolvedValue({ id: 1, nameAbbrev: 'Acon.' }),
       listRepertories: vi.fn().mockResolvedValue([{ abbreviation: 'kent' }]),
       listMateriaMedicas: vi.fn().mockResolvedValue([{ abbreviation: 'boericke' }]),
-    } as unknown as OOREPSDKClient;
+    } as unknown as OOREPClient;
   });
 
   it('when called then returns array with all five tools', () => {
@@ -262,7 +262,7 @@ describe('createLangChainTools', () => {
 });
 
 describe('getLangChainTools', () => {
-  let mockClient: OOREPSDKClient;
+  let mockClient: OOREPClient;
 
   beforeEach(() => {
     mockClient = {
@@ -271,7 +271,7 @@ describe('getLangChainTools', () => {
       getRemedyInfo: vi.fn(),
       listRepertories: vi.fn(),
       listMateriaMedicas: vi.fn(),
-    } as unknown as OOREPSDKClient;
+    } as unknown as OOREPClient;
   });
 
   it('when specific tools requested then returns only those', () => {
@@ -317,7 +317,7 @@ describe('getLangChainTools', () => {
 });
 
 describe('createLangGraphTools', () => {
-  let mockClient: OOREPSDKClient;
+  let mockClient: OOREPClient;
 
   beforeEach(() => {
     mockClient = {
@@ -326,7 +326,7 @@ describe('createLangGraphTools', () => {
       getRemedyInfo: vi.fn(),
       listRepertories: vi.fn(),
       listMateriaMedicas: vi.fn(),
-    } as unknown as OOREPSDKClient;
+    } as unknown as OOREPClient;
   });
 
   it('when called then returns object with tools array', () => {

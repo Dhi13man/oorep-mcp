@@ -3,13 +3,13 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { OOREPClient } from './oorep-client.js';
+import { OOREPHttpClient } from './oorep-client.js';
 import { NetworkError, TimeoutError, RateLimitError } from '../utils/errors.js';
 import type { OOREPConfig } from '../config.js';
 
-describe('OOREPClient', () => {
+describe('OOREPHttpClient', () => {
   let mockConfig: OOREPConfig;
-  let mockClient: OOREPClient;
+  let mockClient: OOREPHttpClient;
   let mockFetch: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
@@ -22,7 +22,7 @@ describe('OOREPClient', () => {
       defaultRepertory: 'test-rep',
       defaultMateriaMedica: 'test-mm',
     };
-    mockClient = new OOREPClient(mockConfig);
+    mockClient = new OOREPHttpClient(mockConfig);
     mockFetch = vi.fn();
     global.fetch = mockFetch;
   });
@@ -32,9 +32,9 @@ describe('OOREPClient', () => {
   });
 
   describe('constructor', () => {
-    it('OOREPClient when created then removes trailing slash from baseUrl', () => {
+    it('OOREPHttpClient when created then removes trailing slash from baseUrl', () => {
       const config = { ...mockConfig, baseUrl: 'https://test.oorep.com/' };
-      const client = new OOREPClient(config);
+      const client = new OOREPHttpClient(config);
 
       expect(client).toBeDefined();
     });
@@ -63,6 +63,31 @@ describe('OOREPClient', () => {
 
       expect(mockFetch).toHaveBeenCalledTimes(2);
       expect(mockFetch.mock.calls[0][0]).toContain('/api/available_remedies');
+    });
+
+    it('lookupRepertory when remoteUser configured then sends X-Remote-User header', async () => {
+      const client = new OOREPHttpClient({ ...mockConfig, remoteUser: '123' });
+
+      const mockSessionResponse = {
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        text: () => Promise.resolve('[]'),
+      };
+      const mockLookupResponse = {
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        text: () => Promise.resolve(JSON.stringify([{ totalNumberOfResults: 0, results: [] }])),
+      };
+
+      mockFetch.mockResolvedValueOnce(mockSessionResponse).mockResolvedValueOnce(mockLookupResponse);
+
+      await client.lookupRepertory({ symptom: 'test' });
+
+      const firstCallOptions = mockFetch.mock.calls[0][1] as RequestInit;
+      const headers = firstCallOptions.headers as Record<string, string>;
+      expect(headers['X-Remote-User']).toBe('123');
     });
 
     it('lookupRepertory when session init fails then throws NetworkError', async () => {
@@ -236,7 +261,7 @@ describe('OOREPClient', () => {
 
     it('lookupRepertory when 401 response then refreshes session and retries', async () => {
       // Create fresh client without session to test 401 handling
-      const freshClient = new OOREPClient(mockConfig);
+      const freshClient = new OOREPHttpClient(mockConfig);
 
       const mockSessionHeaders = new Headers();
       mockSessionHeaders.set('set-cookie', 'session=abc123');
@@ -317,7 +342,7 @@ describe('OOREPClient', () => {
 
     it('lookupRepertory when 500 response then throws NetworkError', async () => {
       // Create fresh client to test error handling
-      const freshClient = new OOREPClient(mockConfig);
+      const freshClient = new OOREPHttpClient(mockConfig);
 
       const mockSessionResponse = {
         ok: true,
@@ -345,7 +370,7 @@ describe('OOREPClient', () => {
       vi.useFakeTimers();
       try {
         // Create fresh client to test error handling
-        const freshClient = new OOREPClient(mockConfig);
+        const freshClient = new OOREPHttpClient(mockConfig);
 
         const mockSessionHeaders = new Headers();
         mockSessionHeaders.set('set-cookie', 'session=abc123');
@@ -416,7 +441,7 @@ describe('OOREPClient', () => {
     });
 
     it('lookupRepertory when 502 Bad Gateway then throws NetworkError', async () => {
-      const freshClient = new OOREPClient(mockConfig);
+      const freshClient = new OOREPHttpClient(mockConfig);
       const mockSessionResponse = {
         ok: true,
         status: 200,
@@ -439,7 +464,7 @@ describe('OOREPClient', () => {
     });
 
     it('lookupRepertory when 503 Service Unavailable then throws NetworkError', async () => {
-      const freshClient = new OOREPClient(mockConfig);
+      const freshClient = new OOREPHttpClient(mockConfig);
       const mockSessionResponse = {
         ok: true,
         status: 200,
@@ -462,7 +487,7 @@ describe('OOREPClient', () => {
     });
 
     it('lookupRepertory when 504 Gateway Timeout then throws NetworkError', async () => {
-      const freshClient = new OOREPClient(mockConfig);
+      const freshClient = new OOREPHttpClient(mockConfig);
       const mockSessionResponse = {
         ok: true,
         status: 200,
@@ -487,7 +512,7 @@ describe('OOREPClient', () => {
     it('lookupRepertory when response is valid JSON but wrong structure then throws TypeError', async () => {
       vi.useFakeTimers();
       try {
-        const freshClient = new OOREPClient(mockConfig);
+        const freshClient = new OOREPHttpClient(mockConfig);
         const mockSessionResponse = {
           ok: true,
           status: 200,
@@ -518,7 +543,7 @@ describe('OOREPClient', () => {
     });
 
     it('lookupRepertory when 400 Bad Request then throws NetworkError', async () => {
-      const freshClient = new OOREPClient(mockConfig);
+      const freshClient = new OOREPHttpClient(mockConfig);
       const mockSessionResponse = {
         ok: true,
         status: 200,
@@ -541,7 +566,7 @@ describe('OOREPClient', () => {
     });
 
     it('lookupRepertory when 403 Forbidden then throws NetworkError', async () => {
-      const freshClient = new OOREPClient(mockConfig);
+      const freshClient = new OOREPHttpClient(mockConfig);
       const mockSessionResponse = {
         ok: true,
         status: 200,
@@ -564,7 +589,7 @@ describe('OOREPClient', () => {
     });
 
     it('lookupRepertory when 404 Not Found then throws NetworkError', async () => {
-      const freshClient = new OOREPClient(mockConfig);
+      const freshClient = new OOREPHttpClient(mockConfig);
       const mockSessionResponse = {
         ok: true,
         status: 200,
@@ -761,7 +786,7 @@ describe('OOREPClient', () => {
   describe('getAvailableRemedies', () => {
     it('getAvailableRemedies when successful then returns remedies array', async () => {
       // Create fresh client
-      const freshClient = new OOREPClient(mockConfig);
+      const freshClient = new OOREPHttpClient(mockConfig);
 
       const mockSessionHeaders = new Headers();
       mockSessionHeaders.set('set-cookie', 'session=abc123');
@@ -787,7 +812,7 @@ describe('OOREPClient', () => {
 
     it('getAvailableRemedies when null response then returns empty array', async () => {
       // Create fresh client
-      const freshClient = new OOREPClient(mockConfig);
+      const freshClient = new OOREPHttpClient(mockConfig);
 
       const mockSessionHeaders = new Headers();
       mockSessionHeaders.set('set-cookie', 'session=abc123');

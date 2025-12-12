@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { OOREPSDKClient, createOOREPClient } from './client.js';
+import { OOREPClient, createOOREPClient } from './client.js';
 
 // Mock the dependencies with proper class constructors
 const mockOOREPClientInstance = {
@@ -31,7 +31,7 @@ const mockDeduplicatorInstance = {
 };
 
 vi.mock('../lib/oorep-client.js', () => ({
-  OOREPClient: vi.fn().mockImplementation(function () {
+  OOREPHttpClient: vi.fn().mockImplementation(function () {
     return mockOOREPClientInstance;
   }),
 }));
@@ -57,11 +57,11 @@ vi.mock('../utils/logger.js', () => ({
   }),
 }));
 
-import { OOREPClient } from '../lib/oorep-client.js';
+import { OOREPHttpClient } from '../lib/oorep-client.js';
 import { InMemoryCache } from '../lib/cache.js';
 import { MapRequestDeduplicator } from '../lib/deduplicator.js';
 
-describe('OOREPSDKClient Unit Tests', () => {
+describe('OOREPClient Unit Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Reset mock return values
@@ -73,22 +73,35 @@ describe('OOREPSDKClient Unit Tests', () => {
   });
 
   describe('constructor', () => {
-    it('initializes OOREPClient with merged config', () => {
-      const client = new OOREPSDKClient({ timeoutMs: 60000 });
+    it('initializes OOREPHttpClient with merged config', () => {
+      const client = new OOREPClient({ timeoutMs: 60000 });
 
-      expect(OOREPClient).toHaveBeenCalledWith(
+      expect(OOREPHttpClient).toHaveBeenCalledWith(
         expect.objectContaining({
           baseUrl: 'https://www.oorep.com',
           timeoutMs: 60000,
-          cacheTtlMs: 300000,
-        })
+          defaultRepertory: 'publicum',
+          defaultMateriaMedica: 'boericke',
+        }),
+        expect.any(Object)
+      );
+
+      client.destroy();
+    });
+
+    it('initializes OOREPHttpClient with remoteUser when provided', () => {
+      const client = new OOREPClient({ remoteUser: '123' });
+
+      expect(OOREPHttpClient).toHaveBeenCalledWith(
+        expect.objectContaining({ remoteUser: '123' }),
+        expect.any(Object)
       );
 
       client.destroy();
     });
 
     it('initializes Cache with cacheTtlMs', () => {
-      const client = new OOREPSDKClient({ cacheTtlMs: 600000 });
+      const client = new OOREPClient({ cacheTtlMs: 600000 });
 
       expect(InMemoryCache).toHaveBeenCalledWith(600000, expect.any(Object));
 
@@ -96,7 +109,7 @@ describe('OOREPSDKClient Unit Tests', () => {
     });
 
     it('initializes RequestDeduplicator', () => {
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       expect(MapRequestDeduplicator).toHaveBeenCalledWith(expect.any(Object));
 
@@ -106,7 +119,7 @@ describe('OOREPSDKClient Unit Tests', () => {
 
   describe('searchRepertory - unit logic', () => {
     it('generates correct cache key with all parameters', async () => {
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       mockOOREPClientInstance.lookupRepertory.mockResolvedValue({
         totalNumberOfResults: 0,
@@ -132,7 +145,7 @@ describe('OOREPSDKClient Unit Tests', () => {
     });
 
     it('uses default repertory when not specified', async () => {
-      const client = new OOREPSDKClient({ defaultRepertory: 'publicum' });
+      const client = new OOREPClient({ defaultRepertory: 'publicum' });
 
       mockOOREPClientInstance.lookupRepertory.mockResolvedValue({
         totalNumberOfResults: 0,
@@ -149,7 +162,7 @@ describe('OOREPSDKClient Unit Tests', () => {
     });
 
     it('returns cached result without calling API', async () => {
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       const cachedResult = { totalResults: 5, rubrics: [], remedyStats: [] };
       mockCacheInstance.get.mockResolvedValue(cachedResult);
@@ -163,7 +176,7 @@ describe('OOREPSDKClient Unit Tests', () => {
     });
 
     it('stores result in cache after API call', async () => {
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       mockOOREPClientInstance.lookupRepertory.mockResolvedValue({
         totalNumberOfResults: 10,
@@ -181,7 +194,7 @@ describe('OOREPSDKClient Unit Tests', () => {
     });
 
     it('uses deduplicator for concurrent requests', async () => {
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       mockOOREPClientInstance.lookupRepertory.mockResolvedValue({
         totalNumberOfResults: 0,
@@ -201,7 +214,7 @@ describe('OOREPSDKClient Unit Tests', () => {
 
   describe('searchMateriaMedica - unit logic', () => {
     it('uses default materia medica when not specified', async () => {
-      const client = new OOREPSDKClient({ defaultMateriaMedica: 'boericke' });
+      const client = new OOREPClient({ defaultMateriaMedica: 'boericke' });
 
       mockOOREPClientInstance.lookupMateriaMedica.mockResolvedValue({
         results: [],
@@ -220,7 +233,7 @@ describe('OOREPSDKClient Unit Tests', () => {
 
   describe('getRemedyInfo - unit logic', () => {
     it('performs case-insensitive matching', async () => {
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue([
         { id: 1, nameAbbrev: 'Acon.', nameLong: 'Aconitum napellus', namealt: [] },
@@ -235,7 +248,7 @@ describe('OOREPSDKClient Unit Tests', () => {
     });
 
     it('matches by abbreviation', async () => {
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue([
         { id: 1, nameAbbrev: 'Acon.', nameLong: 'Aconitum napellus', namealt: [] },
@@ -250,7 +263,7 @@ describe('OOREPSDKClient Unit Tests', () => {
     });
 
     it('matches by alternative name', async () => {
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue([
         { id: 1, nameAbbrev: 'Acon.', nameLong: 'Aconitum napellus', namealt: ['Aconite'] },
@@ -265,7 +278,7 @@ describe('OOREPSDKClient Unit Tests', () => {
     });
 
     it('performs partial matching for queries >= 3 chars', async () => {
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue([
         { id: 1, nameAbbrev: 'Bell.', nameLong: 'Belladonna', namealt: [] },
@@ -280,7 +293,7 @@ describe('OOREPSDKClient Unit Tests', () => {
     });
 
     it('performs partial matching via alternative names', async () => {
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue([
         {
@@ -301,7 +314,7 @@ describe('OOREPSDKClient Unit Tests', () => {
     });
 
     it('matches when query contains alternative name', async () => {
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue([
         {
@@ -322,7 +335,7 @@ describe('OOREPSDKClient Unit Tests', () => {
     });
 
     it('does not partial match for queries < 3 chars', async () => {
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue([
         { id: 1, nameAbbrev: 'Bell.', nameLong: 'Belladonna', namealt: [] },
@@ -336,7 +349,7 @@ describe('OOREPSDKClient Unit Tests', () => {
     });
 
     it('returns null when remedy not found', async () => {
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       mockOOREPClientInstance.getAvailableRemedies.mockResolvedValue([
         { id: 1, nameAbbrev: 'Acon.', nameLong: 'Aconitum napellus', namealt: [] },
@@ -352,7 +365,7 @@ describe('OOREPSDKClient Unit Tests', () => {
 
   describe('listRepertories - unit logic', () => {
     it('filters by language when specified', async () => {
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       mockOOREPClientInstance.getAvailableRepertories.mockResolvedValue([
         { abbreviation: 'kent', title: 'Kent', language: 'en', author: 'Kent' },
@@ -368,7 +381,7 @@ describe('OOREPSDKClient Unit Tests', () => {
     });
 
     it('returns all when no language filter', async () => {
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       mockOOREPClientInstance.getAvailableRepertories.mockResolvedValue([
         { abbreviation: 'kent', title: 'Kent', language: 'en', author: 'Kent' },
@@ -385,7 +398,7 @@ describe('OOREPSDKClient Unit Tests', () => {
 
   describe('listMateriaMedicas - unit logic', () => {
     it('filters by language when specified', async () => {
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       mockOOREPClientInstance.getAvailableMateriaMedicas.mockResolvedValue([
         { abbreviation: 'boericke', title: 'Boericke', language: 'en', author: 'Boericke' },
@@ -401,7 +414,7 @@ describe('OOREPSDKClient Unit Tests', () => {
     });
 
     it('returns cached result without calling API', async () => {
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       const cachedResult = [
         { abbreviation: 'cached', title: 'Cached MM', language: 'en', author: 'Test' },
@@ -417,7 +430,7 @@ describe('OOREPSDKClient Unit Tests', () => {
     });
 
     it('returns all when no language filter', async () => {
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       mockOOREPClientInstance.getAvailableMateriaMedicas.mockResolvedValue([
         { abbreviation: 'boericke', title: 'Boericke', language: 'en', author: 'Boericke' },
@@ -434,7 +447,7 @@ describe('OOREPSDKClient Unit Tests', () => {
 
   describe('clearCache', () => {
     it('delegates to cache clear method', () => {
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       client.clearCache();
 
@@ -446,7 +459,7 @@ describe('OOREPSDKClient Unit Tests', () => {
 
   describe('destroy', () => {
     it('delegates to cache destroy method', () => {
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       client.destroy();
 
@@ -456,7 +469,7 @@ describe('OOREPSDKClient Unit Tests', () => {
 
   describe('getConfig', () => {
     it('returns copy of config', () => {
-      const client = new OOREPSDKClient({ timeoutMs: 45000 });
+      const client = new OOREPClient({ timeoutMs: 45000 });
 
       const config1 = client.getConfig();
       const config2 = client.getConfig();
@@ -470,10 +483,10 @@ describe('OOREPSDKClient Unit Tests', () => {
 });
 
 describe('createOOREPClient factory - unit', () => {
-  it('returns OOREPSDKClient instance', () => {
+  it('returns OOREPClient instance', () => {
     const client = createOOREPClient();
 
-    expect(client).toBeInstanceOf(OOREPSDKClient);
+    expect(client).toBeInstanceOf(OOREPClient);
 
     client.destroy();
   });

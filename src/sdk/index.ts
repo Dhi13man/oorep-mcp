@@ -21,7 +21,7 @@
  */
 
 // Re-export the main client
-export { OOREPSDKClient, createOOREPClient, type OOREPSDKConfig } from './client.js';
+export { OOREPClient, createOOREPClient, type OOREPSDKConfig } from './client.js';
 
 // Re-export constants (single source of truth)
 export {

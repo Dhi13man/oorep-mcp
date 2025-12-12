@@ -3,7 +3,7 @@
  * Search materia medica texts for symptoms and return matching remedy sections
  */
 
-import type { IOOREPSDKClient } from '../interfaces/IOOREPSDKClient.js';
+import type { IOOREPClient } from '../interfaces/IOOREPClient.js';
 import {
   SearchMateriaMedicaArgsSchema,
   MateriaMedicaSearchResultSchema,
@@ -15,7 +15,7 @@ import { logger } from '../utils/logger.js';
 import { TOOL_NAMES } from '../sdk/constants.js';
 
 export class SearchMateriaMedicaTool {
-  constructor(private client: IOOREPSDKClient) {}
+  constructor(private client: IOOREPClient) {}
 
   async execute(args: unknown): Promise<MateriaMedicaSearchResult> {
     try {

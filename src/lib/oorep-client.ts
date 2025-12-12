@@ -2,8 +2,17 @@
  * HTTP client for OOREP API with retry logic and error handling
  */
 
-import { OOREPConfig } from '../config.js';
-import { logger } from '../utils/logger.js';
+/**
+ * Configuration for the HTTP client - only what it actually needs
+ */
+export interface OOREPHttpClientConfig {
+  baseUrl: string;
+  timeoutMs: number;
+  defaultRepertory: string;
+  defaultMateriaMedica: string;
+  remoteUser?: string;
+}
+import { logger as defaultLogger, type ILogger } from '../utils/logger.js';
 import { NetworkError, TimeoutError, RateLimitError } from '../utils/errors.js';
 import { RepertoryMetadata, MateriaMedicaMetadata } from '../utils/schemas.js';
 import pkg from '../../package.json' with { type: 'json' };
@@ -144,7 +153,7 @@ function sleep(ms: number): Promise<void> {
 /**
  * OOREP HTTP Client with retry logic
  */
-export class OOREPClient {
+export class OOREPHttpClient {
   private readonly baseUrl: string;
   private readonly timeoutMs: number;
   private readonly maxRetries = 3;
@@ -152,20 +161,28 @@ export class OOREPClient {
   private sessionInitPromise: Promise<void> | null = null;
   private readonly defaultRepertory: string;
   private readonly defaultMateriaMedica: string;
+  private readonly remoteUser?: string;
+  private readonly logger: ILogger;
 
-  constructor(config: OOREPConfig) {
+  constructor(config: OOREPHttpClientConfig, logger: ILogger = defaultLogger) {
     this.baseUrl = config.baseUrl.replace(/\/$/, ''); // Remove trailing slash
     this.timeoutMs = config.timeoutMs;
     this.defaultRepertory = config.defaultRepertory;
     this.defaultMateriaMedica = config.defaultMateriaMedica;
+    this.remoteUser = config.remoteUser;
+    this.logger = logger;
   }
 
   private getDefaultHeaders(): Record<string, string> {
-    return {
+    const headers: Record<string, string> = {
       Accept: 'application/json',
       'User-Agent': USER_AGENT,
       'X-Requested-With': 'XMLHttpRequest',
     };
+    if (this.remoteUser) {
+      headers['X-Remote-User'] = this.remoteUser;
+    }
+    return headers;
   }
 
   private async ensureSession(forceRefresh = false): Promise<void> {
@@ -202,7 +219,7 @@ export class OOREPClient {
     const url = new URL(`${this.baseUrl}/api/available_remedies`);
     url.searchParams.set('limit', '1');
 
-    logger.debug('Initializing OOREP session', { url: url.toString() });
+    this.logger.debug('Initializing OOREP session', { url: url.toString() });
 
     const response = await fetchWithTimeout(
       url.toString(),
@@ -224,7 +241,7 @@ export class OOREPClient {
 
     // Only store cookies from successful session initialization
     this.storeCookies(response);
-    logger.debug('OOREP session initialized');
+    this.logger.debug('OOREP session initialized');
   }
 
   private storeCookies(response: Response): void {
@@ -252,7 +269,7 @@ export class OOREPClient {
       }
     });
 
-    logger.debug(`Fetching ${url.toString()}`);
+    this.logger.debug(`Fetching ${url.toString()}`);
 
     const headers: Record<string, string> = {
       ...this.getDefaultHeaders(),
@@ -273,7 +290,7 @@ export class OOREPClient {
       );
 
       if (response.status === 401 && !sessionRetried) {
-        logger.warn('OOREP session unauthorized, attempting refresh');
+        this.logger.warn('OOREP session unauthorized, attempting refresh');
         await this.ensureSession(true);
         return this.request<T>(endpoint, params, retryCount, true);
       }
@@ -284,7 +301,7 @@ export class OOREPClient {
       }
 
       if (response.status === 204) {
-        logger.info('OOREP API returned no content', { endpoint });
+        this.logger.info('OOREP API returned no content', { endpoint });
         return null;
       }
 
@@ -319,7 +336,7 @@ export class OOREPClient {
         (error instanceof NetworkError || error instanceof TimeoutError)
       ) {
         const backoffMs = Math.pow(2, retryCount) * 1000;
-        logger.warn(
+        this.logger.warn(
           `Request failed, retrying in ${backoffMs}ms (attempt ${retryCount + 1}/${this.maxRetries})`
         );
         await sleep(backoffMs);
@@ -334,7 +351,7 @@ export class OOREPClient {
         throw error;
       }
 
-      logger.error('Unexpected error in API request', error);
+      this.logger.error('Unexpected error in API request', error);
 
       throw new NetworkError(
         'Failed to fetch data from OOREP API',
@@ -358,7 +375,7 @@ export class OOREPClient {
     const repertory = (params.repertory || this.defaultRepertory).trim();
     const minWeight = params.minWeight && params.minWeight > 0 ? params.minWeight : 1;
 
-    logger.info('Looking up repertory', {
+    this.logger.info('Looking up repertory', {
       symptom: params.symptom,
       repertory,
       minWeight,
@@ -393,7 +410,7 @@ export class OOREPClient {
   }): Promise<RawMateriaMedicaResponse | null> {
     const materiamedica = (params.materiamedica || this.defaultMateriaMedica).trim();
 
-    logger.info('Looking up materia medica', {
+    this.logger.info('Looking up materia medica', {
       symptom: params.symptom,
       materiamedica,
     });
@@ -420,7 +437,7 @@ export class OOREPClient {
       namealt?: string[];
     }>
   > {
-    logger.info('Fetching available remedies');
+    this.logger.info('Fetching available remedies');
     const result = await this.request<
       Array<{
         id: number;
@@ -437,7 +454,7 @@ export class OOREPClient {
    * GET /api/available_rems_and_reps
    */
   async getAvailableRepertories(): Promise<Array<RepertoryMetadata>> {
-    logger.info('Fetching available repertories');
+    this.logger.info('Fetching available repertories');
     const result = await this.request<
       Array<{
         info: {
@@ -466,7 +483,7 @@ export class OOREPClient {
    * GET /api/available_rems_and_mms
    */
   async getAvailableMateriaMedicas(): Promise<Array<MateriaMedicaMetadata>> {
-    logger.info('Fetching available materia medicas');
+    this.logger.info('Fetching available materia medicas');
     const result = await this.request<
       Array<{
         mminfo: {

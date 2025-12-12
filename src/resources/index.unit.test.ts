@@ -14,10 +14,10 @@ const { mockGetAvailableRemedies, mockGetAvailableRepertories, mockGetAvailableM
     mockGetAvailableMateriaMedicas: vi.fn(),
   }));
 
-// Mock the OOREPClient from lib
+// Mock the OOREPHttpClient from lib
 vi.mock('../lib/oorep-client.js', () => {
   return {
-    OOREPClient: class MockOOREPClient {
+    OOREPHttpClient: class MockOOREPHttpClient {
       getAvailableRemedies = mockGetAvailableRemedies;
       getAvailableRepertories = mockGetAvailableRepertories;
       getAvailableMateriaMedicas = mockGetAvailableMateriaMedicas;

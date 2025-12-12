@@ -3,7 +3,7 @@
  * Retrieve comprehensive information about a specific homeopathic remedy
  */
 
-import type { IOOREPSDKClient } from '../interfaces/IOOREPSDKClient.js';
+import type { IOOREPClient } from '../interfaces/IOOREPClient.js';
 import {
   GetRemedyInfoArgsSchema,
   RemedyInfoSchema,
@@ -15,7 +15,7 @@ import { logger } from '../utils/logger.js';
 import { TOOL_NAMES } from '../sdk/constants.js';
 
 export class GetRemedyInfoTool {
-  constructor(private client: IOOREPSDKClient) {}
+  constructor(private client: IOOREPClient) {}
 
   async execute(args: unknown): Promise<RemedyInfo> {
     try {

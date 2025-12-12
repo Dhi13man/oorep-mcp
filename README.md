@@ -574,6 +574,7 @@ All configuration via environment variables:
 | `OOREP_MCP_LOG_LEVEL` | `info` | `debug` \| `info` \| `warn` \| `error` |
 | `OOREP_MCP_DEFAULT_REPERTORY` | `publicum` | Default repertory |
 | `OOREP_MCP_DEFAULT_MATERIA_MEDICA` | `boericke` | Default materia medica |
+| `OOREP_MCP_REMOTE_USER` | *(unset)* | If set, sends `X-Remote-User` header (numeric member ID) on all upstream requests |
 
 > The MCP server maintains an anonymous OOREP session automatically. It performs a lightweight bootstrap request to fetch the required cookies and reuses them for subsequent search calls, so no additional authentication setup is necessary for public data.
 

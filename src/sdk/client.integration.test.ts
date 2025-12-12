@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { OOREPSDKClient, createOOREPClient } from './client.js';
+import { OOREPClient, createOOREPClient } from './client.js';
 import { ValidationError } from '../utils/errors.js';
 
 // Store original fetch
@@ -164,7 +164,7 @@ function createMateriaMedicasResponse(): Response {
   );
 }
 
-describe('OOREPSDKClient Integration Tests', () => {
+describe('OOREPClient Integration Tests', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     mockFetch.mockReset();
@@ -178,7 +178,7 @@ describe('OOREPSDKClient Integration Tests', () => {
 
   describe('constructor and configuration', () => {
     it('when no config provided then uses defaults', () => {
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
       const config = client.getConfig();
 
       expect(config.baseUrl).toBe('https://www.oorep.com');
@@ -191,7 +191,7 @@ describe('OOREPSDKClient Integration Tests', () => {
     });
 
     it('when custom config provided then uses custom values', () => {
-      const client = new OOREPSDKClient({
+      const client = new OOREPClient({
         baseUrl: 'https://custom.oorep.com',
         timeoutMs: 60000,
         cacheTtlMs: 600000,
@@ -210,7 +210,7 @@ describe('OOREPSDKClient Integration Tests', () => {
     });
 
     it('when partial config provided then merges with defaults', () => {
-      const client = new OOREPSDKClient({ timeoutMs: 45000 });
+      const client = new OOREPClient({ timeoutMs: 45000 });
       const config = client.getConfig();
 
       expect(config.baseUrl).toBe('https://www.oorep.com');
@@ -227,7 +227,7 @@ describe('OOREPSDKClient Integration Tests', () => {
         .mockResolvedValueOnce(createSessionResponse())
         .mockResolvedValueOnce(createRepertoryResponse(156));
 
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
       const result = await client.searchRepertory({ symptom: 'headache' });
 
       // Verify HTTP calls were made
@@ -248,7 +248,7 @@ describe('OOREPSDKClient Integration Tests', () => {
         .mockResolvedValueOnce(createSessionResponse())
         .mockResolvedValueOnce(createRepertoryResponse());
 
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
       const result = await client.searchRepertory({
         symptom: 'headache',
         includeRemedyStats: true,
@@ -271,7 +271,7 @@ describe('OOREPSDKClient Integration Tests', () => {
         .mockResolvedValueOnce(createSessionResponse())
         .mockResolvedValueOnce(createRepertoryResponse());
 
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       // First call - makes HTTP request
       const result1 = await client.searchRepertory({ symptom: 'headache' });
@@ -292,7 +292,7 @@ describe('OOREPSDKClient Integration Tests', () => {
         .mockResolvedValueOnce(createRepertoryResponse(10))
         .mockResolvedValueOnce(createRepertoryResponse(20));
 
-      const client = new OOREPSDKClient({ cacheTtlMs: 1000 });
+      const client = new OOREPClient({ cacheTtlMs: 1000 });
 
       await client.searchRepertory({ symptom: 'headache' });
       expect(mockFetch).toHaveBeenCalledTimes(2);
@@ -308,7 +308,7 @@ describe('OOREPSDKClient Integration Tests', () => {
     });
 
     it('when symptom too short then throws validation error without HTTP call', async () => {
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       // Zod schema validates min length before custom validators run
       await expect(client.searchRepertory({ symptom: 'ab' })).rejects.toThrow();
@@ -323,7 +323,7 @@ describe('OOREPSDKClient Integration Tests', () => {
         .mockResolvedValueOnce(createSessionResponse())
         .mockResolvedValueOnce(createRepertoryResponse());
 
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       // Symptom validation is relaxed - special characters are allowed, API handles sanitization
       await expect(client.searchRepertory({ symptom: 'head@che' })).resolves.toBeDefined();
@@ -336,7 +336,7 @@ describe('OOREPSDKClient Integration Tests', () => {
         .mockResolvedValueOnce(createSessionResponse())
         .mockResolvedValueOnce(createRepertoryResponse());
 
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       await expect(client.searchRepertory({ symptom: 'abc' })).resolves.toBeDefined();
 
@@ -348,7 +348,7 @@ describe('OOREPSDKClient Integration Tests', () => {
         .mockResolvedValueOnce(createSessionResponse())
         .mockResolvedValueOnce(createRepertoryResponse());
 
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
       const longSymptom = 'a'.repeat(200);
 
       await expect(client.searchRepertory({ symptom: longSymptom })).resolves.toBeDefined();
@@ -357,7 +357,7 @@ describe('OOREPSDKClient Integration Tests', () => {
     });
 
     it('when symptom 201 chars then throws ValidationError', async () => {
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
       const tooLongSymptom = 'a'.repeat(201);
 
       await expect(client.searchRepertory({ symptom: tooLongSymptom })).rejects.toThrow();
@@ -370,7 +370,7 @@ describe('OOREPSDKClient Integration Tests', () => {
         .mockResolvedValueOnce(createSessionResponse())
         .mockResolvedValueOnce(createRepertoryResponse());
 
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
       await client.searchRepertory({ symptom: 'headache', minWeight: 3 });
 
       // Verify the API call includes minWeight
@@ -386,7 +386,7 @@ describe('OOREPSDKClient Integration Tests', () => {
         .mockResolvedValueOnce(createSessionResponse())
         .mockResolvedValueOnce(createRepertoryResponse());
 
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
       const result = await client.searchRepertory({
         symptom: 'headache',
         maxResults: 1,
@@ -404,7 +404,7 @@ describe('OOREPSDKClient Integration Tests', () => {
         .mockResolvedValueOnce(createSessionResponse())
         .mockResolvedValueOnce(createMateriaMedicaResponse());
 
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
       const result = await client.searchMateriaMedica({ symptom: 'anxiety' });
 
       expect(result.totalResults).toBe(1);
@@ -420,7 +420,7 @@ describe('OOREPSDKClient Integration Tests', () => {
         .mockResolvedValueOnce(createSessionResponse())
         .mockResolvedValueOnce(createMateriaMedicaResponse());
 
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       // Valid remedy name
       await expect(
@@ -434,7 +434,7 @@ describe('OOREPSDKClient Integration Tests', () => {
     });
 
     it('when remedy name invalid then throws ValidationError', async () => {
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       await expect(
         client.searchMateriaMedica({
@@ -451,7 +451,7 @@ describe('OOREPSDKClient Integration Tests', () => {
         .mockResolvedValueOnce(createSessionResponse())
         .mockResolvedValueOnce(createMateriaMedicaResponse());
 
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       await client.searchMateriaMedica({ symptom: 'anxiety' });
       expect(mockFetch).toHaveBeenCalledTimes(2);
@@ -469,7 +469,7 @@ describe('OOREPSDKClient Integration Tests', () => {
         .mockResolvedValueOnce(createSessionResponse()) // session init
         .mockResolvedValueOnce(createSessionResponse()); // getAvailableRemedies
 
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
       const result = await client.getRemedyInfo({ remedy: 'acon.' });
 
       expect(result).not.toBeNull();
@@ -484,7 +484,7 @@ describe('OOREPSDKClient Integration Tests', () => {
         .mockResolvedValueOnce(createSessionResponse()) // session init
         .mockResolvedValueOnce(createSessionResponse()); // getAvailableRemedies
 
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
       const result = await client.getRemedyInfo({ remedy: 'aconitum napellus' });
 
       expect(result).not.toBeNull();
@@ -498,7 +498,7 @@ describe('OOREPSDKClient Integration Tests', () => {
         .mockResolvedValueOnce(createSessionResponse()) // session init
         .mockResolvedValueOnce(createSessionResponse()); // getAvailableRemedies
 
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
       const result = await client.getRemedyInfo({ remedy: 'aconite' });
 
       expect(result).not.toBeNull();
@@ -512,7 +512,7 @@ describe('OOREPSDKClient Integration Tests', () => {
         .mockResolvedValueOnce(createSessionResponse()) // session init
         .mockResolvedValueOnce(createSessionResponse()); // getAvailableRemedies
 
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
       // "bella" should partially match "Belladonna"
       const result = await client.getRemedyInfo({ remedy: 'bella' });
 
@@ -527,7 +527,7 @@ describe('OOREPSDKClient Integration Tests', () => {
         .mockResolvedValueOnce(createSessionResponse()) // session init
         .mockResolvedValueOnce(createSessionResponse()); // getAvailableRemedies
 
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
       // "be" is only 2 chars, below partial match threshold
       const result = await client.getRemedyInfo({ remedy: 'be' });
 
@@ -541,7 +541,7 @@ describe('OOREPSDKClient Integration Tests', () => {
         .mockResolvedValueOnce(createSessionResponse()) // session init
         .mockResolvedValueOnce(createSessionResponse()); // getAvailableRemedies
 
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
       const result = await client.getRemedyInfo({ remedy: 'nonexistent' });
 
       expect(result).toBeNull();
@@ -554,7 +554,7 @@ describe('OOREPSDKClient Integration Tests', () => {
         .mockResolvedValueOnce(createSessionResponse()) // session init
         .mockResolvedValueOnce(createSessionResponse()); // getAvailableRemedies
 
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
       const result = await client.getRemedyInfo({ remedy: 'BELLADONNA' });
 
       expect(result).not.toBeNull();
@@ -564,7 +564,7 @@ describe('OOREPSDKClient Integration Tests', () => {
     });
 
     it('when remedy name invalid then throws error', async () => {
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       await expect(client.getRemedyInfo({ remedy: '' })).rejects.toThrow(); // Throws ZodError for empty string
 
@@ -576,7 +576,7 @@ describe('OOREPSDKClient Integration Tests', () => {
         .mockResolvedValueOnce(createSessionResponse()) // session init
         .mockResolvedValueOnce(createSessionResponse()); // getAvailableRemedies
 
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
       const longName = 'a'.repeat(100);
 
       // Should not throw validation error (but won't find a match)
@@ -591,7 +591,7 @@ describe('OOREPSDKClient Integration Tests', () => {
         .mockResolvedValueOnce(createSessionResponse()) // session init
         .mockResolvedValueOnce(createSessionResponse()); // getAvailableRemedies
 
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       await client.getRemedyInfo({ remedy: 'acon' });
       await client.getRemedyInfo({ remedy: 'acon' });
@@ -609,7 +609,7 @@ describe('OOREPSDKClient Integration Tests', () => {
         .mockResolvedValueOnce(createSessionResponse())
         .mockResolvedValueOnce(createRepertoriesResponse());
 
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
       const result = await client.listRepertories();
 
       expect(result).toHaveLength(3);
@@ -622,7 +622,7 @@ describe('OOREPSDKClient Integration Tests', () => {
         .mockResolvedValueOnce(createSessionResponse())
         .mockResolvedValueOnce(createRepertoriesResponse());
 
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
       const result = await client.listRepertories({ language: 'en' });
 
       expect(result).toHaveLength(2);
@@ -632,7 +632,7 @@ describe('OOREPSDKClient Integration Tests', () => {
     });
 
     it('when language filter invalid then throws ValidationError', async () => {
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       await expect(client.listRepertories({ language: 'e' })).rejects.toThrow(ValidationError);
 
@@ -644,7 +644,7 @@ describe('OOREPSDKClient Integration Tests', () => {
         .mockResolvedValueOnce(createSessionResponse())
         .mockResolvedValueOnce(createRepertoriesResponse());
 
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       await client.listRepertories();
       await client.listRepertories();
@@ -661,7 +661,7 @@ describe('OOREPSDKClient Integration Tests', () => {
         .mockResolvedValueOnce(createSessionResponse())
         .mockResolvedValueOnce(createMateriaMedicasResponse());
 
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
       const result = await client.listMateriaMedicas();
 
       expect(result).toHaveLength(2);
@@ -674,7 +674,7 @@ describe('OOREPSDKClient Integration Tests', () => {
         .mockResolvedValueOnce(createSessionResponse())
         .mockResolvedValueOnce(createMateriaMedicasResponse());
 
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
       const result = await client.listMateriaMedicas({ language: 'de' });
 
       expect(result).toHaveLength(1);
@@ -693,7 +693,7 @@ describe('OOREPSDKClient Integration Tests', () => {
 
       mockFetch.mockResolvedValueOnce(createSessionResponse()).mockReturnValueOnce(pendingRequest);
 
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       // Start 3 concurrent requests for same symptom
       const promise1 = client.searchRepertory({ symptom: 'headache' });
@@ -721,7 +721,7 @@ describe('OOREPSDKClient Integration Tests', () => {
         .mockResolvedValueOnce(createRepertoryResponse(10))
         .mockResolvedValueOnce(createRepertoryResponse(20));
 
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       const [r1, r2] = await Promise.all([
         client.searchRepertory({ symptom: 'headache' }),
@@ -745,7 +745,7 @@ describe('OOREPSDKClient Integration Tests', () => {
         .mockResolvedValueOnce(createRepertoryResponse(10))
         .mockResolvedValueOnce(createRepertoryResponse(20));
 
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       await client.searchRepertory({ symptom: 'headache' });
       expect(mockFetch).toHaveBeenCalledTimes(2);
@@ -762,13 +762,13 @@ describe('OOREPSDKClient Integration Tests', () => {
 
   describe('destroy', () => {
     it('when called then cleans up resources', () => {
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       expect(() => client.destroy()).not.toThrow();
     });
 
     it('when called multiple times then does not throw', () => {
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       expect(() => {
         client.destroy();
@@ -779,7 +779,7 @@ describe('OOREPSDKClient Integration Tests', () => {
 
   describe('getConfig', () => {
     it('when called then returns immutable config copy', () => {
-      const client = new OOREPSDKClient();
+      const client = new OOREPClient();
 
       const config1 = client.getConfig();
       const config2 = client.getConfig();
@@ -796,7 +796,7 @@ describe('createOOREPClient factory', () => {
   it('when called without config then creates client with defaults', () => {
     const client = createOOREPClient();
 
-    expect(client).toBeInstanceOf(OOREPSDKClient);
+    expect(client).toBeInstanceOf(OOREPClient);
     expect(client.getConfig().baseUrl).toBe('https://www.oorep.com');
 
     client.destroy();
@@ -805,7 +805,7 @@ describe('createOOREPClient factory', () => {
   it('when called with config then creates client with custom config', () => {
     const client = createOOREPClient({ timeoutMs: 60000 });
 
-    expect(client).toBeInstanceOf(OOREPSDKClient);
+    expect(client).toBeInstanceOf(OOREPClient);
     expect(client.getConfig().timeoutMs).toBe(60000);
 
     client.destroy();

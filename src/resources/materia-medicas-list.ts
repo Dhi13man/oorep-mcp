@@ -5,7 +5,7 @@
  */
 
 import { RESOURCE_URIS, MIME_TYPES } from '../sdk/constants.js';
-import type { OOREPClient } from '../lib/oorep-client.js';
+import type { OOREPHttpClient } from '../lib/oorep-client.js';
 import type { ResourceContent, ResourceDefinition } from './remedies-list.js';
 
 export const materiaMedicasListDefinition: ResourceDefinition = {
@@ -15,7 +15,7 @@ export const materiaMedicasListDefinition: ResourceDefinition = {
   mimeType: MIME_TYPES.JSON,
 };
 
-export async function fetchMateriaMedicasList(client: OOREPClient): Promise<ResourceContent> {
+export async function fetchMateriaMedicasList(client: OOREPHttpClient): Promise<ResourceContent> {
   const materiaMedicas = await client.getAvailableMateriaMedicas();
   return {
     uri: RESOURCE_URIS.MATERIA_MEDICAS_LIST,

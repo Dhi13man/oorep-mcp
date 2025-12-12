@@ -3,7 +3,7 @@
  * Get list of all accessible materia medicas with metadata
  */
 
-import type { IOOREPSDKClient } from '../interfaces/IOOREPSDKClient.js';
+import type { IOOREPClient } from '../interfaces/IOOREPClient.js';
 import {
   z,
   ListMateriaMedicasArgsSchema,
@@ -16,7 +16,7 @@ import { logger } from '../utils/logger.js';
 import { TOOL_NAMES } from '../sdk/constants.js';
 
 export class ListMateriaMedicasTool {
-  constructor(private client: IOOREPSDKClient) {}
+  constructor(private client: IOOREPClient) {}
 
   async execute(args: unknown): Promise<{ materiaMedicas: MateriaMedicaMetadata[] }> {
     try {
