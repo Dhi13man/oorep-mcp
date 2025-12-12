@@ -44,7 +44,7 @@ export class ResourceRegistry {
   private deduplicator: MapRequestDeduplicator;
 
   constructor(config: OOREPConfig) {
-    this.cache = new InMemoryCache(3600000, logger);
+    this.cache = new InMemoryCache(config.cacheTtlMs, logger);
     this.deduplicator = new MapRequestDeduplicator(logger);
     this.httpClient = new OOREPHttpClient({
       baseUrl: config.baseUrl,
@@ -120,7 +120,7 @@ export class ResourceRegistry {
   /**
    * Clean up resources - clears cache and releases connections
    */
-  destroy(): void {
-    this.cache.destroy?.();
+  async destroy(): Promise<void> {
+    await this.cache.destroy?.();
   }
 }

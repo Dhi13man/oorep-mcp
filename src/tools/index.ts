@@ -48,10 +48,11 @@ export class ToolRegistry {
 
   constructor(config: OOREPConfig) {
     // Create single shared SDK instance for all tools
-   const sdkConfig: OOREPSDKConfig = {
+    const sdkConfig: OOREPSDKConfig = {
       baseUrl: config.baseUrl,
       timeoutMs: config.timeoutMs,
       cacheTtlMs: config.cacheTtlMs,
+      maxResults: config.maxResults,
       remoteUser: config.remoteUser,
       defaultRepertory: config.defaultRepertory,
       defaultMateriaMedica: config.defaultMateriaMedica,
@@ -102,7 +103,7 @@ export class ToolRegistry {
   /**
    * Clean up resources - destroys the shared SDK instance
    */
-  destroy(): void {
-    this.sdk.destroy();
+  async destroy(): Promise<void> {
+    await this.sdk.destroy();
   }
 }

@@ -69,6 +69,8 @@ export interface OOREPSDKConfig {
   timeoutMs?: number;
   /** Cache TTL in milliseconds (default: 300000 = 5 minutes) */
   cacheTtlMs?: number;
+  /** Maximum results to return from searches (default: 100, max: 500) */
+  maxResults?: number;
   /**
    * Optional numeric OOREP member ID to send via X-Remote-User header.
    * Useful for self-hosted OOREP deployments behind a reverse proxy auth layer.
@@ -94,6 +96,7 @@ type NormalizedSDKConfig = {
   baseUrl: string;
   timeoutMs: number;
   cacheTtlMs: number;
+  maxResults: number;
   remoteUser?: string;
   defaultRepertory: string;
   defaultMateriaMedica: string;
@@ -121,6 +124,7 @@ export class OOREPClient {
       baseUrl: config.baseUrl ?? DEFAULTS.BASE_URL,
       timeoutMs: config.timeoutMs ?? DEFAULTS.TIMEOUT_MS,
       cacheTtlMs: config.cacheTtlMs ?? DEFAULTS.CACHE_TTL_MS,
+      maxResults: Math.min(Math.max(config.maxResults ?? DEFAULTS.MAX_RESULTS, 1), 500),
       remoteUser: config.remoteUser,
       defaultRepertory: config.defaultRepertory ?? DEFAULTS.REPERTORY,
       defaultMateriaMedica: config.defaultMateriaMedica ?? DEFAULTS.MATERIA_MEDICA,
@@ -158,13 +162,14 @@ export class OOREPClient {
 
     // Trim whitespace overrides and apply default repertory consistently for cache and API
     const repertory = this.normalizeOverride(validated.repertory, this.config.defaultRepertory);
+    const maxResults = validated.maxResults ?? this.config.maxResults;
 
     const cacheKey = generateCacheKey('repertory', {
       remoteUser: this.config.remoteUser,
       symptom: validated.symptom,
       repertory,
       minWeight: validated.minWeight,
-      maxResults: validated.maxResults,
+      maxResults,
       includeRemedyStats: validated.includeRemedyStats,
     });
 
@@ -181,7 +186,7 @@ export class OOREPClient {
 
       const result = formatRepertoryResults(apiResponse, {
         includeRemedyStats: validated.includeRemedyStats,
-        maxResults: validated.maxResults,
+        maxResults,
       });
 
       await this.cache.set(cacheKey, result);
@@ -209,13 +214,14 @@ export class OOREPClient {
       validated.materiamedica,
       this.config.defaultMateriaMedica
     );
+    const maxResults = validated.maxResults ?? this.config.maxResults;
 
     const cacheKey = generateCacheKey('mm', {
       remoteUser: this.config.remoteUser,
       symptom: validated.symptom,
       materiamedica,
       remedy: validated.remedy,
-      maxResults: validated.maxResults,
+      maxResults,
     });
 
     const cached = (await this.cache.get(cacheKey)) as MateriaMedicaSearchResult | null;
@@ -228,7 +234,7 @@ export class OOREPClient {
         remedy: validated.remedy,
       });
 
-      const result = formatMateriaMedicaResults(apiResponse, validated.maxResults);
+      const result = formatMateriaMedicaResults(apiResponse, maxResults);
 
       await this.cache.set(cacheKey, result);
       return result;
