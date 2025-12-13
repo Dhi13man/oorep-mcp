@@ -610,7 +610,7 @@ graph TB
         Prompts[Prompts]
         SDK[SDK]
 
-        subgraph SDKClient[OOREPSDKClient]
+        subgraph SDKClient[OOREPClient]
             Cache[(Cache)]
             Dedup[Deduplicator]
             Validators[Validators]
@@ -729,7 +729,7 @@ import type {
   MateriaMedicaResult,
   MateriaMedicaSection,
   // SDK Client types
-  OOREPSDKClient,
+  OOREPClient,
   OOREPSDKConfig,
 } from 'oorep-mcp';
 ```

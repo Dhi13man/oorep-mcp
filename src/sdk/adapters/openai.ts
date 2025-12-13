@@ -279,7 +279,7 @@ export function openAIFormatResourceAsSystemMessage(
  *
  * const [searchHelp, remedies] = await Promise.all([
  *   getResource('oorep://help/search-syntax'),
- *   getResource('oorep://remedies/list', client.getClient()),
+ *   getResource('oorep://remedies/list', client.getHttpClient()),
  * ]);
  * const context = openAIFormatResourcesAsContext([searchHelp, remedies]);
  * ```

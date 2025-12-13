@@ -236,7 +236,7 @@ console.log(searchHelp); // Markdown guide for search syntax
 
 // For dynamic resources, create a client and pass its underlying OOREPClient
 const client = createOOREPClient();
-const remedies = await getResource('oorep://remedies/list', client.getClient());
+const remedies = await getResource('oorep://remedies/list', client.getHttpClient());
 console.log(remedies.text); // JSON with 600+ remedies
 
 // List all available resources (no client needed)
@@ -421,7 +421,7 @@ const messages = messageData.map((msg) =>
 
 // For RAG use cases, get resources as Documents (dynamic resource needs client)
 const remediesDoc = langChainFormatResourceAsDocument(
-  await getResource('oorep://remedies/list', client.getClient())
+  await getResource('oorep://remedies/list', client.getHttpClient())
 );
 // Use with vector stores or retrievers
 
@@ -539,7 +539,7 @@ import type {
   AnalyzeSymptomsArgs,
   RemedyComparisonArgs,
   // Client types
-  OOREPSDKClient,
+  OOREPClient,
   OOREPSDKConfig,
 } from 'oorep-mcp';
 
