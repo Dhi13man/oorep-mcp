@@ -20,6 +20,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `remoteUser` SDK config option for programmatic X-Remote-User header configuration
 - `maxResults` SDK config option to set default maximum results for searches (default: 100, max: 500)
 
+### Changed
+
+- **Test Coverage**: Increased from 93% to 95% with 1100+ tests
+
+### Fixed
+
+- **maxResults Config**: SDK config `maxResults` is now correctly applied (was being ignored due to Zod schema defaults)
+- **Documentation**: Updated test count and coverage badges in README
+
 ## [1.1.3] - 2025-12-10
 
 ### Fixed
