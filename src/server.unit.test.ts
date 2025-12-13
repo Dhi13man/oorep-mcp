@@ -479,7 +479,10 @@ describe('runServer', () => {
 
   it('runServer when SIGTERM received then shuts down gracefully', async () => {
     const handlers = new Map<string, (...args: unknown[]) => unknown>();
-    vi.spyOn(process, 'on').mockImplementation(((event: string, handler: (...args: unknown[]) => void) => {
+    vi.spyOn(process, 'on').mockImplementation(((
+      event: string,
+      handler: (...args: unknown[]) => void
+    ) => {
       handlers.set(event, handler);
       return process;
     }) as unknown as typeof process.on);
@@ -502,7 +505,10 @@ describe('runServer', () => {
 
   it('runServer when shutdown cleanup fails then exits with code 1', async () => {
     const handlers = new Map<string, (...args: unknown[]) => unknown>();
-    vi.spyOn(process, 'on').mockImplementation(((event: string, handler: (...args: unknown[]) => void) => {
+    vi.spyOn(process, 'on').mockImplementation(((
+      event: string,
+      handler: (...args: unknown[]) => void
+    ) => {
       handlers.set(event, handler);
       return process;
     }) as unknown as typeof process.on);
