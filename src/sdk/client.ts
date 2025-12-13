@@ -138,13 +138,16 @@ export class OOREPClient {
 
     this.httpClient =
       config.httpClient ??
-      new OOREPHttpClient({
-        baseUrl: this.config.baseUrl,
-        timeoutMs: this.config.timeoutMs,
-        remoteUser: this.config.remoteUser,
-        defaultRepertory: this.config.defaultRepertory,
-        defaultMateriaMedica: this.config.defaultMateriaMedica,
-      }, this.logger);
+      new OOREPHttpClient(
+        {
+          baseUrl: this.config.baseUrl,
+          timeoutMs: this.config.timeoutMs,
+          remoteUser: this.config.remoteUser,
+          defaultRepertory: this.config.defaultRepertory,
+          defaultMateriaMedica: this.config.defaultMateriaMedica,
+        },
+        this.logger
+      );
   }
 
   /**

@@ -81,7 +81,9 @@ describe('OOREPHttpClient', () => {
         text: () => Promise.resolve(JSON.stringify([{ totalNumberOfResults: 0, results: [] }])),
       };
 
-      mockFetch.mockResolvedValueOnce(mockSessionResponse).mockResolvedValueOnce(mockLookupResponse);
+      mockFetch
+        .mockResolvedValueOnce(mockSessionResponse)
+        .mockResolvedValueOnce(mockLookupResponse);
 
       await client.lookupRepertory({ symptom: 'test' });
 

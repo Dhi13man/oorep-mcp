@@ -90,7 +90,9 @@ describe('getResource', () => {
   });
 
   it('throws error when client required but not provided', async () => {
-    await expect(getResource('oorep://remedies/list')).rejects.toThrow('OOREPHttpClient is required');
+    await expect(getResource('oorep://remedies/list')).rejects.toThrow(
+      'OOREPHttpClient is required'
+    );
   });
 });
 

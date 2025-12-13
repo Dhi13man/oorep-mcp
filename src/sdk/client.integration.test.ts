@@ -102,7 +102,11 @@ function createMateriaMedicaResponseWithResults(count = 2): Response {
     abbrev: string;
     remedy_id: number;
     remedy_fullname: string;
-    result_sections: Array<{ heading?: string | null; content?: string | null; depth?: number | null }>;
+    result_sections: Array<{
+      heading?: string | null;
+      content?: string | null;
+      depth?: number | null;
+    }>;
   }> = [];
 
   for (let index = 0; index < count; index++) {

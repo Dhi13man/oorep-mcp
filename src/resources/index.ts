@@ -46,13 +46,16 @@ export class ResourceRegistry {
   constructor(config: OOREPConfig) {
     this.cache = new InMemoryCache(config.cacheTtlMs, logger);
     this.deduplicator = new MapRequestDeduplicator(logger);
-    this.httpClient = new OOREPHttpClient({
-      baseUrl: config.baseUrl,
-      timeoutMs: config.timeoutMs,
-      remoteUser: config.remoteUser,
-      defaultRepertory: config.defaultRepertory,
-      defaultMateriaMedica: config.defaultMateriaMedica,
-    }, logger);
+    this.httpClient = new OOREPHttpClient(
+      {
+        baseUrl: config.baseUrl,
+        timeoutMs: config.timeoutMs,
+        remoteUser: config.remoteUser,
+        defaultRepertory: config.defaultRepertory,
+        defaultMateriaMedica: config.defaultMateriaMedica,
+      },
+      logger
+    );
   }
 
   getDefinitions(): ResourceDefinition[] {

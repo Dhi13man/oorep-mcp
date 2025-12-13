@@ -161,14 +161,11 @@ describe('getConfig', () => {
       ['--max-results'],
       ['--log-level'],
       ['--remote-user'],
-    ])(
-      'getConfig when %s has no value then throws error',
-      (arg: string) => {
-        process.argv = ['node', 'script.js', arg];
+    ])('getConfig when %s has no value then throws error', (arg: string) => {
+      process.argv = ['node', 'script.js', arg];
 
-        expect(() => getConfig()).toThrow();
-      }
-    );
+      expect(() => getConfig()).toThrow();
+    });
   });
 
   describe('when CLI argument has invalid numeric value', () => {
