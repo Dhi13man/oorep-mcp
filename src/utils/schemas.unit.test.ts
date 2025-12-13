@@ -28,7 +28,7 @@ describe('SearchRepertoryArgsSchema', () => {
     const result = SearchRepertoryArgsSchema.parse(input);
 
     expect(result.symptom).toBe('headache');
-    expect(result.maxResults).toBe(20);
+    expect(result.maxResults).toBeUndefined(); // Defaults to config, not hardcoded
     expect(result.includeRemedyStats).toBe(true);
   });
 
@@ -89,7 +89,7 @@ describe('SearchRepertoryArgsSchema', () => {
 
   it('SearchRepertoryArgsSchema when maxResults is out of range then throws error', () => {
     const input1 = { symptom: 'headache', maxResults: 0 };
-    const input2 = { symptom: 'headache', maxResults: 101 };
+    const input2 = { symptom: 'headache', maxResults: 501 };
 
     expect(() => SearchRepertoryArgsSchema.parse(input1)).toThrow();
     expect(() => SearchRepertoryArgsSchema.parse(input2)).toThrow();
@@ -102,7 +102,7 @@ describe('SearchMateriaMedicaArgsSchema', () => {
     const result = SearchMateriaMedicaArgsSchema.parse(input);
 
     expect(result.symptom).toBe('fever');
-    expect(result.maxResults).toBe(10);
+    expect(result.maxResults).toBeUndefined(); // Defaults to config, not hardcoded
   });
 
   it('SearchMateriaMedicaArgsSchema when valid full input then parses successfully', () => {
@@ -129,7 +129,7 @@ describe('SearchMateriaMedicaArgsSchema', () => {
 
   it('SearchMateriaMedicaArgsSchema when maxResults is out of range then throws error', () => {
     const input1 = { symptom: 'fever', maxResults: 0 };
-    const input2 = { symptom: 'fever', maxResults: 51 };
+    const input2 = { symptom: 'fever', maxResults: 501 };
 
     expect(() => SearchMateriaMedicaArgsSchema.parse(input1)).toThrow();
     expect(() => SearchMateriaMedicaArgsSchema.parse(input2)).toThrow();

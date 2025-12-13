@@ -3,7 +3,13 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { listResources, getResource, getSearchSyntaxHelp } from './resources.js';
+import {
+  listResources,
+  getResource,
+  getSearchSyntaxHelp,
+  getResourceDefinition,
+  getResourceUris,
+} from './resources.js';
 
 // Mock client for dynamic resources
 const mockGetAvailableRemedies = vi.fn();
@@ -94,6 +100,23 @@ describe('getResource', () => {
       'OOREPHttpClient is required'
     );
   });
+
+  it('throws error when client not provided for repertories list', async () => {
+    await expect(getResource('oorep://repertories/list')).rejects.toThrow(
+      'OOREPHttpClient is required to fetch repertories list resource'
+    );
+  });
+
+  it('throws error when client not provided for materia medicas list', async () => {
+    await expect(getResource('oorep://materia-medicas/list')).rejects.toThrow(
+      'OOREPHttpClient is required to fetch materia medicas list resource'
+    );
+  });
+
+  it('throws NotFoundError for unknown resource URI', async () => {
+    // @ts-expect-error - testing invalid URI
+    await expect(getResource('oorep://unknown/resource')).rejects.toThrow('Unknown resource URI');
+  });
 });
 
 describe('getSearchSyntaxHelp', () => {
@@ -102,5 +125,33 @@ describe('getSearchSyntaxHelp', () => {
 
     expect(typeof result).toBe('string');
     expect(result).toContain('# OOREP Search Syntax Guide');
+  });
+});
+
+describe('getResourceDefinition', () => {
+  it('returns definition for existing resource', () => {
+    const def = getResourceDefinition('oorep://help/search-syntax');
+
+    expect(def).toBeDefined();
+    expect(def!.uri).toBe('oorep://help/search-syntax');
+    expect(def!.name).toBe('OOREP Search Syntax Help');
+  });
+
+  it('returns undefined for non-existent resource', () => {
+    const def = getResourceDefinition('oorep://unknown/resource');
+
+    expect(def).toBeUndefined();
+  });
+});
+
+describe('getResourceUris', () => {
+  it('returns all resource URIs', () => {
+    const uris = getResourceUris();
+
+    expect(uris).toHaveLength(4);
+    expect(uris).toContain('oorep://remedies/list');
+    expect(uris).toContain('oorep://repertories/list');
+    expect(uris).toContain('oorep://materia-medicas/list');
+    expect(uris).toContain('oorep://help/search-syntax');
   });
 });

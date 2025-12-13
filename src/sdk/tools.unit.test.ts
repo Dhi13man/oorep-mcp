@@ -83,8 +83,8 @@ describe('toolDefinitions', () => {
       expect(maxResultsProp).toBeDefined();
       expect(maxResultsProp.type).toBe('number');
       expect(maxResultsProp.minimum).toBe(1);
-      expect(maxResultsProp.maximum).toBe(100);
-      expect(maxResultsProp.default).toBe(20);
+      expect(maxResultsProp.maximum).toBe(500);
+      expect(maxResultsProp.default).toBeUndefined(); // Defaults to config, not hardcoded
     });
 
     it('when accessed then has includeRemedyStats property', () => {
@@ -121,8 +121,8 @@ describe('toolDefinitions', () => {
       // Assert
       const prop = tool.parameters.properties.maxResults;
       expect(prop.minimum).toBe(1);
-      expect(prop.maximum).toBe(50);
-      expect(prop.default).toBe(10);
+      expect(prop.maximum).toBe(500);
+      expect(prop.default).toBeUndefined(); // Defaults to config, not hardcoded
     });
   });
 

@@ -80,10 +80,10 @@ export const searchRepertoryToolDefinition = {
       },
       maxResults: {
         type: 'number',
-        description: 'Optional: Maximum number of results to return (1-100). Default: 20',
+        description:
+          'Optional: Maximum number of results to return (1-500). Defaults to OOREP_MCP_MAX_RESULTS (100) when omitted.',
         minimum: 1,
-        maximum: 100,
-        default: 20,
+        maximum: 500,
       },
       includeRemedyStats: {
         type: 'boolean',

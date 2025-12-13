@@ -6,10 +6,11 @@
  *
  * Note: These examples use relative imports for development.
  * When using as a package consumer, import from:
- * - 'oorep-mcp/sdk/client'
+ * - 'oorep-mcp' (main SDK client)
  * - 'oorep-mcp/sdk/openai'
  * - 'oorep-mcp/sdk/vercel-ai'
  * - 'oorep-mcp/sdk/langchain'
+ * - 'oorep-mcp/sdk/google-genai'
  */
 
 // =====================================================
@@ -54,7 +55,7 @@ async function directUsageExample() {
   console.log('Available repertories:', repertories);
 
   // Clean up
-  client.destroy();
+  await client.destroy();
 }
 
 // =====================================================
@@ -97,7 +98,7 @@ async function openAIExample() {
   console.log('Final response:', finalResponse.choices[0].message.content);
   */
 
-  client.destroy();
+  await client.destroy();
 }
 
 // =====================================================
@@ -126,7 +127,7 @@ async function vercelAIExample() {
   console.log('Tool calls:', result.toolCalls);
   */
 
-  client.destroy();
+  await client.destroy();
 }
 
 // =====================================================
@@ -161,7 +162,7 @@ async function langchainExample() {
   console.log('Agent result:', result);
   */
 
-  client.destroy();
+  await client.destroy();
 }
 
 // =====================================================
@@ -188,7 +189,7 @@ async function customIntegrationExample() {
   });
   console.log('Direct tool execution result:', result);
 
-  client.destroy();
+  await client.destroy();
 }
 
 // =====================================================
@@ -217,7 +218,7 @@ async function errorHandlingExample() {
     }
   }
 
-  client.destroy();
+  await client.destroy();
 }
 
 // =====================================================

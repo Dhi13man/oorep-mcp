@@ -28,10 +28,9 @@ export const SearchRepertoryArgsSchema = z.object({
     .number()
     .int()
     .min(1)
-    .max(100)
+    .max(500)
     .optional()
-    .default(20)
-    .describe('Maximum number of results to return'),
+    .describe('Maximum number of results to return. Defaults to OOREP_MCP_MAX_RESULTS when omitted.'),
   includeRemedyStats: z
     .boolean()
     .optional()
@@ -56,10 +55,9 @@ export const SearchMateriaMedicaArgsSchema = z.object({
     .number()
     .int()
     .min(1)
-    .max(50)
+    .max(500)
     .optional()
-    .default(10)
-    .describe('Maximum number of results to return'),
+    .describe('Maximum number of results to return. Defaults to OOREP_MCP_MAX_RESULTS when omitted.'),
 });
 
 export const GetRemedyInfoArgsSchema = z.object({

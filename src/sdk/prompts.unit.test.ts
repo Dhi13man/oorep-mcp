@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { listPrompts, getPrompt } from './prompts.js';
+import { listPrompts, getPrompt, getPromptDefinition, getPromptNames } from './prompts.js';
 
 describe('listPrompts', () => {
   it('returns all available prompt definitions', () => {
@@ -83,5 +83,37 @@ describe('getPrompt', () => {
     expect(result.messages[0].content.text).toContain('STEP 1: Chief Complaint');
     expect(result.messages[0].content.text).toContain('STEP 7: Recommendations');
     expect(result.messages[0].content.text).toContain('Detailed Symptom Gathering');
+  });
+
+  it('throws NotFoundError for unknown prompt name', () => {
+    // @ts-expect-error - testing invalid prompt name
+    expect(() => getPrompt('unknown-prompt')).toThrow('Unknown prompt');
+  });
+});
+
+describe('getPromptDefinition', () => {
+  it('returns definition for existing prompt', () => {
+    const def = getPromptDefinition('analyze-symptoms');
+
+    expect(def).toBeDefined();
+    expect(def!.name).toBe('analyze-symptoms');
+    expect(def!.description).toBeDefined();
+  });
+
+  it('returns undefined for non-existent prompt', () => {
+    const def = getPromptDefinition('non-existent');
+
+    expect(def).toBeUndefined();
+  });
+});
+
+describe('getPromptNames', () => {
+  it('returns all prompt names', () => {
+    const names = getPromptNames();
+
+    expect(names).toHaveLength(3);
+    expect(names).toContain('analyze-symptoms');
+    expect(names).toContain('remedy-comparison');
+    expect(names).toContain('repertorization-workflow');
   });
 });

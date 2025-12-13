@@ -64,10 +64,10 @@ export const toolDefinitions: OOREPToolDefinition[] = [
         },
         maxResults: {
           type: 'number',
-          description: 'Maximum number of rubrics to return',
+          description:
+            'Maximum number of rubrics to return. Defaults to OOREP_MCP_MAX_RESULTS when omitted.',
           minimum: 1,
-          maximum: 100,
-          default: 20,
+          maximum: 500,
         },
         includeRemedyStats: {
           type: 'boolean',
@@ -100,10 +100,10 @@ export const toolDefinitions: OOREPToolDefinition[] = [
         },
         maxResults: {
           type: 'number',
-          description: 'Maximum number of results to return',
+          description:
+            'Maximum number of results to return. Defaults to OOREP_MCP_MAX_RESULTS when omitted.',
           minimum: 1,
-          maximum: 50,
-          default: 10,
+          maximum: 500,
         },
       },
       required: ['symptom'],
