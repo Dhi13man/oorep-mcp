@@ -172,8 +172,8 @@ export async function runServer() {
       logger.info(`Received ${signal}, shutting down gracefully...`);
       try {
         // Clean up registries
-        toolRegistry.destroy();
-        resourceRegistry.destroy();
+        await toolRegistry.destroy();
+        await resourceRegistry.destroy();
         // PromptRegistry is stateless, no cleanup needed
 
         await server.close();

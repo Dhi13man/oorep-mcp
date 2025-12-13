@@ -13,12 +13,12 @@ export type { ICache } from './ICache.js';
 export type { ILogger, LogLevel } from './ILogger.js';
 export type { IRequestDeduplicator } from './IRequestDeduplicator.js';
 export type {
-  IOOREPSDKClient,
+  IOOREPClient,
   SearchRepertoryArgs,
   SearchMateriaMedicaArgs,
   GetRemedyInfoArgs,
   ListByLanguageArgs,
-} from './IOOREPSDKClient.js';
+} from './IOOREPClient.js';
 
 // Export NoOp implementations for disabling features
 export { NoOpCache } from './ICache.js';

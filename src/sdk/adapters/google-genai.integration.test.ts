@@ -1,12 +1,12 @@
 /**
  * Integration tests for Google Gemini (@google/genai) Adapter
  *
- * These tests use the real OOREPSDKClient with only external HTTP calls mocked.
+ * These tests use the real OOREPClient with only external HTTP calls mocked.
  * They verify the full flow through the adapter -> SDK client -> OOREPClient.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { OOREPSDKClient } from '../client.js';
+import { OOREPClient } from '../client.js';
 import { getResource, getSearchSyntaxHelp } from '../resources.js';
 import { getPrompt } from '../prompts.js';
 import {
@@ -137,7 +137,7 @@ function createMateriaMedicasResponse(): Response {
 }
 
 describe('Google Gemini Integration - Tool Executors', () => {
-  let client: OOREPSDKClient;
+  let client: OOREPClient;
   let executors: GeminiToolExecutors;
 
   beforeEach(() => {
@@ -147,7 +147,7 @@ describe('Google Gemini Integration - Tool Executors', () => {
     // Default mock setup for session init
     mockFetch.mockResolvedValue(createSessionResponse());
 
-    client = new OOREPSDKClient({
+    client = new OOREPClient({
       baseUrl: 'https://test.oorep.com',
       timeoutMs: 5000,
       cacheTtlMs: 0, // Disable caching for tests
@@ -247,14 +247,14 @@ describe('Google Gemini Integration - Tool Executors', () => {
 });
 
 describe('Google Gemini Integration - Resource Formatting', () => {
-  let client: OOREPSDKClient;
+  let client: OOREPClient;
 
   beforeEach(() => {
     vi.clearAllMocks();
     global.fetch = mockFetch;
     mockFetch.mockResolvedValue(createSessionResponse());
 
-    client = new OOREPSDKClient({
+    client = new OOREPClient({
       baseUrl: 'https://test.oorep.com',
       timeoutMs: 5000,
       cacheTtlMs: 0,
@@ -361,7 +361,7 @@ describe('Google Gemini Integration - Prompt Conversion', () => {
 });
 
 describe('Google Gemini Integration - Full Flow', () => {
-  let client: OOREPSDKClient;
+  let client: OOREPClient;
   let executors: GeminiToolExecutors;
 
   beforeEach(() => {
@@ -369,7 +369,7 @@ describe('Google Gemini Integration - Full Flow', () => {
     global.fetch = mockFetch;
     mockFetch.mockResolvedValue(createSessionResponse());
 
-    client = new OOREPSDKClient({
+    client = new OOREPClient({
       baseUrl: 'https://test.oorep.com',
       timeoutMs: 5000,
       cacheTtlMs: 0,

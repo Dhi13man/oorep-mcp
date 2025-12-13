@@ -4,7 +4,7 @@
  * Provides access to MCP resources for the OOREP server.
  */
 
-import { OOREPClient } from '../lib/oorep-client.js';
+import { OOREPHttpClient } from '../lib/oorep-client.js';
 import { RESOURCE_URIS, type ResourceUri } from '../sdk/constants.js';
 import type { OOREPConfig } from '../config.js';
 import { logger } from '../utils/logger.js';
@@ -39,22 +39,23 @@ const resourceDefinitions: ResourceDefinition[] = [
 ];
 
 export class ResourceRegistry {
-  private client: OOREPClient;
+  private httpClient: OOREPHttpClient;
   private cache: InMemoryCache;
   private deduplicator: MapRequestDeduplicator;
 
   constructor(config: OOREPConfig) {
-    this.cache = new InMemoryCache(3600000, logger);
+    this.cache = new InMemoryCache(config.cacheTtlMs, logger);
     this.deduplicator = new MapRequestDeduplicator(logger);
-    this.client = new OOREPClient({
-      baseUrl: config.baseUrl,
-      timeoutMs: config.timeoutMs,
-      cacheTtlMs: 3600000,
-      maxResults: config.maxResults,
-      logLevel: config.logLevel,
-      defaultRepertory: config.defaultRepertory,
-      defaultMateriaMedica: config.defaultMateriaMedica,
-    });
+    this.httpClient = new OOREPHttpClient(
+      {
+        baseUrl: config.baseUrl,
+        timeoutMs: config.timeoutMs,
+        remoteUser: config.remoteUser,
+        defaultRepertory: config.defaultRepertory,
+        defaultMateriaMedica: config.defaultMateriaMedica,
+      },
+      logger
+    );
   }
 
   getDefinitions(): ResourceDefinition[] {
@@ -84,13 +85,13 @@ export class ResourceRegistry {
       const resource = await this.deduplicator.deduplicate(cacheKey, async () => {
         switch (uri as ResourceUri) {
           case RESOURCE_URIS.REMEDIES_LIST:
-            return fetchRemediesList(this.client);
+            return fetchRemediesList(this.httpClient);
 
           case RESOURCE_URIS.REPERTORIES_LIST:
-            return fetchRepertoriesList(this.client);
+            return fetchRepertoriesList(this.httpClient);
 
           case RESOURCE_URIS.MATERIA_MEDICAS_LIST:
-            return fetchMateriaMedicasList(this.client);
+            return fetchMateriaMedicasList(this.httpClient);
 
           case RESOURCE_URIS.SEARCH_SYNTAX_HELP:
             return getSearchSyntaxHelp();
@@ -122,7 +123,7 @@ export class ResourceRegistry {
   /**
    * Clean up resources - clears cache and releases connections
    */
-  destroy(): void {
-    this.cache.destroy?.();
+  async destroy(): Promise<void> {
+    await this.cache.destroy?.();
   }
 }

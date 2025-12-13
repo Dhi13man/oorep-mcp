@@ -3,7 +3,7 @@
  * Search for symptoms in homeopathic repertories and return matching rubrics with remedies
  */
 
-import type { IOOREPSDKClient } from '../interfaces/IOOREPSDKClient.js';
+import type { IOOREPClient } from '../interfaces/IOOREPClient.js';
 import {
   SearchRepertoryArgsSchema,
   RepertorySearchResultSchema,
@@ -15,7 +15,7 @@ import { logger } from '../utils/logger.js';
 import { TOOL_NAMES } from '../sdk/constants.js';
 
 export class SearchRepertoryTool {
-  constructor(private client: IOOREPSDKClient) {}
+  constructor(private client: IOOREPClient) {}
 
   async execute(args: unknown): Promise<RepertorySearchResult> {
     try {
@@ -80,10 +80,10 @@ export const searchRepertoryToolDefinition = {
       },
       maxResults: {
         type: 'number',
-        description: 'Optional: Maximum number of results to return (1-100). Default: 20',
+        description:
+          'Optional: Maximum number of results to return (1-500). Defaults to OOREP_MCP_MAX_RESULTS (100) when omitted.',
         minimum: 1,
-        maximum: 100,
-        default: 20,
+        maximum: 500,
       },
       includeRemedyStats: {
         type: 'boolean',

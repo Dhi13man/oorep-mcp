@@ -5,7 +5,7 @@
 
 import type { ILogger, LogLevel } from '../interfaces/ILogger.js';
 
-export type { LogLevel } from '../interfaces/ILogger.js';
+export type { ILogger, LogLevel } from '../interfaces/ILogger.js';
 
 /**
  * Console logger implementation

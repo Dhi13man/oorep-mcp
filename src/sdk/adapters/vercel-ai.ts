@@ -23,7 +23,7 @@
  */
 
 import { z } from '../../utils/schemas.js';
-import type { OOREPSDKClient } from '../client.js';
+import type { OOREPClient } from '../client.js';
 import type { ResourceContent } from '../resources.js';
 import type { PromptResult } from '../prompts.js';
 import { TOOL_NAMES } from '../constants.js';
@@ -58,7 +58,7 @@ export interface VercelAITool<TInput, TOutput> {
  * });
  * ```
  */
-export function createOOREPTools(client: OOREPSDKClient) {
+export function createOOREPTools(client: OOREPClient) {
   return {
     [TOOL_NAMES.SEARCH_REPERTORY]: {
       description:
@@ -72,7 +72,12 @@ export function createOOREPTools(client: OOREPSDKClient) {
           .optional()
           .describe('Repertory abbreviation. Use list_available_repertories to discover options.'),
         minWeight: z.number().min(1).max(4).optional().describe('Minimum remedy weight (1-4)'),
-        maxResults: z.number().min(1).max(100).optional().default(20).describe('Maximum results'),
+        maxResults: z
+          .number()
+          .min(1)
+          .max(500)
+          .optional()
+          .describe('Maximum results. Defaults to client config maxResults when omitted.'),
         includeRemedyStats: z
           .boolean()
           .optional()
@@ -99,7 +104,12 @@ export function createOOREPTools(client: OOREPSDKClient) {
             'Materia medica abbreviation. Use list_available_materia_medicas to discover options.'
           ),
         remedy: z.string().optional().describe('Filter to specific remedy'),
-        maxResults: z.number().min(1).max(50).optional().default(10).describe('Maximum results'),
+        maxResults: z
+          .number()
+          .min(1)
+          .max(500)
+          .optional()
+          .describe('Maximum results. Defaults to client config maxResults when omitted.'),
       }),
       execute: async (args: {
         symptom: string;
@@ -153,7 +163,7 @@ export type OOREPTools = ReturnType<typeof createOOREPTools>;
  * ```
  */
 export function getOOREPTools<K extends keyof OOREPTools>(
-  client: OOREPSDKClient,
+  client: OOREPClient,
   toolNames: K[]
 ): Pick<OOREPTools, K> {
   const allTools = createOOREPTools(client);
@@ -174,23 +184,23 @@ export function getOOREPTools<K extends keyof OOREPTools>(
  * const searchTool = createSearchRepertoryTool(client);
  * ```
  */
-export function createSearchRepertoryTool(client: OOREPSDKClient) {
+export function createSearchRepertoryTool(client: OOREPClient) {
   return createOOREPTools(client).search_repertory;
 }
 
-export function createSearchMateriaMedicaTool(client: OOREPSDKClient) {
+export function createSearchMateriaMedicaTool(client: OOREPClient) {
   return createOOREPTools(client).search_materia_medica;
 }
 
-export function createGetRemedyInfoTool(client: OOREPSDKClient) {
+export function createGetRemedyInfoTool(client: OOREPClient) {
   return createOOREPTools(client).get_remedy_info;
 }
 
-export function createListRepertoriesTool(client: OOREPSDKClient) {
+export function createListRepertoriesTool(client: OOREPClient) {
   return createOOREPTools(client).list_available_repertories;
 }
 
-export function createListMateriaMedicasTool(client: OOREPSDKClient) {
+export function createListMateriaMedicasTool(client: OOREPClient) {
   return createOOREPTools(client).list_available_materia_medicas;
 }
 

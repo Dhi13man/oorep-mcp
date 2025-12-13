@@ -7,7 +7,7 @@
  * Fully supports dependency injection for extensibility.
  */
 
-import { OOREPClient } from '../lib/oorep-client.js';
+import { OOREPHttpClient } from '../lib/oorep-client.js';
 import { InMemoryCache } from '../lib/cache.js';
 import { MapRequestDeduplicator } from '../lib/deduplicator.js';
 import { ConsoleLogger } from '../utils/logger.js';
@@ -69,6 +69,13 @@ export interface OOREPSDKConfig {
   timeoutMs?: number;
   /** Cache TTL in milliseconds (default: 300000 = 5 minutes) */
   cacheTtlMs?: number;
+  /** Maximum results to return from searches (default: 100, max: 500) */
+  maxResults?: number;
+  /**
+   * Optional numeric OOREP member ID to send via X-Remote-User header.
+   * Useful for self-hosted OOREP deployments behind a reverse proxy auth layer.
+   */
+  remoteUser?: string;
   /** Default repertory abbreviation (default: publicum) */
   defaultRepertory?: string;
   /** Default materia medica abbreviation (default: boericke) */
@@ -81,20 +88,30 @@ export interface OOREPSDKConfig {
   deduplicator?: IRequestDeduplicator;
   /** Custom logger implementation */
   logger?: ILogger;
-  /** Custom OOREP client (advanced usage) */
-  client?: OOREPClient;
+  /** Custom OOREP HTTP client (advanced usage) */
+  httpClient?: OOREPHttpClient;
 }
 
+type NormalizedSDKConfig = {
+  baseUrl: string;
+  timeoutMs: number;
+  cacheTtlMs: number;
+  maxResults: number;
+  remoteUser?: string;
+  defaultRepertory: string;
+  defaultMateriaMedica: string;
+};
+
 /**
- * OOREP SDK Client for programmatic access to homeopathic data
+ * OOREP Client for programmatic access to homeopathic data
  * Supports full dependency injection for cache, logger, deduplicator, and HTTP client
  */
-export class OOREPSDKClient {
-  private client: OOREPClient;
+export class OOREPClient {
+  private httpClient: OOREPHttpClient;
   private cache: ICache;
   private deduplicator: IRequestDeduplicator;
   private logger: ILogger;
-  private config: Required<Omit<OOREPSDKConfig, 'cache' | 'deduplicator' | 'logger' | 'client'>>;
+  private config: NormalizedSDKConfig;
 
   private normalizeOverride(value: string | undefined, fallback: string): string {
     const trimmed = value?.trim();
@@ -107,6 +124,8 @@ export class OOREPSDKClient {
       baseUrl: config.baseUrl ?? DEFAULTS.BASE_URL,
       timeoutMs: config.timeoutMs ?? DEFAULTS.TIMEOUT_MS,
       cacheTtlMs: config.cacheTtlMs ?? DEFAULTS.CACHE_TTL_MS,
+      maxResults: Math.min(Math.max(config.maxResults ?? DEFAULTS.MAX_RESULTS, 1), 500),
+      remoteUser: config.remoteUser,
       defaultRepertory: config.defaultRepertory ?? DEFAULTS.REPERTORY,
       defaultMateriaMedica: config.defaultMateriaMedica ?? DEFAULTS.MATERIA_MEDICA,
     };
@@ -117,18 +136,18 @@ export class OOREPSDKClient {
     this.cache = config.cache ?? new InMemoryCache(this.config.cacheTtlMs, this.logger);
     this.deduplicator = config.deduplicator ?? new MapRequestDeduplicator(this.logger);
 
-    // Create or use provided OOREP client
-    this.client =
-      config.client ??
-      new OOREPClient({
-        baseUrl: this.config.baseUrl,
-        timeoutMs: this.config.timeoutMs,
-        cacheTtlMs: this.config.cacheTtlMs,
-        maxResults: 100,
-        logLevel: 'warn',
-        defaultRepertory: this.config.defaultRepertory,
-        defaultMateriaMedica: this.config.defaultMateriaMedica,
-      });
+    this.httpClient =
+      config.httpClient ??
+      new OOREPHttpClient(
+        {
+          baseUrl: this.config.baseUrl,
+          timeoutMs: this.config.timeoutMs,
+          remoteUser: this.config.remoteUser,
+          defaultRepertory: this.config.defaultRepertory,
+          defaultMateriaMedica: this.config.defaultMateriaMedica,
+        },
+        this.logger
+      );
   }
 
   /**
@@ -146,12 +165,15 @@ export class OOREPSDKClient {
 
     // Trim whitespace overrides and apply default repertory consistently for cache and API
     const repertory = this.normalizeOverride(validated.repertory, this.config.defaultRepertory);
+    const maxResults =
+      args.maxResults !== undefined ? validated.maxResults : this.config.maxResults;
 
     const cacheKey = generateCacheKey('repertory', {
+      remoteUser: this.config.remoteUser,
       symptom: validated.symptom,
       repertory,
       minWeight: validated.minWeight,
-      maxResults: validated.maxResults,
+      maxResults,
       includeRemedyStats: validated.includeRemedyStats,
     });
 
@@ -159,7 +181,7 @@ export class OOREPSDKClient {
     if (cached) return cached;
 
     return this.deduplicator.deduplicate(cacheKey, async () => {
-      const apiResponse = await this.client.lookupRepertory({
+      const apiResponse = await this.httpClient.lookupRepertory({
         symptom: validated.symptom,
         repertory,
         minWeight: validated.minWeight,
@@ -168,7 +190,7 @@ export class OOREPSDKClient {
 
       const result = formatRepertoryResults(apiResponse, {
         includeRemedyStats: validated.includeRemedyStats,
-        maxResults: validated.maxResults,
+        maxResults,
       });
 
       await this.cache.set(cacheKey, result);
@@ -196,25 +218,28 @@ export class OOREPSDKClient {
       validated.materiamedica,
       this.config.defaultMateriaMedica
     );
+    const maxResults =
+      args.maxResults !== undefined ? validated.maxResults : this.config.maxResults;
 
     const cacheKey = generateCacheKey('mm', {
+      remoteUser: this.config.remoteUser,
       symptom: validated.symptom,
       materiamedica,
       remedy: validated.remedy,
-      maxResults: validated.maxResults,
+      maxResults,
     });
 
     const cached = (await this.cache.get(cacheKey)) as MateriaMedicaSearchResult | null;
     if (cached) return cached;
 
     return this.deduplicator.deduplicate(cacheKey, async () => {
-      const apiResponse = await this.client.lookupMateriaMedica({
+      const apiResponse = await this.httpClient.lookupMateriaMedica({
         symptom: validated.symptom,
         materiamedica,
         remedy: validated.remedy,
       });
 
-      const result = formatMateriaMedicaResults(apiResponse, validated.maxResults);
+      const result = formatMateriaMedicaResults(apiResponse, maxResults);
 
       await this.cache.set(cacheKey, result);
       return result;
@@ -228,12 +253,15 @@ export class OOREPSDKClient {
     const validated = GetRemedyInfoArgsSchema.parse(args);
     validateRemedyName(validated.remedy);
 
-    const cacheKey = generateCacheKey('remedy', { name: validated.remedy.toLowerCase() });
+    const cacheKey = generateCacheKey('remedy', {
+      remoteUser: this.config.remoteUser,
+      name: validated.remedy.toLowerCase(),
+    });
     const cached = (await this.cache.get(cacheKey)) as RemedyInfo | null;
     if (cached) return cached;
 
     return this.deduplicator.deduplicate(cacheKey, async () => {
-      const remedies = await this.client.getAvailableRemedies();
+      const remedies = await this.httpClient.getAvailableRemedies();
       const query = validated.remedy.trim().toLowerCase();
       const normalizedQuery = query.replace(/[^a-z0-9]/g, '');
       const allowPartialMatch = normalizedQuery.length >= 3;
@@ -269,12 +297,15 @@ export class OOREPSDKClient {
       validateLanguage(validated.language);
     }
 
-    const cacheKey = generateCacheKey('repertories', { language: validated.language });
+    const cacheKey = generateCacheKey('repertories', {
+      remoteUser: this.config.remoteUser,
+      language: validated.language,
+    });
     const cached = (await this.cache.get(cacheKey)) as RepertoryMetadata[] | null;
     if (cached) return cached;
 
     return this.deduplicator.deduplicate(cacheKey, async () => {
-      let repertories = await this.client.getAvailableRepertories();
+      let repertories = await this.httpClient.getAvailableRepertories();
 
       if (validated.language) {
         const lang = validated.language.toLowerCase();
@@ -295,12 +326,15 @@ export class OOREPSDKClient {
       validateLanguage(validated.language);
     }
 
-    const cacheKey = generateCacheKey('materiamedicas', { language: validated.language });
+    const cacheKey = generateCacheKey('materiamedicas', {
+      remoteUser: this.config.remoteUser,
+      language: validated.language,
+    });
     const cached = (await this.cache.get(cacheKey)) as MateriaMedicaMetadata[] | null;
     if (cached) return cached;
 
     return this.deduplicator.deduplicate(cacheKey, async () => {
-      let materiaMedicas = await this.client.getAvailableMateriaMedicas();
+      let materiaMedicas = await this.httpClient.getAvailableMateriaMedicas();
 
       if (validated.language) {
         const lang = validated.language.toLowerCase();
@@ -329,24 +363,22 @@ export class OOREPSDKClient {
   /**
    * Get the current configuration
    */
-  getConfig(): Readonly<
-    Required<Omit<OOREPSDKConfig, 'cache' | 'deduplicator' | 'logger' | 'client'>>
-  > {
+  getConfig(): Readonly<NormalizedSDKConfig> {
     return { ...this.config };
   }
 
   /**
-   * Get the underlying OOREPClient instance
+   * Get the underlying OOREPHttpClient instance
    *
    * Useful for passing to resource/prompt functions that require API access.
    */
-  getClient(): OOREPClient {
-    return this.client;
+  getHttpClient(): OOREPHttpClient {
+    return this.httpClient;
   }
 }
 
 /**
- * Create a new OOREP SDK client
+ * Create a new OOREP client
  *
  * @example
  * ```typescript
@@ -375,6 +407,6 @@ export class OOREPSDKClient {
  * const client = createOOREPClient({ cache: new RedisCache(redis) });
  * ```
  */
-export function createOOREPClient(config?: OOREPSDKConfig): OOREPSDKClient {
-  return new OOREPSDKClient(config);
+export function createOOREPClient(config?: OOREPSDKConfig): OOREPClient {
+  return new OOREPClient(config);
 }

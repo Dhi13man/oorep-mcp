@@ -3,7 +3,10 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { createServer, runServer } from './server.js';
+import { ToolRegistry } from './tools/index.js';
+import { ResourceRegistry } from './resources/index.js';
 
 // Mock the stdio transport
 vi.mock('@modelcontextprotocol/sdk/server/stdio.js', () => ({
@@ -472,5 +475,50 @@ describe('runServer', () => {
     await runServer();
 
     expect(mockOn).toHaveBeenCalledWith('SIGINT', expect.any(Function));
+  });
+
+  it('runServer when SIGTERM received then shuts down gracefully', async () => {
+    const handlers = new Map<string, (...args: unknown[]) => unknown>();
+    vi.spyOn(process, 'on').mockImplementation(((event: string, handler: (...args: unknown[]) => void) => {
+      handlers.set(event, handler);
+      return process;
+    }) as unknown as typeof process.on);
+
+    const destroyTools = vi.spyOn(ToolRegistry.prototype, 'destroy').mockResolvedValue();
+    const destroyResources = vi.spyOn(ResourceRegistry.prototype, 'destroy').mockResolvedValue();
+    const closeServer = vi.spyOn(Server.prototype, 'close').mockResolvedValue();
+
+    await runServer();
+
+    const sigterm = handlers.get('SIGTERM');
+    expect(sigterm).toBeDefined();
+
+    await expect(sigterm?.('SIGTERM')).rejects.toThrow('process.exit called');
+    expect(destroyTools).toHaveBeenCalledTimes(1);
+    expect(destroyResources).toHaveBeenCalledTimes(1);
+    expect(closeServer).toHaveBeenCalledTimes(1);
+    expect(mockExit).toHaveBeenCalledWith(0);
+  });
+
+  it('runServer when shutdown cleanup fails then exits with code 1', async () => {
+    const handlers = new Map<string, (...args: unknown[]) => unknown>();
+    vi.spyOn(process, 'on').mockImplementation(((event: string, handler: (...args: unknown[]) => void) => {
+      handlers.set(event, handler);
+      return process;
+    }) as unknown as typeof process.on);
+
+    vi.spyOn(ToolRegistry.prototype, 'destroy').mockRejectedValue(new Error('cleanup failed'));
+    const destroyResources = vi.spyOn(ResourceRegistry.prototype, 'destroy').mockResolvedValue();
+    const closeServer = vi.spyOn(Server.prototype, 'close').mockResolvedValue();
+
+    await runServer();
+
+    const sigint = handlers.get('SIGINT');
+    expect(sigint).toBeDefined();
+
+    await expect(sigint?.('SIGINT')).rejects.toThrow('process.exit called');
+    expect(destroyResources).not.toHaveBeenCalled(); // aborts on failed destroy
+    expect(closeServer).not.toHaveBeenCalled(); // should bail on first failure
+    expect(mockExit).toHaveBeenCalledWith(1);
   });
 });

@@ -20,6 +20,7 @@ describe('getConfig', () => {
     delete process.env.OOREP_MCP_LOG_LEVEL;
     delete process.env.OOREP_MCP_DEFAULT_REPERTORY;
     delete process.env.OOREP_MCP_DEFAULT_MATERIA_MEDICA;
+    delete process.env.OOREP_MCP_REMOTE_USER;
     process.argv = ['node', 'script.js'];
   });
 
@@ -40,6 +41,7 @@ describe('getConfig', () => {
       expect(config.logLevel).toBe('info');
       expect(config.defaultRepertory).toBe('publicum');
       expect(config.defaultMateriaMedica).toBe('boericke');
+      expect(config.remoteUser).toBeUndefined();
     });
   });
 
@@ -52,6 +54,7 @@ describe('getConfig', () => {
       process.env.OOREP_MCP_LOG_LEVEL = 'debug';
       process.env.OOREP_MCP_DEFAULT_REPERTORY = 'kent';
       process.env.OOREP_MCP_DEFAULT_MATERIA_MEDICA = 'hering';
+      process.env.OOREP_MCP_REMOTE_USER = '123';
 
       const config = getConfig();
 
@@ -62,6 +65,7 @@ describe('getConfig', () => {
       expect(config.logLevel).toBe('debug');
       expect(config.defaultRepertory).toBe('kent');
       expect(config.defaultMateriaMedica).toBe('hering');
+      expect(config.remoteUser).toBe('123');
     });
   });
 
@@ -106,6 +110,14 @@ describe('getConfig', () => {
       expect(config.logLevel).toBe('warn');
     });
 
+    it('getConfig when --remote-user provided then sets remoteUser', () => {
+      process.argv = ['node', 'script.js', '--remote-user', '456'];
+
+      const config = getConfig();
+
+      expect(config.remoteUser).toBe('456');
+    });
+
     it('getConfig when CLI args and env vars both set then CLI args take precedence', () => {
       process.env.OOREP_MCP_TIMEOUT_MS = '30000';
       process.argv = ['node', 'script.js', '--timeout', '60000'];
@@ -127,6 +139,8 @@ describe('getConfig', () => {
         '75',
         '--log-level',
         'debug',
+        '--remote-user',
+        '789',
       ];
 
       const config = getConfig();
@@ -135,18 +149,23 @@ describe('getConfig', () => {
       expect(config.cacheTtlMs).toBe(600000);
       expect(config.maxResults).toBe(75);
       expect(config.logLevel).toBe('debug');
+      expect(config.remoteUser).toBe('789');
     });
   });
 
   describe('when CLI argument is missing value', () => {
-    it.each([['--base-url'], ['--timeout'], ['--cache-ttl'], ['--max-results'], ['--log-level']])(
-      'getConfig when %s has no value then throws error',
-      (arg: string) => {
-        process.argv = ['node', 'script.js', arg];
+    it.each([
+      ['--base-url'],
+      ['--timeout'],
+      ['--cache-ttl'],
+      ['--max-results'],
+      ['--log-level'],
+      ['--remote-user'],
+    ])('getConfig when %s has no value then throws error', (arg: string) => {
+      process.argv = ['node', 'script.js', arg];
 
-        expect(() => getConfig()).toThrow();
-      }
-    );
+      expect(() => getConfig()).toThrow();
+    });
   });
 
   describe('when CLI argument has invalid numeric value', () => {
@@ -315,6 +334,22 @@ describe('getConfig', () => {
 
     it('getConfig when defaultMateriaMedica is only whitespace then throws error', () => {
       process.env.OOREP_MCP_DEFAULT_MATERIA_MEDICA = '   ';
+
+      expect(() => getConfig()).toThrow();
+    });
+  });
+
+  describe('when validating remoteUser', () => {
+    it('getConfig when remoteUser is empty/whitespace then treats as unset', () => {
+      process.env.OOREP_MCP_REMOTE_USER = '   ';
+
+      const config = getConfig();
+
+      expect(config.remoteUser).toBeUndefined();
+    });
+
+    it('getConfig when remoteUser is non-numeric then throws error', () => {
+      process.env.OOREP_MCP_REMOTE_USER = 'abc';
 
       expect(() => getConfig()).toThrow();
     });

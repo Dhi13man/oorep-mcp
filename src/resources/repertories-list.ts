@@ -5,7 +5,7 @@
  */
 
 import { RESOURCE_URIS, MIME_TYPES } from '../sdk/constants.js';
-import type { OOREPClient } from '../lib/oorep-client.js';
+import type { OOREPHttpClient } from '../lib/oorep-client.js';
 import type { ResourceContent, ResourceDefinition } from './remedies-list.js';
 
 export const repertoriesListDefinition: ResourceDefinition = {
@@ -15,7 +15,7 @@ export const repertoriesListDefinition: ResourceDefinition = {
   mimeType: MIME_TYPES.JSON,
 };
 
-export async function fetchRepertoriesList(client: OOREPClient): Promise<ResourceContent> {
+export async function fetchRepertoriesList(client: OOREPHttpClient): Promise<ResourceContent> {
   const repertories = await client.getAvailableRepertories();
   return {
     uri: RESOURCE_URIS.REPERTORIES_LIST,

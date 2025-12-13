@@ -1,11 +1,11 @@
 /**
  * Integration tests for Vercel AI SDK Adapter
  *
- * These tests use the real OOREPSDKClient with only external HTTP calls mocked.
+ * These tests use the real OOREPClient with only external HTTP calls mocked.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { OOREPSDKClient } from '../client.js';
+import { OOREPClient } from '../client.js';
 import { createOOREPTools, getOOREPTools } from './vercel-ai.js';
 
 // Store original fetch
@@ -137,13 +137,13 @@ function createMateriaMedicasResponse(): Response {
 }
 
 describe('Vercel AI Adapter Integration Tests', () => {
-  let client: OOREPSDKClient;
+  let client: OOREPClient;
 
   beforeEach(() => {
     vi.useFakeTimers();
     mockFetch.mockReset();
     global.fetch = mockFetch;
-    client = new OOREPSDKClient();
+    client = new OOREPClient();
   });
 
   afterEach(() => {

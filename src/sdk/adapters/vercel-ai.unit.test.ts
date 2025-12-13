@@ -19,10 +19,10 @@ import {
   vercelAICombinePromptWithContext,
   type OOREPTools,
 } from './vercel-ai.js';
-import type { OOREPSDKClient, ResourceContent, PromptResult } from '../client.js';
+import type { OOREPClient, ResourceContent, PromptResult } from '../client.js';
 
 describe('createOOREPTools', () => {
-  let mockClient: OOREPSDKClient;
+  let mockClient: OOREPClient;
 
   beforeEach(() => {
     mockClient = {
@@ -31,7 +31,7 @@ describe('createOOREPTools', () => {
       getRemedyInfo: vi.fn().mockResolvedValue({ id: 1, nameAbbrev: 'Acon.' }),
       listRepertories: vi.fn().mockResolvedValue([{ abbreviation: 'kent' }]),
       listMateriaMedicas: vi.fn().mockResolvedValue([{ abbreviation: 'boericke' }]),
-    } as unknown as OOREPSDKClient;
+    } as unknown as OOREPClient;
   });
 
   it('when called then returns object with all five tools', () => {
@@ -194,7 +194,7 @@ describe('createOOREPTools', () => {
 });
 
 describe('getOOREPTools', () => {
-  let mockClient: OOREPSDKClient;
+  let mockClient: OOREPClient;
 
   beforeEach(() => {
     mockClient = {
@@ -203,7 +203,7 @@ describe('getOOREPTools', () => {
       getRemedyInfo: vi.fn(),
       listRepertories: vi.fn(),
       listMateriaMedicas: vi.fn(),
-    } as unknown as OOREPSDKClient;
+    } as unknown as OOREPClient;
   });
 
   it('when single tool requested then returns only that tool', () => {
@@ -241,7 +241,7 @@ describe('getOOREPTools', () => {
 });
 
 describe('individual tool creators', () => {
-  let mockClient: OOREPSDKClient;
+  let mockClient: OOREPClient;
 
   beforeEach(() => {
     mockClient = {
@@ -250,7 +250,7 @@ describe('individual tool creators', () => {
       getRemedyInfo: vi.fn().mockResolvedValue({ id: 1 }),
       listRepertories: vi.fn().mockResolvedValue([]),
       listMateriaMedicas: vi.fn().mockResolvedValue([]),
-    } as unknown as OOREPSDKClient;
+    } as unknown as OOREPClient;
   });
 
   describe('createSearchRepertoryTool', () => {

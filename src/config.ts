@@ -13,6 +13,7 @@ export interface OOREPConfig {
   logLevel: string;
   defaultRepertory: string;
   defaultMateriaMedica: string;
+  remoteUser?: string;
 }
 
 /**
@@ -27,6 +28,7 @@ export function getConfig(): OOREPConfig {
     logLevel: process.env.OOREP_MCP_LOG_LEVEL ?? DEFAULTS.LOG_LEVEL,
     defaultRepertory: process.env.OOREP_MCP_DEFAULT_REPERTORY ?? DEFAULTS.REPERTORY,
     defaultMateriaMedica: process.env.OOREP_MCP_DEFAULT_MATERIA_MEDICA ?? DEFAULTS.MATERIA_MEDICA,
+    remoteUser: process.env.OOREP_MCP_REMOTE_USER,
   };
 
   // Parse CLI arguments (override env vars)
@@ -63,6 +65,10 @@ export function getConfig(): OOREPConfig {
         if (i + 1 >= args.length) throw new Error(`Missing value for ${arg}`);
         config.logLevel = args[++i];
         break;
+      case '--remote-user':
+        if (i + 1 >= args.length) throw new Error(`Missing value for ${arg}`);
+        config.remoteUser = args[++i];
+        break;
     }
   }
 
@@ -79,17 +85,23 @@ export function getConfig(): OOREPConfig {
     throw new Error('OOREP_MCP_MAX_RESULTS must be between 1 and 500');
   }
 
-  if (!['debug', 'info', 'warn', 'error'].includes(config.logLevel)) {
-    throw new Error('OOREP_MCP_LOG_LEVEL must be one of: debug, info, warn, error');
-  }
   if (config.cacheTtlMs < 0 || config.cacheTtlMs > 3600000) {
     throw new Error('OOREP_MCP_CACHE_TTL_MS must be between 0 and 3600000');
+  }
+  if (!['debug', 'info', 'warn', 'error'].includes(config.logLevel)) {
+    throw new Error('OOREP_MCP_LOG_LEVEL must be one of: debug, info, warn, error');
   }
   if (!config.defaultRepertory.trim()) {
     throw new Error('OOREP_MCP_DEFAULT_REPERTORY cannot be empty');
   }
   if (!config.defaultMateriaMedica.trim()) {
     throw new Error('OOREP_MCP_DEFAULT_MATERIA_MEDICA cannot be empty');
+  }
+  if (config.remoteUser !== undefined && !config.remoteUser.trim()) {
+    config.remoteUser = undefined;
+  }
+  if (config.remoteUser !== undefined && !/^\d+$/.test(config.remoteUser.trim())) {
+    throw new Error('OOREP_MCP_REMOTE_USER must be a numeric member ID');
   }
   logger.info('Configuration loaded', {
     baseUrl: config.baseUrl,
@@ -99,6 +111,7 @@ export function getConfig(): OOREPConfig {
     logLevel: config.logLevel,
     defaultRepertory: config.defaultRepertory,
     defaultMateriaMedica: config.defaultMateriaMedica,
+    remoteUserSet: Boolean(config.remoteUser),
   });
 
   return config;

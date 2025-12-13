@@ -16,7 +16,7 @@ import { createOOREPClient } from 'oorep-mcp';
 const client = createOOREPClient();
 const results = await client.searchRepertory({ symptom: 'headache worse motion' });
 console.log(results.rubrics);
-client.destroy();
+await client.destroy();
 ```
 
 ## SDK Client
@@ -28,6 +28,8 @@ const client = createOOREPClient({
   baseUrl: 'https://www.oorep.com',  // OOREP API base URL
   timeoutMs: 30000,                   // Request timeout (ms)
   cacheTtlMs: 300000,                 // Cache TTL (ms, 0 to disable)
+  maxResults: 100,                    // Default max results (1-500, default: 100)
+  remoteUser: '123',                  // Optional: X-Remote-User member ID (self-hosted OOREP)
   defaultRepertory: 'publicum',       // Default repertory
   defaultMateriaMedica: 'boericke',   // Default materia medica
 });
@@ -60,7 +62,7 @@ const repertories = await client.listRepertories({ language: 'en' });
 const materiaMedicas = await client.listMateriaMedicas();
 
 // Always cleanup when done
-client.destroy();
+await client.destroy();
 ```
 
 ## Framework Adapters
@@ -131,7 +133,7 @@ try {
     }
   }
 } finally {
-  client.destroy();
+  await client.destroy();
 }
 ```
 
@@ -170,7 +172,7 @@ try {
   const lastMessage = result.messages[result.messages.length - 1];
   console.log(lastMessage.content);
 } finally {
-  client.destroy();
+  await client.destroy();
 }
 ```
 
@@ -218,7 +220,7 @@ try {
     console.log(finalResponse.text);
   }
 } finally {
-  client.destroy();
+  await client.destroy();
 }
 ```
 
@@ -235,14 +237,14 @@ console.log(searchHelp); // Markdown guide for search syntax
 
 // For dynamic resources, create a client and pass its underlying OOREPClient
 const client = createOOREPClient();
-const remedies = await getResource('oorep://remedies/list', client.getClient());
+const remedies = await getResource('oorep://remedies/list', client.getHttpClient());
 console.log(remedies.text); // JSON with 600+ remedies
 
 // List all available resources (no client needed)
 const resources = listResources();
 // Returns: { uri, name, description, mimeType }[]
 
-client.destroy();
+await client.destroy();
 ```
 
 ### Available Resources
@@ -387,7 +389,7 @@ const result = await generateText({
 // Or use the combined helper
 const { system: sys, messages: msgs } = vercelAICombinePromptWithContext(searchSyntax, workflow);
 
-client.destroy();
+await client.destroy();
 ```
 
 #### LangChain Prompts
@@ -420,11 +422,11 @@ const messages = messageData.map((msg) =>
 
 // For RAG use cases, get resources as Documents (dynamic resource needs client)
 const remediesDoc = langChainFormatResourceAsDocument(
-  await getResource('oorep://remedies/list', client.getClient())
+  await getResource('oorep://remedies/list', client.getHttpClient())
 );
 // Use with vector stores or retrievers
 
-client.destroy();
+await client.destroy();
 ```
 
 #### Google Gemini Prompts
@@ -464,7 +466,7 @@ const { systemInstruction: sysInst, contents: cont } = geminiConvertPromptWithCo
   workflow
 );
 
-client.destroy();
+await client.destroy();
 ```
 
 ## Available Tools
@@ -538,7 +540,7 @@ import type {
   AnalyzeSymptomsArgs,
   RemedyComparisonArgs,
   // Client types
-  OOREPSDKClient,
+  OOREPClient,
   OOREPSDKConfig,
 } from 'oorep-mcp';
 

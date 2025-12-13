@@ -3,13 +3,13 @@
  */
 
 import { vi, type Mock } from 'vitest';
-import type { IOOREPSDKClient } from '../interfaces/IOOREPSDKClient.js';
+import type { IOOREPClient } from '../interfaces/IOOREPClient.js';
 
 /**
- * Creates a mock IOOREPSDKClient with all methods stubbed
+ * Creates a mock IOOREPClient with all methods stubbed
  * Individual tests can override specific methods as needed
  */
-export function createMockSDKClient(): IOOREPSDKClient & { [K in keyof IOOREPSDKClient]: Mock } {
+export function createMockSDKClient(): IOOREPClient & { [K in keyof IOOREPClient]: Mock } {
   return {
     searchRepertory: vi.fn(),
     searchMateriaMedica: vi.fn(),

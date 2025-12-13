@@ -1,12 +1,12 @@
 /**
  * Integration tests for OpenAI Adapter
  *
- * These tests use the real OOREPSDKClient with only external HTTP calls mocked.
+ * These tests use the real OOREPClient with only external HTTP calls mocked.
  * They verify the full flow through the adapter -> SDK client -> OOREPClient.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { OOREPSDKClient } from '../client.js';
+import { OOREPClient } from '../client.js';
 import { executeOpenAITool, executeOOREPTool, processToolCalls } from './openai.js';
 
 // Store original fetch
@@ -153,13 +153,13 @@ function createMateriaMedicasResponse(): Response {
 }
 
 describe('OpenAI Adapter Integration Tests', () => {
-  let client: OOREPSDKClient;
+  let client: OOREPClient;
 
   beforeEach(() => {
     vi.useFakeTimers();
     mockFetch.mockReset();
     global.fetch = mockFetch;
-    client = new OOREPSDKClient();
+    client = new OOREPClient();
   });
 
   afterEach(() => {

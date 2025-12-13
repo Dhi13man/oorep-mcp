@@ -27,7 +27,7 @@
  * ```
  */
 
-import type { OOREPSDKClient } from '../client.js';
+import type { OOREPClient } from '../client.js';
 import type { ResourceContent } from '../resources.js';
 import type { PromptResult } from '../prompts.js';
 import { toolDefinitions } from '../tools.js';
@@ -85,7 +85,7 @@ export function getOpenAITools(toolNames?: string[]): OpenAITool[] {
  * @throws {NotFoundError} If functionName is not a recognized tool name
  */
 export async function executeOpenAITool(
-  client: OOREPSDKClient,
+  client: OOREPClient,
   functionName: string,
   argumentsJson: string
 ): Promise<unknown> {
@@ -103,7 +103,7 @@ export async function executeOpenAITool(
  * @throws {NotFoundError} If toolName is not a recognized tool name
  */
 export async function executeOOREPTool(
-  client: OOREPSDKClient,
+  client: OOREPClient,
   toolName: string,
   args: Record<string, unknown>
 ): Promise<unknown> {
@@ -154,7 +154,7 @@ export async function executeOOREPTool(
  * const result = await executor('search_repertory', '{"symptom": "headache"}');
  * ```
  */
-export function createToolExecutor(client: OOREPSDKClient) {
+export function createToolExecutor(client: OOREPClient) {
   return (functionName: string, argumentsJson: string) =>
     executeOpenAITool(client, functionName, argumentsJson);
 }
@@ -179,7 +179,7 @@ export function formatToolResult(result: unknown): string {
  * ```
  */
 export async function processToolCalls(
-  client: OOREPSDKClient,
+  client: OOREPClient,
   toolCalls:
     | Array<{
         id: string;
@@ -279,7 +279,7 @@ export function openAIFormatResourceAsSystemMessage(
  *
  * const [searchHelp, remedies] = await Promise.all([
  *   getResource('oorep://help/search-syntax'),
- *   getResource('oorep://remedies/list', client.getClient()),
+ *   getResource('oorep://remedies/list', client.getHttpClient()),
  * ]);
  * const context = openAIFormatResourcesAsContext([searchHelp, remedies]);
  * ```

@@ -1,12 +1,13 @@
 /**
  * Tool registration and exports
  *
- * This module manages MCP tools by delegating to a shared OOREPSDKClient instance.
+ * This module manages MCP tools by delegating to a shared OOREPClient instance.
  * The SDK is the single source of truth for all tool logic.
  */
 
 import type { OOREPConfig } from '../config.js';
-import { OOREPSDKClient, type OOREPSDKConfig } from '../sdk/client.js';
+import { OOREPClient, type OOREPSDKConfig } from '../sdk/client.js';
+import { logger } from '../utils/logger.js';
 import { NotFoundError } from '../utils/errors.js';
 import { SearchRepertoryTool, searchRepertoryToolDefinition } from './search-repertory.js';
 import {
@@ -43,7 +44,7 @@ export interface ToolHandler {
 export class ToolRegistry {
   private tools = new Map<string, ToolHandler>();
   private definitions: ToolDefinition[] = [];
-  private sdk: OOREPSDKClient;
+  private sdk: OOREPClient;
 
   constructor(config: OOREPConfig) {
     // Create single shared SDK instance for all tools
@@ -51,10 +52,13 @@ export class ToolRegistry {
       baseUrl: config.baseUrl,
       timeoutMs: config.timeoutMs,
       cacheTtlMs: config.cacheTtlMs,
+      maxResults: config.maxResults,
+      remoteUser: config.remoteUser,
       defaultRepertory: config.defaultRepertory,
       defaultMateriaMedica: config.defaultMateriaMedica,
+      logger,
     };
-    this.sdk = new OOREPSDKClient(sdkConfig);
+    this.sdk = new OOREPClient(sdkConfig);
     this.registerAllTools();
   }
 
@@ -99,7 +103,7 @@ export class ToolRegistry {
   /**
    * Clean up resources - destroys the shared SDK instance
    */
-  destroy(): void {
-    this.sdk.destroy();
+  async destroy(): Promise<void> {
+    await this.sdk.destroy();
   }
 }

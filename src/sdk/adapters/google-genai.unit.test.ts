@@ -12,7 +12,7 @@ import {
   type GeminiToolExecutors,
 } from './google-genai.js';
 import { TOOL_NAMES } from '../constants.js';
-import type { OOREPSDKClient } from '../client.js';
+import type { OOREPClient } from '../client.js';
 
 describe('geminiFunctionDeclarations', () => {
   it('when accessed then contains all five tools', () => {
@@ -84,7 +84,7 @@ describe('TOOL_NAMES from constants', () => {
 });
 
 describe('createGeminiToolExecutors', () => {
-  let mockClient: OOREPSDKClient;
+  let mockClient: OOREPClient;
   let executors: GeminiToolExecutors;
 
   beforeEach(() => {
@@ -94,7 +94,7 @@ describe('createGeminiToolExecutors', () => {
       getRemedyInfo: vi.fn().mockResolvedValue({ id: 1, nameAbbrev: 'Acon.' }),
       listRepertories: vi.fn().mockResolvedValue([{ abbreviation: 'kent' }]),
       listMateriaMedicas: vi.fn().mockResolvedValue([{ abbreviation: 'boericke' }]),
-    } as unknown as OOREPSDKClient;
+    } as unknown as OOREPClient;
     executors = createGeminiToolExecutors(mockClient);
   });
 
@@ -138,7 +138,7 @@ describe('createGeminiToolExecutors', () => {
 });
 
 describe('executeGeminiFunctionCall', () => {
-  let mockClient: OOREPSDKClient;
+  let mockClient: OOREPClient;
   let executors: GeminiToolExecutors;
 
   beforeEach(() => {
@@ -148,7 +148,7 @@ describe('executeGeminiFunctionCall', () => {
       getRemedyInfo: vi.fn().mockResolvedValue({ id: 1, nameAbbrev: 'Acon.' }),
       listRepertories: vi.fn().mockResolvedValue([{ abbreviation: 'kent' }]),
       listMateriaMedicas: vi.fn().mockResolvedValue([{ abbreviation: 'boericke' }]),
-    } as unknown as OOREPSDKClient;
+    } as unknown as OOREPClient;
     executors = createGeminiToolExecutors(mockClient);
   });
 
@@ -204,7 +204,7 @@ describe('executeGeminiFunctionCall', () => {
       get_remedy_info: 'getRemedyInfo',
       list_available_repertories: 'listRepertories',
       list_available_materia_medicas: 'listMateriaMedicas',
-    }[name] as keyof OOREPSDKClient;
+    }[name] as keyof OOREPClient;
 
     expect(mockClient[methodName]).toHaveBeenCalled();
   });

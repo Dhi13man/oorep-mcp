@@ -10,7 +10,7 @@
  */
 
 import { RESOURCE_URIS, type ResourceUri } from './constants.js';
-import type { OOREPClient } from '../lib/oorep-client.js';
+import type { OOREPHttpClient } from '../lib/oorep-client.js';
 import { NotFoundError } from '../utils/errors.js';
 
 // Re-export for convenience
@@ -112,34 +112,34 @@ export function listResources(): ResourceDefinition[] {
  * const searchHelp = await getResource('oorep://help/search-syntax');
  * console.log(searchHelp.text);
  *
- * // Dynamic resource (client required)
- * const client = new OOREPClient({ baseUrl: 'https://www.oorep.com' });
- * const remedies = await getResource('oorep://remedies/list', client);
+ * // Dynamic resource (HTTP client required)
+ * const httpClient = new OOREPHttpClient({ baseUrl: 'https://www.oorep.com', ... }, logger);
+ * const remedies = await getResource('oorep://remedies/list', httpClient);
  * console.log(remedies.text);
  * ```
  */
 export async function getResource(
   uri: ResourceUri,
-  client?: OOREPClient
+  httpClient?: OOREPHttpClient
 ): Promise<ResourceContent> {
   switch (uri) {
     case RESOURCE_URIS.REMEDIES_LIST:
-      if (!client) {
-        throw new Error('OOREPClient is required to fetch remedies list resource');
+      if (!httpClient) {
+        throw new Error('OOREPHttpClient is required to fetch remedies list resource');
       }
-      return fetchRemediesList(client);
+      return fetchRemediesList(httpClient);
 
     case RESOURCE_URIS.REPERTORIES_LIST:
-      if (!client) {
-        throw new Error('OOREPClient is required to fetch repertories list resource');
+      if (!httpClient) {
+        throw new Error('OOREPHttpClient is required to fetch repertories list resource');
       }
-      return fetchRepertoriesList(client);
+      return fetchRepertoriesList(httpClient);
 
     case RESOURCE_URIS.MATERIA_MEDICAS_LIST:
-      if (!client) {
-        throw new Error('OOREPClient is required to fetch materia medicas list resource');
+      if (!httpClient) {
+        throw new Error('OOREPHttpClient is required to fetch materia medicas list resource');
       }
-      return fetchMateriaMedicasList(client);
+      return fetchMateriaMedicasList(httpClient);
 
     case RESOURCE_URIS.SEARCH_SYNTAX_HELP:
       return getSearchSyntaxHelpStatic();

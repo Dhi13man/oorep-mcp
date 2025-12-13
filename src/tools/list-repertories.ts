@@ -3,7 +3,7 @@
  * Get list of all accessible repertories with metadata
  */
 
-import type { IOOREPSDKClient } from '../interfaces/IOOREPSDKClient.js';
+import type { IOOREPClient } from '../interfaces/IOOREPClient.js';
 import {
   z,
   ListRepertoriesArgsSchema,
@@ -16,7 +16,7 @@ import { logger } from '../utils/logger.js';
 import { TOOL_NAMES } from '../sdk/constants.js';
 
 export class ListRepertoriesTool {
-  constructor(private client: IOOREPSDKClient) {}
+  constructor(private client: IOOREPClient) {}
 
   async execute(args: unknown): Promise<{ repertories: RepertoryMetadata[] }> {
     try {
