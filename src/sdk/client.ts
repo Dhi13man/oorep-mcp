@@ -162,7 +162,8 @@ export class OOREPClient {
 
     // Trim whitespace overrides and apply default repertory consistently for cache and API
     const repertory = this.normalizeOverride(validated.repertory, this.config.defaultRepertory);
-    const maxResults = validated.maxResults ?? this.config.maxResults;
+    const maxResults =
+      args.maxResults !== undefined ? validated.maxResults : this.config.maxResults;
 
     const cacheKey = generateCacheKey('repertory', {
       remoteUser: this.config.remoteUser,
@@ -214,7 +215,8 @@ export class OOREPClient {
       validated.materiamedica,
       this.config.defaultMateriaMedica
     );
-    const maxResults = validated.maxResults ?? this.config.maxResults;
+    const maxResults =
+      args.maxResults !== undefined ? validated.maxResults : this.config.maxResults;
 
     const cacheKey = generateCacheKey('mm', {
       remoteUser: this.config.remoteUser,

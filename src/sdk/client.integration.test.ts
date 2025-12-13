@@ -97,6 +97,38 @@ function createMateriaMedicaResponse(): Response {
   );
 }
 
+function createMateriaMedicaResponseWithResults(count = 2): Response {
+  const results: Array<{
+    abbrev: string;
+    remedy_id: number;
+    remedy_fullname: string;
+    result_sections: Array<{ heading?: string | null; content?: string | null; depth?: number | null }>;
+  }> = [];
+
+  for (let index = 0; index < count; index++) {
+    const section = { heading: 'Mind', content: `Section ${index}`, depth: 1 };
+    const resultItem = {
+      abbrev: 'boericke',
+      remedy_id: index + 1,
+      remedy_fullname: `Remedy ${index + 1}`,
+      result_sections: [section],
+    };
+    results.push(resultItem);
+  }
+
+  const numberOfMatchingSectionsPerChapter = results.map((result) => ({
+    hits: result.result_sections.length,
+    remedyId: result.remedy_id,
+  }));
+
+  const payload = {
+    results,
+    numberOfMatchingSectionsPerChapter,
+  };
+
+  return createMockResponse(payload, 200, { 'set-cookie': 'session=test123' });
+}
+
 // Helper for repertories list response (matches OOREPClient expected format)
 function createRepertoriesResponse(): Response {
   return createMockResponse(
@@ -216,6 +248,22 @@ describe('OOREPClient Integration Tests', () => {
       expect(config.baseUrl).toBe('https://www.oorep.com');
       expect(config.timeoutMs).toBe(45000);
       expect(config.cacheTtlMs).toBe(300000);
+
+      client.destroy();
+    });
+
+    it.each([
+      { input: 0, expected: 1 },
+      { input: 9999, expected: 500 },
+    ])('when maxResults is $input then clamps to $expected', ({ input, expected }) => {
+      // Arrange
+      const client = new OOREPClient({ maxResults: input });
+
+      // Act
+      const config = client.getConfig();
+
+      // Assert
+      expect(config.maxResults).toBe(expected);
 
       client.destroy();
     });
@@ -396,6 +444,22 @@ describe('OOREPClient Integration Tests', () => {
 
       client.destroy();
     });
+
+    it('when maxResults omitted then uses config default to limit rubrics', async () => {
+      // Arrange
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse())
+        .mockResolvedValueOnce(createRepertoryResponse());
+      const client = new OOREPClient({ maxResults: 1 });
+
+      // Act
+      const result = await client.searchRepertory({ symptom: 'headache' });
+
+      // Assert
+      expect(result.rubrics).toHaveLength(1);
+
+      client.destroy();
+    });
   });
 
   describe('searchMateriaMedica', () => {
@@ -458,6 +522,22 @@ describe('OOREPClient Integration Tests', () => {
 
       await client.searchMateriaMedica({ symptom: 'anxiety' });
       expect(mockFetch).toHaveBeenCalledTimes(2); // No additional calls
+
+      client.destroy();
+    });
+
+    it('when maxResults omitted then uses config default to limit materia medica results', async () => {
+      // Arrange
+      mockFetch
+        .mockResolvedValueOnce(createSessionResponse())
+        .mockResolvedValueOnce(createMateriaMedicaResponseWithResults(3));
+      const client = new OOREPClient({ maxResults: 1 });
+
+      // Act
+      const result = await client.searchMateriaMedica({ symptom: 'anxiety' });
+
+      // Assert
+      expect(result.results).toHaveLength(1);
 
       client.destroy();
     });
