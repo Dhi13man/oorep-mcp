@@ -15,133 +15,101 @@ export const searchSyntaxHelpDefinition: ResourceDefinition = {
   mimeType: MIME_TYPES.MARKDOWN,
 };
 
-const SEARCH_SYNTAX_HELP_TEXT = `# OOREP Search Syntax Guide
+const SEARCH_SYNTAX_HELP_TEXT = `# OOREP Search Guide
 
-## Rubric Structure
+## How Search Works
 
-Repertory rubrics follow a hierarchical structure:
-**Location > Symptom > Modality**
+**AND Logic**: Multiple terms require ALL to match.
+- \`head pain\` → rubrics must contain BOTH "head" AND "pain"
+- Fewer terms = more results. Add terms only to narrow down.
 
-Examples:
-- "Head, pain, throbbing"
-- "Nose, obstruction, chronic"
-- "Stomach, pain, burning, after eating"
+**Case Insensitive**: \`HEAD\` = \`head\` = \`Head\`
 
-Understanding this structure helps form better queries.
+## Critical: Use agg/amel, NOT worse/better
 
-## Basic Search
+Repertories use standard abbreviations for modalities:
+- \`agg\` = aggravation (worse)
+- \`amel\` = amelioration (better)
 
-Simple text searches match symptoms and rubrics:
-- \`headache\` - finds all entries containing "headache"
-- \`headache night\` - finds entries with BOTH words (implicit AND)
+✅ \`head* agg motion\` → head symptoms worse from motion
+❌ \`head* worse motion\` → will miss most results
 
-**Best Practice**: Use 2-3 words maximum per query. Start with location, then symptom.
-- ✅ \`head pain\` (location first)
-- ❌ \`pain in my head that throbs\` (too verbose)
+## Wildcards (Primary Strategy)
 
-## Wildcards
+Use \`*\` to match variations. This is your most powerful tool.
 
-Use asterisk (*) to match any characters:
-- \`head*\` - matches "headache", "head pain", "head pressure", etc.
-- \`*ache\` - matches "headache", "backache", "toothache", etc.
+**Syntax:**
+- \`burn*\` → burning, burns, burnt
+- \`*ache\` → headache, backache, toothache
+- NOT allowed: \`bu*rn\` (middle), \`*\` (standalone)
 
-**Note**: Wildcards should only be used at the beginning or end of words, not in the middle.
-
-## Exclusions
-
-Use minus sign (-) to exclude terms:
-- \`fever -night\` - finds fever entries but excludes those mentioning night
-- \`headache -migraine\` - headache entries excluding migraine
-
-## Exact Phrases
-
-Use quotation marks for exact phrase matching:
-- \`"worse from cold"\` - exact phrase match
-- \`"better from motion"\` - exact phrase match
-
-**Caution**: Exact phrases can be restrictive. If no results, try without quotes.
+**Common patterns:** \`burn*\`, \`stitch*\`, \`press*\`, \`throb*\`, \`cramp*\`, \`walk*\`, \`sit*\`, \`eat*\`
 
 ## Vocabulary Mapping
 
-Repertories use traditional homeopathic terminology. Map common terms:
+Natural language must be converted to repertory terms:
 
-| Say This | Instead Of |
-|----------|------------|
-| obstruction | blocked, stopped up, congested |
-| agg (aggravation) | worse, worsening |
-| amel (amelioration) | better, improving |
-| pulsating, throbbing | pounding |
-| stitching | sharp, stabbing |
-| discharge, coryza | runny nose |
-| cephalalgia | headache |
-| vertigo | dizziness |
-| pyrexia | fever |
-| dyspnea | difficulty breathing |
-| epistaxis | nosebleed |
-| nausea | queasiness |
+| Natural Language | Use This Instead |
+|------------------|------------------|
+| blocked, congested | \`obstruct*\` |
+| nodules | \`nod*\` |
+| sharp pain | \`stitch*\` |
+| dizziness | \`vertigo\` |
+| runny nose | \`coryza\` or \`discharg*\` |
+| nosebleed | \`epistax*\` |
+| throwing up | \`vomit*\` |
+| breathing difficulty | \`dyspn*\` |
+| worse/worsening | \`agg\` |
+| better/improving | \`amel\` |
 
-## Query Optimization
+## Query Construction
 
-### What Works
-- ✅ \`nose obstruction\` - simple, location-first
-- ✅ \`head* pain\` - wildcard for variations
-- ✅ \`anxiety fear\` - related terms together
-- ✅ \`cough dry\` - symptom with characteristic
+**Golden Rules:**
+1. **2-3 words maximum** - AND logic means more terms = fewer results
+2. **Location + symptom** - \`head burn*\` not \`burning pain in head\`
+3. **Wildcards liberally** - \`nod*\` catches nodes, nodules, nodular
+4. **Standard modalities** - \`agg\`/\`amel\` not worse/better
 
-### What Fails
-- ❌ \`"difficulty breathing through blocked nose"\` - too long, use: \`nose obstruction\`
-- ❌ \`my head hurts when I move\` - natural language, use: \`head pain motion\`
-- ❌ \`headache from stress at work\` - too specific, use: \`head* stress\`
+**What Works:**
+- ✅ \`anticip*\` → finds ANTICIPATION rubrics
+- ✅ \`nod* vocal*\` → finds NODES, vocal cords
+- ✅ \`tremb* hand*\` → trembling in hands
+- ✅ \`hoars* cold*\` → hoarseness from cold
 
-### No Results? Try:
+**What Fails:**
+- ❌ \`Mind, anxiety, anticipating\` → use: \`anticip*\`
+- ❌ \`Larynx nodules\` → use: \`nod* laryn*\`
+- ❌ \`hoarseness cold drinks agg\` → too many terms, use: \`hoars* cold*\`
+
+## Recovery (0 Results)
+
 1. Reduce to 2 words
-2. Swap vocabulary using table above
-3. Add wildcard: \`nose*\` instead of \`nose\`
-4. Remove exact phrase quotes
-5. Try broader terms: \`pain\` instead of \`sharp shooting pain\`
+2. Add wildcards: \`obstruct*\` instead of \`obstruction\`
+3. Use root stems: \`anticip*\` instead of \`anticipating\`
+4. Check modality: \`agg\` not \`worse\`
+5. Remove quotes if using exact phrases
 
-## Tool Selection Guide
+## Other Syntax
+
+**Exclusions:** \`fever -night\` → fever excluding night
+**Exact phrases:** \`"gums swollen"\` → use sparingly, restrictive
+
+## Tool Selection
 
 | Tool | When to Use |
 |------|-------------|
-| \`search_repertory\` | Find rubrics for symptoms. Set \`includeRemedyStats: true\` for aggregated remedy scores |
-| \`search_materia_medica\` | Confirm remedy fit. Filter by remedy: \`{"symptom": "fever", "remedy": "Belladonna"}\` |
-| \`get_remedy_info\` | Get remedy full name, abbreviation, and alternate names |
-| \`list_available_repertories\` | Discover available repertories (kent, boger, publicum, etc.) |
-| \`list_available_materia_medicas\` | Discover available materia medica texts |
+| \`search_repertory\` | Find rubrics. Use \`includeRemedyStats: true\` for remedy scores |
+| \`search_materia_medica\` | Confirm remedy fit |
+| \`get_remedy_info\` | Get remedy names and abbreviations |
 
-## Combining Techniques
+## Quick Reference
 
-You can combine these techniques:
-- \`head* -nausea\` - headache-related entries, excluding nausea
-- \`fever night -intermittent\` - fever at night, excluding intermittent fever
-
-## Examples
-
-### Symptom Searches
-- \`anxiety fear\` - general anxiety and fear symptoms
-- \`cough dry night\` - dry cough at night
-- \`pain stitching\` - stitching pains
-
-### Modality Searches
-- \`head* cold agg\` - head symptoms worse from cold
-- \`pain motion amel\` - pain better from motion
-
-### Advanced Searches
-- \`head* night -nausea\` - comprehensive headache search at night
-- \`anxiety palpitation*\` - anxiety with palpitations
-
-## Tips
-
-1. Start simple (2 words), add terms only if too many results
-2. Use wildcards when unsure of exact wording
-3. Location first, then symptom, then modality
-4. Use \`includeRemedyStats: true\` to see aggregated remedy scores
-5. Quality over quantity: 5-8 well-chosen searches beat many vague ones
-
-## Note
-
-This is a search tool only. Always consult with a qualified homeopathic practitioner for case analysis and remedy selection.
+\`\`\`
+MODALITIES: agg (worse), amel (better) - NOT "worse"/"better"
+WILDCARDS:  burn*, stitch*, press*, throb*, cramp*, walk*, sit*, eat*
+STRUCTURE:  2-3 words, location+symptom, wildcards liberally
+RECOVERY:   Fewer words, add wildcards, check modality terms
+\`\`\`
 `;
 
 export function getSearchSyntaxHelp(): ResourceContent {

@@ -54,7 +54,7 @@ describe('getResource', () => {
 
     expect(result.uri).toBe('oorep://help/search-syntax');
     expect(result.mimeType).toBe('text/markdown');
-    expect(result.text).toContain('# OOREP Search Syntax Guide');
+    expect(result.text).toContain('# OOREP Search Guide');
     expect(result.text).toContain('Wildcards');
   });
 
@@ -124,7 +124,7 @@ describe('getSearchSyntaxHelp', () => {
     const result = getSearchSyntaxHelp();
 
     expect(typeof result).toBe('string');
-    expect(result).toContain('# OOREP Search Syntax Guide');
+    expect(result).toContain('# OOREP Search Guide');
   });
 });
 
