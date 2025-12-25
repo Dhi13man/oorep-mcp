@@ -184,7 +184,7 @@ describe('ResourceRegistry', () => {
       expect(result.contents).toHaveLength(1);
       expect(result.contents[0].uri).toBe('oorep://help/search-syntax');
       expect(result.contents[0].mimeType).toBe('text/markdown');
-      expect(result.contents[0].text).toContain('# OOREP Search Syntax Guide');
+      expect(result.contents[0].text).toContain('# OOREP Search Guide');
     });
 
     it('getResource when search syntax help then includes wildcard section', async () => {
@@ -208,7 +208,7 @@ describe('ResourceRegistry', () => {
     it('getResource when search syntax help then includes examples', async () => {
       const result = await registry.getResource('oorep://help/search-syntax');
 
-      expect(result.contents[0].text).toContain('Example');
+      expect(result.contents[0].text).toContain('What Works');
     });
   });
 

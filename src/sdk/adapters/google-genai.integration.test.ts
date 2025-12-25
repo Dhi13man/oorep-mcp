@@ -272,7 +272,7 @@ describe('Google Gemini Integration - Resource Formatting', () => {
       const instruction = geminiFormatResourceAsSystemInstruction(resource);
 
       expect(typeof instruction).toBe('string');
-      expect(instruction).toContain('OOREP Search Syntax');
+      expect(instruction).toContain('OOREP Search Guide');
       expect(instruction.length).toBeGreaterThan(100);
     });
   });

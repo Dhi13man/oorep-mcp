@@ -2,13 +2,9 @@
  * Unit tests for search-syntax-help resource
  */
 
-import { describe, it, expect } from 'vitest';
-import {
-  searchSyntaxHelpDefinition,
-  getSearchSyntaxHelp,
-  type ResourceContent,
-  type ResourceDefinition,
-} from './search-syntax-help.js';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { searchSyntaxHelpDefinition, getSearchSyntaxHelp } from './search-syntax-help.js';
+import type { ResourceContent } from './remedies-list.js';
 import { RESOURCE_URIS, MIME_TYPES } from '../sdk/constants.js';
 
 describe('searchSyntaxHelpDefinition', () => {
@@ -59,62 +55,60 @@ describe('getSearchSyntaxHelp', () => {
 
   describe('content sections', () => {
     it('when called then includes title header', () => {
-      expect(result.text).toContain('# OOREP Search Syntax Guide');
+      expect(result.text).toContain('# OOREP Search Guide');
     });
 
-    it('when called then includes basic search section', () => {
-      expect(result.text).toContain('## Basic Search');
+    it('when called then includes how search works section', () => {
+      expect(result.text).toContain('## How Search Works');
+      expect(result.text).toContain('AND Logic');
+    });
+
+    it('when called then includes modality section with agg/amel', () => {
+      expect(result.text).toContain('agg');
+      expect(result.text).toContain('amel');
+      expect(result.text).toContain('NOT worse/better');
     });
 
     it('when called then includes wildcards section', () => {
       expect(result.text).toContain('## Wildcards');
-      expect(result.text).toContain('asterisk');
       expect(result.text).toContain('*');
     });
 
-    it('when called then includes exclusions section', () => {
-      expect(result.text).toContain('## Exclusions');
-      expect(result.text).toContain('minus sign');
-      expect(result.text).toContain('-');
+    it('when called then includes vocabulary mapping section', () => {
+      expect(result.text).toContain('## Vocabulary Mapping');
+      expect(result.text).toContain('Natural Language');
     });
 
-    it('when called then includes exact phrases section', () => {
-      expect(result.text).toContain('## Exact Phrases');
-      expect(result.text).toContain('quotation marks');
+    it('when called then includes query construction section', () => {
+      expect(result.text).toContain('## Query Construction');
+      expect(result.text).toContain('Golden Rules');
     });
 
-    it('when called then includes combining techniques section', () => {
-      expect(result.text).toContain('## Combining Techniques');
+    it('when called then includes recovery section', () => {
+      expect(result.text).toContain('## Recovery');
     });
 
-    it('when called then includes examples section', () => {
-      expect(result.text).toContain('## Examples');
-    });
-
-    it('when called then includes tips section', () => {
-      expect(result.text).toContain('## Tips');
-    });
-
-    it('when called then includes practitioner disclaimer', () => {
-      expect(result.text.toLowerCase()).toContain('practitioner');
+    it('when called then includes quick reference section', () => {
+      expect(result.text).toContain('## Quick Reference');
     });
   });
 
   describe('example searches', () => {
-    it('when called then includes headache example', () => {
-      expect(result.text.toLowerCase()).toContain('headache');
+    it('when called then includes what works examples', () => {
+      expect(result.text).toContain('What Works');
+      expect(result.text).toContain('anticip*');
     });
 
-    it('when called then includes modality examples', () => {
-      expect(result.text).toContain('worse from cold');
-      expect(result.text).toContain('better from motion');
+    it('when called then includes what fails examples', () => {
+      expect(result.text).toContain('What Fails');
     });
 
     it('when called then includes wildcard example', () => {
       expect(result.text).toMatch(/head\*/);
     });
 
-    it('when called then includes exclusion example', () => {
+    it('when called then includes exclusion syntax', () => {
+      expect(result.text).toContain('Exclusions');
       expect(result.text).toMatch(/-\w+/);
     });
   });
