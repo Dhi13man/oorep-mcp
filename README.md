@@ -1,15 +1,10 @@
 # OOREP MCP Server
 
 [![npm version](https://img.shields.io/npm/v/oorep-mcp.svg)](https://www.npmjs.com/package/oorep-mcp)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
 [![CI](https://github.com/Dhi13man/oorep-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Dhi13man/oorep-mcp/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/Dhi13man/oorep-mcp/actions/workflows/codeql.yml/badge.svg)](https://github.com/Dhi13man/oorep-mcp/actions/workflows/codeql.yml)
-[![Test Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen.svg)](https://github.com/Dhi13man/oorep-mcp/actions)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Dhi13man/oorep-mcp/badge)](https://scorecard.dev/viewer/?uri=github.com/Dhi13man/oorep-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Contributors](https://img.shields.io/github/contributors-anon/dhi13man/oorep-mcp?style=flat)](https://github.com/Dhi13man/oorep-mcp/graphs/contributors)
-[![GitHub forks](https://img.shields.io/github/forks/dhi13man/oorep-mcp?style=social)](https://github.com/Dhi13man/oorep-mcp/network/members)
-[![GitHub Repo stars](https://img.shields.io/github/stars/dhi13man/oorep-mcp?style=social)](https://github.com/Dhi13man/oorep-mcp/stargazers)
-[![Last Commit](https://img.shields.io/github/last-commit/dhi13man/oorep-mcp)](https://github.com/Dhi13man/oorep-mcp/commits/master)
 
 [!["Buy Me A Coffee"](https://img.buymeacoffee.com/button-api/?text=Buy%20me%20an%20Ego%20boost&emoji=%F0%9F%98%B3&slug=dhi13man&button_colour=FF5F5F&font_colour=ffffff&font_family=Lato&outline_colour=000000&coffee_colour=FFDD00)](https://www.buymeacoffee.com/dhi13man)
 
@@ -879,14 +874,14 @@ To see detailed debug logs for troubleshooting:
 ### Prerequisites
 
 - Node.js ≥ 20.0.0
-- npm ≥ 8.0.0
+- npm ≥ 10.0.0
 
 ### Setup
 
 ```bash
 git clone https://github.com/Dhi13man/oorep-mcp.git
 cd oorep-mcp
-npm install
+npm ci
 ```
 
 ### Commands
@@ -898,6 +893,7 @@ npm run dev            # Development mode with watch
 npm test               # Run all tests
 npm run test:watch     # Watch mode
 npm run test:coverage  # Coverage report
+npm run test:e2e       # Live OOREP integration (requires network access)
 npm run lint           # ESLint
 npm run format         # Prettier
 ```

@@ -1,0 +1,47 @@
+name: Bug report or feature request
+description: Report a reproducible problem or propose a focused improvement.
+title: ''
+labels: []
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Request type
+      options:
+        - Bug report
+        - Feature request
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Describe the problem or improvement and why it matters.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction or proposed behavior
+      description: For bugs, include minimal steps. For features, describe the desired behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include the package, Node.js, npm, operating system, and MCP client versions when relevant.
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Additional evidence
+      description: Add sanitized logs, screenshots, examples, or alternatives considered.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues for duplicates.
+          required: true
+        - label: I removed secrets and personal information from the report.
+          required: true
