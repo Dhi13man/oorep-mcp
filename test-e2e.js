@@ -194,7 +194,7 @@ async function testSearchRepertory() {
   // Test 3: Validation - symptom too short
   try {
     logInfo('Test 3: Validation test (symptom too short)');
-    const result = await callToolOrThrow({
+    await callToolOrThrow({
       name: 'search_repertory',
       arguments: {
         symptom: 'ab', // Too short
