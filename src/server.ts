@@ -126,7 +126,7 @@ export async function createServer(): Promise<ServerContext> {
     } catch (error) {
       logger.error('Resource read failed', error);
       const sanitized = sanitizeError(error);
-      throw new Error(sanitized.message);
+      throw new Error(sanitized.message, { cause: error });
     }
   });
 
@@ -147,7 +147,7 @@ export async function createServer(): Promise<ServerContext> {
     } catch (error) {
       logger.error('Prompt get failed', error);
       const sanitized = sanitizeError(error);
-      throw new Error(sanitized.message);
+      throw new Error(sanitized.message, { cause: error });
     }
   });
 

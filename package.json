@@ -50,8 +50,8 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
-    "format": "prettier --write 'src/**/*.ts'",
-    "format:check": "prettier --check 'src/**/*.ts'",
+    "format": "prettier --write \"src/**/*.ts\" --end-of-line auto",
+    "format:check": "prettier --check \"src/**/*.ts\" --end-of-line auto",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run typecheck && npm run format && npm run build && npm run lint && npm run test"
   },
@@ -85,23 +85,27 @@
   },
   "homepage": "https://github.com/Dhi13man/oorep-mcp#readme",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.25.1",
-    "zod": "^4.2.1"
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^4.3.5"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.2",
-    "@types/node": "^25.0.3",
-    "@typescript-eslint/eslint-plugin": "^8.50.1",
-    "@typescript-eslint/parser": "^8.50.1",
-    "@vitest/coverage-v8": "^4.0.16",
-    "eslint": "^9.39.2",
-    "prettier": "^3.7.4",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^25.0.9",
+    "@typescript-eslint/eslint-plugin": "^8.65.0",
+    "@typescript-eslint/parser": "^8.65.0",
+    "@vitest/coverage-v8": "^4.1.10",
+    "eslint": "^10.8.0",
+    "prettier": "^3.8.0",
     "tsx": "^4.21.0",
     "typescript": "^5.8.0",
-    "typescript-eslint": "^8.50.1",
-    "vitest": "^4.0.10"
+    "typescript-eslint": "^8.65.0",
+    "vitest": "^4.1.10"
+  },
+  "overrides": {
+    "@hono/node-server": "2.0.12",
+    "@napi-rs/wasm-runtime": "1.1.6"
   }
 }

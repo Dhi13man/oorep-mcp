@@ -878,7 +878,7 @@ To see detailed debug logs for troubleshooting:
 
 ### Prerequisites
 
-- Node.js ≥ 18.0.0
+- Node.js ≥ 20.0.0
 - npm ≥ 8.0.0
 
 ### Setup
