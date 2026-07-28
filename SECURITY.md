@@ -13,9 +13,10 @@ We take security vulnerabilities seriously. If you discover a security issue, pl
 
 ### How to Report
 
-1. **Do NOT** open a public GitHub issue for security vulnerabilities
-2. Email the maintainer directly at: **<dhiman.seal@hotmail.com>**
-3. Include the following information:
+1. **Do not** open a public GitHub issue for security vulnerabilities.
+2. Submit a [private vulnerability report](https://github.com/Dhi13man/oorep-mcp/security/advisories/new).
+3. If private reporting is unavailable, email **<dhiman.seal@hotmail.com>**.
+4. Include the following information:
    - Description of the vulnerability
    - Steps to reproduce
    - Potential impact
@@ -23,13 +24,10 @@ We take security vulnerabilities seriously. If you discover a security issue, pl
 
 ### What to Expect
 
-- **Acknowledgment**: Within 48 hours of your report
-- **Initial Assessment**: Within 7 days
-- **Resolution Timeline**: Depends on severity
-  - Critical: 24-48 hours
-  - High: 7 days
-  - Medium: 30 days
-  - Low: Next release cycle
+- The maintainer will acknowledge the report and coordinate validation privately.
+- Remediation and disclosure timing depends on severity, exploitability, and the
+  availability of a safe fix.
+- Please allow reasonable time for a patch and package release before disclosure.
 
 ### Disclosure Policy
 

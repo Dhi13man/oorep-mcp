@@ -4,12 +4,7 @@ Thank you for your interest in contributing to the OOREP MCP server! This docume
 
 ## Code of Conduct
 
-This project follows a simple code of conduct:
-
-- Be respectful and constructive
-- Welcome newcomers and help them learn
-- Focus on what is best for the community
-- Show empathy towards other community members
+Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## How to Contribute
 
@@ -39,7 +34,7 @@ Feature requests are welcome! Please create an issue with:
 
 ### Submitting Pull Requests
 
-1. **Fork the repository** and create a new branch from `main`
+1. **Fork the repository** and create a new branch from `master`
 2. **Make your changes** following the code style guidelines below
 3. **Write tests** for new functionality
 4. **Ensure all tests pass** (`npm test`)
@@ -51,7 +46,7 @@ Feature requests are welcome! Please create an issue with:
 ### Prerequisites
 
 - Node.js ≥ 20.0.0
-- npm ≥ 8.0.0
+- npm ≥ 10.0.0
 - Git
 
 ### Setup Instructions
@@ -62,7 +57,7 @@ git clone https://github.com/YOUR_USERNAME/oorep-mcp.git
 cd oorep-mcp
 
 # Install dependencies
-npm install
+npm ci
 
 # Build the project
 npm run build
@@ -97,6 +92,9 @@ npm run test:watch
 
 # Generate coverage report
 npm run test:coverage
+
+# Run live end-to-end tests (requires access to www.oorep.com)
+npm run test:e2e
 ```
 
 ## Code Style Guidelines
@@ -260,38 +258,14 @@ test(client): add tests for retry logic
 
 - [ ] All tests pass (`npm test`)
 - [ ] Code is linted (`npm run lint`)
-- [ ] Code is formatted (`npm run format`)
+- [ ] Formatting passes (`npm run format:check`)
 - [ ] Type checking passes (`npm run typecheck`)
 - [ ] Build succeeds (`npm run build`)
 - [ ] Documentation is updated (if applicable)
 - [ ] CHANGELOG is updated (for user-facing changes)
 
-### PR Description Template
-
-```markdown
-## Summary
-Brief description of changes
-
-## Motivation
-Why is this change needed?
-
-## Changes
-- List of specific changes made
-- Another change
-- ...
-
-## Testing
-How was this tested?
-
-## Screenshots (if applicable)
-Add screenshots for UI changes
-
-## Checklist
-- [ ] Tests added/updated
-- [ ] Documentation updated
-- [ ] CHANGELOG updated
-- [ ] All CI checks pass
-```
+GitHub will populate the repository's pull request template. Explain the problem,
+the minimal solution, and the verification performed.
 
 ## Release Process
 
@@ -306,7 +280,7 @@ Regular contributors may request release privileges after several successful con
 
 ## Getting Help
 
-- **Questions?** Open a [GitHub Discussion](https://github.com/Dhi13man/oorep-mcp/discussions)
+- **Questions?** Open an [issue](https://github.com/Dhi13man/oorep-mcp/issues)
 - **Bug reports**: Create an [issue](https://github.com/Dhi13man/oorep-mcp/issues)
 - **Need clarification**: Comment on existing issues or PRs
 

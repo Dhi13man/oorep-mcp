@@ -16,42 +16,12 @@ import type {
   RemedyInfo,
   RepertoryMetadata,
   MateriaMedicaMetadata,
+  SearchRepertoryArgs,
+  SearchMateriaMedicaArgs,
+  GetRemedyInfoArgs,
+  ListRepertoriesArgs,
+  ListMateriaMedicasArgs,
 } from '../utils/schemas.js';
-
-/**
- * Search repertory arguments
- */
-export interface SearchRepertoryArgs {
-  symptom: string;
-  repertory?: string;
-  minWeight?: number;
-  maxResults?: number;
-  includeRemedyStats?: boolean;
-}
-
-/**
- * Search materia medica arguments
- */
-export interface SearchMateriaMedicaArgs {
-  symptom: string;
-  materiamedica?: string;
-  remedy?: string;
-  maxResults?: number;
-}
-
-/**
- * Get remedy info arguments
- */
-export interface GetRemedyInfoArgs {
-  remedy: string;
-}
-
-/**
- * List repertories/materia medicas arguments
- */
-export interface ListByLanguageArgs {
-  language?: string;
-}
 
 /**
  * Interface for OOREP Client
@@ -65,8 +35,8 @@ export interface IOOREPClient {
   searchRepertory(args: SearchRepertoryArgs): Promise<RepertorySearchResult>;
   searchMateriaMedica(args: SearchMateriaMedicaArgs): Promise<MateriaMedicaSearchResult>;
   getRemedyInfo(args: GetRemedyInfoArgs): Promise<RemedyInfo | null>;
-  listRepertories(args?: ListByLanguageArgs): Promise<RepertoryMetadata[]>;
-  listMateriaMedicas(args?: ListByLanguageArgs): Promise<MateriaMedicaMetadata[]>;
+  listRepertories(args?: ListRepertoriesArgs): Promise<RepertoryMetadata[]>;
+  listMateriaMedicas(args?: ListMateriaMedicasArgs): Promise<MateriaMedicaMetadata[]>;
 
   // Lifecycle methods
   clearCache(): Promise<void>;

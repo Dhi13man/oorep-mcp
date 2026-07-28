@@ -7,12 +7,10 @@
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { spawn } from 'child_process';
 
 let testsPassed = 0;
 let testsFailed = 0;
 let client;
-let serverProcess;
 
 async function callToolOrThrow(params) {
   const result = await client.callTool(params);
@@ -60,24 +58,16 @@ function logInfo(message) {
   log(`ℹ ${message}`, colors.blue);
 }
 
+function recordCheck(condition, successMessage, failureMessage) {
+  if (condition) {
+    logSuccess(successMessage);
+  } else {
+    logError(failureMessage);
+  }
+}
+
 async function setup() {
   log('\n🚀 Starting OOREP MCP Server E2E Tests\n', colors.yellow);
-
-  // Start the server process
-  serverProcess = spawn('node', ['dist/index.js'], {
-    env: {
-      ...process.env,
-      OOREP_MCP_LOG_LEVEL: 'error', // Reduce noise during tests
-    },
-  });
-
-  serverProcess.stderr.on('data', (data) => {
-    // Only show errors during setup
-    const msg = data.toString();
-    if (msg.includes('ERROR') || msg.includes('Failed')) {
-      console.error('Server stderr:', msg);
-    }
-  });
 
   // Create client
   const transport = new StdioClientTransport({
@@ -164,7 +154,9 @@ async function testSearchRepertory() {
 
       if (data.remedyStats && data.remedyStats.length > 0) {
         logSuccess(`Remedy stats included (${data.remedyStats.length} remedies)`);
-        logInfo(`  Top remedy: ${data.remedyStats[0].name} (count: ${data.remedyStats[0].count}, weight: ${data.remedyStats[0].cumulativeWeight})`);
+        logInfo(
+          `  Top remedy: ${data.remedyStats[0].name} (count: ${data.remedyStats[0].count}, weight: ${data.remedyStats[0].cumulativeWeight})`
+        );
       }
     } else {
       logError('No content returned');
@@ -228,7 +220,9 @@ async function testSearchMateriaMedica() {
       logInfo(`  First remedy: ${data.results[0].remedy}`);
       logInfo(`  Sections: ${data.results[0].sections.length}`);
       if (data.results[0].sections.length > 0) {
-        logInfo(`  First section content (truncated): ${data.results[0].sections[0].content.substring(0, 100)}...`);
+        logInfo(
+          `  First section content (truncated): ${data.results[0].sections[0].content.substring(0, 100)}...`
+        );
       }
     }
   } catch (error) {
@@ -410,11 +404,7 @@ async function testListPrompts() {
 
     logSuccess(`Found ${result.prompts.length} prompts`);
 
-    const expectedPrompts = [
-      'analyze-symptoms',
-      'remedy-comparison',
-      'repertorization-workflow',
-    ];
+    const expectedPrompts = ['analyze-symptoms', 'remedy-comparison', 'repertorization-workflow'];
 
     for (const promptName of expectedPrompts) {
       const prompt = result.prompts.find((p) => p.name === promptName);
@@ -449,7 +439,11 @@ async function testGetPrompts() {
     if (result.messages && result.messages.length > 0) {
       logSuccess('Prompt returned successfully');
       logInfo(`  Messages: ${result.messages.length}`);
-      logInfo(`  Contains symptom: ${result.messages[0].content.text.includes('headache worse at night')}`);
+      recordCheck(
+        result.messages[0].content.text.includes('headache worse at night'),
+        'Prompt includes the supplied symptom',
+        'Prompt omits the supplied symptom'
+      );
     } else {
       logError('No messages in prompt');
     }
@@ -469,7 +463,20 @@ async function testGetPrompts() {
 
     if (result.messages && result.messages.length > 0) {
       logSuccess('Prompt returned successfully');
-      logInfo(`  Contains all remedies: ${result.messages[0].content.text.includes('Aconite') && result.messages[0].content.text.includes('Belladonna')}`);
+      const text = result.messages[0].content.text;
+      recordCheck(text.includes('Aconite'), 'Prompt includes Aconite', 'Prompt omits Aconite');
+      recordCheck(
+        text.includes('Belladonna'),
+        'Prompt includes Belladonna',
+        'Prompt omits Belladonna'
+      );
+      recordCheck(
+        text.includes('Gelsemium'),
+        'Prompt includes Gelsemium',
+        'Prompt omits Gelsemium'
+      );
+    } else {
+      logError('No messages in prompt');
     }
   } catch (error) {
     logError('Test 2 failed', error);
@@ -486,8 +493,14 @@ async function testGetPrompts() {
     if (result.messages && result.messages.length > 0) {
       logSuccess('Prompt returned successfully');
       const text = result.messages[0].content.text;
-      logInfo(`  Contains STEP 1: ${text.includes('STEP 1')}`);
-      logInfo(`  Contains workflow: ${text.includes('workflow')}`);
+      recordCheck(text.includes('STEP 1'), 'Prompt includes STEP 1', 'Prompt omits STEP 1');
+      recordCheck(
+        text.toLowerCase().includes('workflow'),
+        'Prompt identifies itself as a workflow',
+        'Prompt does not identify itself as a workflow'
+      );
+    } else {
+      logError('No messages in prompt');
     }
   } catch (error) {
     logError('Test 3 failed', error);
@@ -541,11 +554,6 @@ async function cleanup() {
     logSuccess('Client closed');
   } catch (error) {
     logError('Failed to close client', error);
-  }
-
-  if (serverProcess) {
-    serverProcess.kill();
-    logSuccess('Server process terminated');
   }
 }
 
