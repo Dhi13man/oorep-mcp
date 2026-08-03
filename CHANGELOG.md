@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.3] - 2026-08-03
+
+### Fixed
+
+- **MCP Registry namespace**: Corrected the case-sensitive GitHub OIDC
+  namespace to `io.github.Dhi13man/oorep-mcp`, enabling publication to the
+  official MCP Registry.
+
+### Security
+
+- **Release validation**: Reject MCP namespace drift between the canonical
+  GitHub repository owner, `package.json`, and `server.json` before publishing.
+
 ## [1.2.2] - 2026-08-03
 
 ### Added
@@ -455,6 +468,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - For full functionality, users should run a local OOREP instance or configure authentication
 - Public metadata endpoints work without authentication (remedies list, repertories list, materia medicas list)
 
+[1.2.3]: https://github.com/Dhi13man/oorep-mcp/compare/v1.2.2...v1.2.3
 [1.2.2]: https://github.com/Dhi13man/oorep-mcp/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/Dhi13man/oorep-mcp/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/Dhi13man/oorep-mcp/compare/v1.1.3...v1.2.0
