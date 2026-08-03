@@ -2,6 +2,17 @@
 
 Comprehensive analysis of homeopathic repertory structures based on parsed data from Kent, Murphy, Synthesis, and Boenninghausen (BG3.100). This document serves as a reference for building effective AI prompts and search guides that work across all repertories.
 
+## Data Provenance
+
+This is a historical analysis published with oorep-mcp v1.2.1 on 2025-12-25.
+The referenced OOREP source snapshot is submodule commit
+[`104f51f8660d5a42418a579a0963e77b291a80ff`](https://github.com/nondeterministic/oorep/tree/104f51f8660d5a42418a579a0963e77b291a80ff).
+
+The original extraction script and raw count output were not retained, so the
+aggregate counts in this document cannot be independently reproduced from this
+repository alone. Treat them as snapshot evidence rather than current OOREP
+totals; use the live MCP discovery and search tools for current data.
+
 ## Executive Summary
 
 | Repertory | Chapters | Total Symptoms | Root Rubrics | Unique Characteristics |

@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: If you use oorep-mcp, please cite this software.
+type: software
+title: oorep-mcp
+abstract: MCP server and TypeScript client SDK for OOREP homeopathic repertory and materia medica reference data.
+authors:
+  - family-names: Seal
+    given-names: Dhiman
+repository-code: https://github.com/Dhi13man/oorep-mcp
+url: https://www.npmjs.com/package/oorep-mcp
+license: MIT
+version: 1.2.2
+date-released: 2026-08-03

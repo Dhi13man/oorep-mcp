@@ -6,13 +6,14 @@ on:
   pull_request:
     branches: [main, master]
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   test:
     name: Test on Node.js ${{ matrix.node-version }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     strategy:
       matrix:
@@ -54,17 +55,11 @@ jobs:
         if: matrix.node-version == '22.x'
         run: npm run test:coverage
 
-      - name: Upload coverage to Codecov
-        if: matrix.node-version == '22.x'
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v6.0.2
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false
-          verbose: true
-
   build-verification:
     name: Build Verification
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout code

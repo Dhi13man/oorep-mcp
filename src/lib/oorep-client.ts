@@ -41,12 +41,16 @@ type RawRepertoryCase = {
   weightedRemedies: RawWeightedRemedy[];
 };
 
+type RawGroupedRepertoryCase = {
+  subRubrics: Array<Omit<RawRepertoryCase, 'repertoryAbbrev'>>;
+};
+
 type RawRepertoryPayload = {
   totalNumberOfRepertoryRubrics: number;
   totalNumberOfResults: number;
   totalNumberOfPages: number;
   currPage: number;
-  results: RawRepertoryCase[];
+  results: Array<RawRepertoryCase | RawGroupedRepertoryCase>;
 };
 
 type RawRepertoryResponse = [
@@ -460,9 +464,9 @@ export class OOREPHttpClient {
         info: {
           abbrev: string;
           title: string;
-          authorLastName?: string;
-          authorFirstName?: string;
-          language?: string;
+          authorLastName?: string | null;
+          authorFirstName?: string | null;
+          language?: string | null;
         };
       }>
     >('/api/available_rems_and_reps');
@@ -473,8 +477,8 @@ export class OOREPHttpClient {
       author:
         item.info.authorLastName && item.info.authorFirstName
           ? `${item.info.authorFirstName} ${item.info.authorLastName}`
-          : item.info.authorLastName || item.info.authorFirstName,
-      language: item.info.language,
+          : item.info.authorLastName || item.info.authorFirstName || undefined,
+      language: item.info.language ?? undefined,
     }));
   }
 
@@ -491,9 +495,9 @@ export class OOREPHttpClient {
           abbrev: string;
           displaytitle?: string;
           fulltitle?: string;
-          authorlastname?: string;
-          authorfirstname?: string;
-          lang?: string;
+          authorlastname?: string | null;
+          authorfirstname?: string | null;
+          lang?: string | null;
         };
       }>
     >('/api/available_rems_and_mms');
@@ -504,8 +508,8 @@ export class OOREPHttpClient {
       author:
         item.mminfo.authorlastname && item.mminfo.authorfirstname
           ? `${item.mminfo.authorfirstname} ${item.mminfo.authorlastname}`
-          : item.mminfo.authorlastname || item.mminfo.authorfirstname,
-      language: item.mminfo.lang,
+          : item.mminfo.authorlastname || item.mminfo.authorfirstname || undefined,
+      language: item.mminfo.lang ?? undefined,
     }));
   }
 }
