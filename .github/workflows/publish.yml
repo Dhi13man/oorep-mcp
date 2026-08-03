@@ -3,21 +3,21 @@ name: Publish to npm
 on:
   release:
     types: [published]
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Tag to publish (e.g., v1.0.0)'
-        required: true
-        type: string
 
-permissions:
-  contents: read
-  id-token: write  # Required for npm provenance
+permissions: {}
+
+concurrency:
+  group: publish-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
 
 jobs:
   publish:
-    name: Publish to npm
+    name: Publish release
     runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       - name: Checkout code
@@ -25,46 +25,198 @@ jobs:
         with:
           persist-credentials: false
           submodules: false
-          ref: ${{ github.event.release.tag_name || inputs.tag }}
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Verify release commit is protected
+        run: |
+          git fetch --no-tags --depth=1 origin master
+          RELEASE_COMMIT=$(git rev-parse HEAD)
+          PROTECTED_COMMIT=$(git rev-parse origin/master)
+
+          if [ "$RELEASE_COMMIT" != "$PROTECTED_COMMIT" ]; then
+            echo "Release tag must point to the current protected master commit"
+            echo "Release commit: $RELEASE_COMMIT"
+            echo "Protected commit: $PROTECTED_COMMIT"
+            exit 1
+          fi
+          echo "Release commit is the current protected master commit: $RELEASE_COMMIT"
 
       - name: Setup Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
-          node-version: '22.x'
+          node-version: '24.x'
           registry-url: 'https://registry.npmjs.org'
-          cache: 'npm'
+          package-manager-cache: false
 
       - name: Verify version matches tag
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
           PACKAGE_VERSION=$(node -p "require('./package.json').version")
-          TAG_VERSION=${{ github.event.release.tag_name || inputs.tag }}
-          TAG_VERSION=${TAG_VERSION#v}  # Remove 'v' prefix if present
+          TAG_VERSION=${RELEASE_TAG#v}
+          SERVER_VERSION=$(node -p "require('./server.json').version")
+          SERVER_PACKAGE_VERSION=$(node -p "require('./server.json').packages[0].version")
 
           if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
-            echo "❌ Version mismatch: package.json=$PACKAGE_VERSION, tag=$TAG_VERSION"
+            echo "Version mismatch: package.json=$PACKAGE_VERSION, tag=$TAG_VERSION"
             exit 1
           fi
-          echo "✓ Version matches: $PACKAGE_VERSION"
+          if [ "$SERVER_VERSION" != "$PACKAGE_VERSION" ] || [ "$SERVER_PACKAGE_VERSION" != "$PACKAGE_VERSION" ]; then
+            echo "Version mismatch: package.json=$PACKAGE_VERSION, server.json=$SERVER_VERSION, server package=$SERVER_PACKAGE_VERSION"
+            exit 1
+          fi
+          echo "Version matches: $PACKAGE_VERSION"
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests
-        run: npm test
+      - name: Verify package
+        run: npm run prepublishOnly
 
-      - name: Build
-        run: npm run build
+      - name: Pack and publish to npm
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          PACK_RESULT=$(npm pack --json)
+          PACKAGE_TARBALL=$(node -e "const [result] = JSON.parse(process.argv[1]); process.stdout.write(result.filename)" "$PACK_RESULT")
+          LOCAL_INTEGRITY=$(node -e "const [result] = JSON.parse(process.argv[1]); process.stdout.write(result.integrity)" "$PACK_RESULT")
 
-      - name: Publish to npm with provenance
-        run: npm publish --provenance --access public
+          if npm view "oorep-mcp@$PACKAGE_VERSION" version >/dev/null 2>&1; then
+            PUBLISHED_DIST=$(npm view "oorep-mcp@$PACKAGE_VERSION" dist --json)
+            PUBLISHED_INTEGRITY=$(node -e "process.stdout.write(JSON.parse(process.argv[1]).integrity ?? '')" "$PUBLISHED_DIST")
+            if [ "$PUBLISHED_INTEGRITY" != "$LOCAL_INTEGRITY" ]; then
+              echo "oorep-mcp@$PACKAGE_VERSION exists with different package contents"
+              exit 1
+            fi
+            if ! node -e '
+              const dist = JSON.parse(process.argv[1]);
+              const predicate = dist.attestations?.provenance?.predicateType;
+              process.exit(predicate === "https://slsa.dev/provenance/v1" ? 0 : 1);
+            ' "$PUBLISHED_DIST"
+            then
+              echo "oorep-mcp@$PACKAGE_VERSION exists without the expected provenance attestation"
+              exit 1
+            fi
+            echo "oorep-mcp@$PACKAGE_VERSION is already published with matching integrity and provenance"
+          else
+            npm publish "$PACKAGE_TARBALL" --access public
+          fi
+
+      - name: Wait for npm registry propagation
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          for attempt in {1..12}; do
+            if [ "$(npm view "oorep-mcp@$PACKAGE_VERSION" version 2>/dev/null)" = "$PACKAGE_VERSION" ]; then
+              echo "oorep-mcp@$PACKAGE_VERSION is available on npm"
+              exit 0
+            fi
+            echo "Waiting for npm registry propagation ($attempt/12)"
+            sleep 10
+          done
+          echo "oorep-mcp@$PACKAGE_VERSION did not become available on npm"
+          exit 1
+
+      - name: Verify npm provenance
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          PROVENANCE_AVAILABLE=false
+
+          for attempt in {1..12}; do
+            PUBLISHED_DIST=$(npm view "oorep-mcp@$PACKAGE_VERSION" dist --json)
+            if node -e '
+              const dist = JSON.parse(process.argv[1]);
+              const predicate = dist.attestations?.provenance?.predicateType;
+              process.exit(predicate === "https://slsa.dev/provenance/v1" ? 0 : 1);
+            ' "$PUBLISHED_DIST"
+            then
+              PROVENANCE_AVAILABLE=true
+              break
+            fi
+            echo "Waiting for npm provenance propagation ($attempt/12)"
+            sleep 10
+          done
+
+          if [ "$PROVENANCE_AVAILABLE" != true ]; then
+            echo "oorep-mcp@$PACKAGE_VERSION is missing its provenance attestation"
+            exit 1
+          fi
+
+          PROVENANCE_CHECK_DIR=$(mktemp --directory)
+          npm install --prefix "$PROVENANCE_CHECK_DIR" --ignore-scripts --prefer-online "oorep-mcp@$PACKAGE_VERSION"
+          npm --prefix "$PROVENANCE_CHECK_DIR" audit signatures
+
+      - name: Install MCP Registry publisher
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          MCP_PUBLISHER_VERSION: v1.8.0
+          MCP_PUBLISHER_SHA256: 1370446bbe74d562608e8005a6ccce02d146a661fbd78674e11cc70b9618d6cf
+        run: |
+          curl --fail --location --silent --show-error \
+            --output mcp-publisher.tar.gz \
+            "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz"
+          echo "$MCP_PUBLISHER_SHA256  mcp-publisher.tar.gz" | sha256sum --check
+          tar --extract --gzip --file mcp-publisher.tar.gz mcp-publisher
+          ./mcp-publisher --help >/dev/null
+
+      - name: Authenticate to MCP Registry
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish to MCP Registry
+        run: |
+          SERVER_NAME=$(node -p "require('./server.json').name")
+          SERVER_VERSION=$(node -p "require('./server.json').version")
+          ENCODED_SERVER_NAME=$(node -p "encodeURIComponent(require('./server.json').name)")
+          ENCODED_SERVER_VERSION=$(node -p "encodeURIComponent(require('./server.json').version)")
+          REGISTRY_RESPONSE_FILE=$(mktemp)
+          REGISTRY_HTTP_STATUS=$(curl --silent --show-error \
+            --output "$REGISTRY_RESPONSE_FILE" \
+            --write-out "%{http_code}" \
+            "https://registry.modelcontextprotocol.io/v0.1/servers/$ENCODED_SERVER_NAME/versions/$ENCODED_SERVER_VERSION")
+
+          case "$REGISTRY_HTTP_STATUS" in
+            200)
+              REGISTRY_RESPONSE=$(<"$REGISTRY_RESPONSE_FILE")
+              REGISTRY_STATUS=$(
+                REGISTRY_RESPONSE="$REGISTRY_RESPONSE" node -e '
+                  const response = JSON.parse(process.env.REGISTRY_RESPONSE);
+                  const local = require("./server.json");
+                  const published = response.server;
+
+                  const fields = ["name", "version", "description", "repository", "packages", "remotes"];
+                  const stable = (value) => {
+                    if (Array.isArray(value)) return value.map(stable);
+                    if (value && typeof value === "object") {
+                      return Object.fromEntries(Object.keys(value).sort().map((key) => [key, stable(value[key])]));
+                    }
+                    return value ?? null;
+                  };
+                  const select = (server) => Object.fromEntries(fields.map((field) => [field, stable(server[field])]));
+                  process.stdout.write(JSON.stringify(select(local)) === JSON.stringify(select(published)) ? "matching" : "mismatch");
+                '
+              )
+              if [ "$REGISTRY_STATUS" != matching ]; then
+                echo "$SERVER_NAME@$SERVER_VERSION exists with different registry metadata"
+                exit 1
+              fi
+              echo "$SERVER_NAME@$SERVER_VERSION is already published with matching metadata"
+              ;;
+            404)
+              ./mcp-publisher publish
+              ;;
+            *)
+              echo "MCP Registry lookup failed with HTTP $REGISTRY_HTTP_STATUS"
+              exit 1
+              ;;
+          esac
 
       - name: Create publication summary
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
-          echo "### 📦 Published to npm" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Package**: oorep-mcp" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version**: $(node -p 'require(\"./package.json\").version')" >> $GITHUB_STEP_SUMMARY
-          echo "- **Tag**: ${{ github.event.release.tag_name || inputs.tag }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Provenance**: ✓ Enabled" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "### Release published"
+            echo ""
+            echo "- **Package**: oorep-mcp"
+            echo "- **Version**: $(node -p 'require(\"./package.json\").version')"
+            echo "- **Tag**: $RELEASE_TAG"
+            echo "- **npm provenance**: enabled by trusted publishing"
+            echo "- **MCP Registry**: io.github.dhi13man/oorep-mcp"
+          } >> "$GITHUB_STEP_SUMMARY"
