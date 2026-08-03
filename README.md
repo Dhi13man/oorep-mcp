@@ -6,15 +6,14 @@
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Dhi13man/oorep-mcp/badge)](https://scorecard.dev/viewer/?uri=github.com/Dhi13man/oorep-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-[!["Buy Me A Coffee"](https://img.buymeacoffee.com/button-api/?text=Buy%20me%20an%20Ego%20boost&emoji=%F0%9F%98%B3&slug=dhi13man&button_colour=FF5F5F&font_colour=ffffff&font_family=Lato&outline_colour=000000&coffee_colour=FFDD00)](https://www.buymeacoffee.com/dhi13man)
-
-**Model Context Protocol server (and Client SDK) providing AI assistants access to OOREP - a comprehensive homeopathic repertory and materia medica database.**
+An MCP server and TypeScript client SDK that gives AI assistants access to
+OOREP's homeopathic repertory and materia medica reference data.
 
 ## TL;DR
 
 ```bash
 # Install and run (no setup required)
-npx oorep-mcp
+npx -y oorep-mcp
 ```
 
 ```typescript
@@ -83,6 +82,8 @@ This MCP server enables AI assistants to query this data programmatically.
 
 ## Quick Start
 
+Requires [Node.js 20 or newer](https://nodejs.org/) with npm/npx.
+
 ### 1. Add to Claude Desktop
 
 **macOS:** Edit `~/Library/Application Support/Claude/claude_desktop_config.json`
@@ -120,7 +121,7 @@ Quit completely (Cmd+Q / Alt+F4), then reopen.
 No installation required:
 
 ```bash
-npx oorep-mcp
+npx -y oorep-mcp
 ```
 
 ### npm Global
@@ -937,3 +938,4 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - **MCP Documentation**: <https://modelcontextprotocol.io>
 - **Issue Tracker**: <https://github.com/Dhi13man/oorep-mcp/issues>
 - **npm Package**: <https://www.npmjs.com/package/oorep-mcp>
+- **Support Development**: <https://www.buymeacoffee.com/dhi13man>

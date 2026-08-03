@@ -5,6 +5,59 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2026-08-03
+
+### Added
+
+- **Open-source maintenance**: Added community issue and pull request templates,
+  a Code of Conduct, private vulnerability-reporting guidance, and OpenSSF
+  Scorecard reporting.
+- **MCP Registry publishing**: Added current registry metadata and automated
+  publication of `io.github.dhi13man/oorep-mcp` after npm releases.
+- **Project metadata**: Added citation metadata, GitHub funding configuration,
+  and provenance context for the repertory structure analysis.
+
+### Changed
+
+- **Supported runtime**: Raised the minimum Node.js version from 18 to 20 to use
+  patched Hono dependencies.
+- **Build and test gates**: Clean stale build output, run formatting as a
+  non-mutating check, and count live end-to-end assertion failures instead of
+  reporting false passes.
+- **Release authentication**: Replaced long-lived npm and Codecov tokens with
+  short-lived GitHub OIDC credentials; npm trusted publishing now emits
+  provenance automatically.
+- **Repository access**: Changed the OOREP submodule URL from SSH to HTTPS so
+  anonymous clones can initialize it.
+
+### Fixed
+
+- **Live repertory search**: Support the current grouped OOREP response shape
+  while retaining compatibility with legacy flat results.
+- **Metadata validation**: Omit unavailable repertory and materia medica
+  author/language fields instead of returning invalid `null` values.
+- **CodeQL findings**: Removed unused bindings and scoped SARIF upload
+  permissions to the analysis job.
+- **Package surface**: Removed a duplicate interface barrel and corrected the
+  public SDK interface/export checks.
+
+### Security
+
+- Updated direct and transitive dependencies to remove all 18 reported npm
+  audit findings, including two critical findings.
+- Pinned third-party GitHub Actions to immutable commit SHAs and disabled
+  persisted checkout credentials.
+- Made CodeQL, Codecov, and OpenSSF failures visible instead of allowing silent
+  success.
+
+### Dependencies
+
+- **Core**: `@modelcontextprotocol/sdk` 1.25.1 → 1.30.0, `zod` 4.2.1 →
+  4.3.5.
+- **Toolchain**: TypeScript 5.8 → 6.0.3, ESLint 9 → 10, Node.js types 25 →
+  26, Vitest 4.0 → 4.1, and compatible TypeScript-ESLint, Prettier, and
+  transitive security updates.
+
 ## [1.2.1] - 2025-12-25
 
 ### Changed
@@ -402,6 +455,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - For full functionality, users should run a local OOREP instance or configure authentication
 - Public metadata endpoints work without authentication (remedies list, repertories list, materia medicas list)
 
+[1.2.2]: https://github.com/Dhi13man/oorep-mcp/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/Dhi13man/oorep-mcp/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/Dhi13man/oorep-mcp/compare/v1.1.3...v1.2.0
 [1.1.3]: https://github.com/Dhi13man/oorep-mcp/compare/v1.1.2...v1.1.3
