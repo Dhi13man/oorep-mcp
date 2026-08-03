@@ -46,6 +46,58 @@ describe('formatRepertoryResults', () => {
     expect(result.rubrics[0].remedies[0].name).toBe('Aconitum napellus');
   });
 
+  it('formatRepertoryResults when response groups subrubrics then flattens them', () => {
+    // Arrange
+    const mockApiResponse = {
+      totalNumberOfResults: 202,
+      results: [
+        {
+          id: -1,
+          cazeId: -1,
+          rubricWeight: 1,
+          rubricLabel: null,
+          subRubrics: [
+            {
+              rubric: {
+                abbrev: 'publicum',
+                id: 69877,
+                fullPath: 'Abdomen, headache with, agg.',
+              },
+              weightedRemedies: [
+                {
+                  remedy: { nameAbbrev: 'Bell.', nameLong: 'Belladonna' },
+                  weight: 3,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    // Act
+    const result = formatRepertoryResults(mockApiResponse, { includeRemedyStats: false });
+
+    // Assert
+    expect(result).toEqual({
+      totalResults: 202,
+      rubrics: [
+        {
+          rubric: 'Abdomen, headache with, agg.',
+          repertory: 'publicum',
+          remedies: [
+            {
+              name: 'Belladonna',
+              abbreviation: 'Bell.',
+              weight: 3,
+            },
+          ],
+        },
+      ],
+      remedyStats: undefined,
+    });
+  });
+
   it('formatRepertoryResults when rubric has textt but no fullPath then uses textt', () => {
     const mockApiResponse = {
       totalNumberOfResults: 1,

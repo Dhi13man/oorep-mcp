@@ -10,22 +10,38 @@ import type {
   MateriaMedicaResult,
 } from '../utils/schemas.js';
 
+type RawRepertoryRubric = {
+  rubric: {
+    fullPath?: string | null;
+    textt?: string | null;
+  };
+  weightedRemedies: Array<{
+    remedy: {
+      nameAbbrev: string;
+      nameLong: string;
+    };
+    weight: number;
+  }>;
+};
+
+type RawFlatRepertoryRubric = RawRepertoryRubric & {
+  repertoryAbbrev: string;
+};
+
+type RawGroupedRepertoryRubric = RawRepertoryRubric & {
+  rubric: RawRepertoryRubric['rubric'] & {
+    abbrev: string;
+  };
+};
+
 type RawRepertoryResult = {
   totalNumberOfResults: number;
-  results: Array<{
-    rubric: {
-      fullPath?: string;
-      textt?: string | null;
-    };
-    repertoryAbbrev: string;
-    weightedRemedies: Array<{
-      remedy: {
-        nameAbbrev: string;
-        nameLong: string;
-      };
-      weight: number;
-    }>;
-  }>;
+  results: Array<
+    | RawFlatRepertoryRubric
+    | {
+        subRubrics: RawGroupedRepertoryRubric[];
+      }
+  >;
 };
 
 type RawMateriaMedicaResult = {
@@ -60,12 +76,15 @@ export function formatRepertoryResults(
     };
   }
 
+  const rawRubrics = apiResponse.results.flatMap<
+    RawFlatRepertoryRubric | RawGroupedRepertoryRubric
+  >((result) => ('subRubrics' in result ? result.subRubrics : [result]));
   const limit =
-    options.maxResults && options.maxResults > 0 ? options.maxResults : apiResponse.results.length;
+    options.maxResults && options.maxResults > 0 ? options.maxResults : rawRubrics.length;
 
-  const rubrics: Rubric[] = apiResponse.results.slice(0, limit).map((result) => ({
+  const rubrics: Rubric[] = rawRubrics.slice(0, limit).map((result) => ({
     rubric: result.rubric.fullPath || result.rubric.textt || 'Untitled rubric',
-    repertory: result.repertoryAbbrev,
+    repertory: 'repertoryAbbrev' in result ? result.repertoryAbbrev : result.rubric.abbrev,
     remedies: result.weightedRemedies.map((remedy) => ({
       name: remedy.remedy.nameLong || remedy.remedy.nameAbbrev,
       abbreviation: remedy.remedy.nameAbbrev,

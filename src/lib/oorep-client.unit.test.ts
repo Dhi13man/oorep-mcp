@@ -885,6 +885,43 @@ describe('OOREPHttpClient', () => {
       expect(result[0].author).toBe('James Kent');
     });
 
+    it('getAvailableRepertories when upstream metadata is null then normalizes it to undefined', async () => {
+      // Arrange
+      const mockResponse = {
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        text: () =>
+          Promise.resolve(
+            JSON.stringify([
+              {
+                info: {
+                  abbrev: 'dorcsi-de',
+                  title: 'Dorcsi Repertory',
+                  authorFirstName: null,
+                  authorLastName: null,
+                  language: null,
+                },
+              },
+            ])
+          ),
+      };
+      mockFetch.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await mockClient.getAvailableRepertories();
+
+      // Assert
+      expect(result).toEqual([
+        {
+          abbreviation: 'dorcsi-de',
+          title: 'Dorcsi Repertory',
+          author: undefined,
+          language: undefined,
+        },
+      ]);
+    });
+
     it('getAvailableRepertories when only lastName then uses it', async () => {
       const mockApiResponse = [
         {
@@ -998,6 +1035,44 @@ describe('OOREPHttpClient', () => {
       expect(result[0].abbreviation).toBe('boericke');
       expect(result[0].title).toBe('Boericke MM');
       expect(result[0].author).toBe('William Boericke');
+    });
+
+    it('getAvailableMateriaMedicas when upstream metadata is null then normalizes it to undefined', async () => {
+      // Arrange
+      const mockResponse = {
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        text: () =>
+          Promise.resolve(
+            JSON.stringify([
+              {
+                mminfo: {
+                  id: 1,
+                  abbrev: 'heringc',
+                  displaytitle: 'Hering Guiding Symptoms',
+                  authorfirstname: null,
+                  authorlastname: null,
+                  lang: null,
+                },
+              },
+            ])
+          ),
+      };
+      mockFetch.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await mockClient.getAvailableMateriaMedicas();
+
+      // Assert
+      expect(result).toEqual([
+        {
+          abbreviation: 'heringc',
+          title: 'Hering Guiding Symptoms',
+          author: undefined,
+          language: undefined,
+        },
+      ]);
     });
 
     it('getAvailableMateriaMedicas when no displaytitle then uses fulltitle', async () => {
