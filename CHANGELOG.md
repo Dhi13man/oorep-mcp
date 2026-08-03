@@ -24,9 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Build and test gates**: Clean stale build output, run formatting as a
   non-mutating check, and count live end-to-end assertion failures instead of
   reporting false passes.
-- **Release authentication**: Replaced long-lived npm and Codecov tokens with
-  short-lived GitHub OIDC credentials; npm trusted publishing now emits
-  provenance automatically.
+- **Release authentication**: Replaced long-lived npm tokens with short-lived
+  GitHub OIDC credentials; npm trusted publishing now emits provenance
+  automatically.
 - **Repository access**: Changed the OOREP submodule URL from SSH to HTTPS so
   anonymous clones can initialize it.
 
@@ -47,8 +47,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   audit findings, including two critical findings.
 - Pinned third-party GitHub Actions to immutable commit SHAs and disabled
   persisted checkout credentials.
-- Made CodeQL, Codecov, and OpenSSF failures visible instead of allowing silent
-  success.
+- Made CodeQL and OpenSSF failures visible, and removed the inactive Codecov
+  upload path while retaining enforced coverage thresholds in CI.
 
 ### Dependencies
 
