@@ -53,12 +53,16 @@ jobs:
 
       - name: Verify version matches tag
         env:
+          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
           RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
+          PACKAGE_MCP_NAME=$(node -p "require('./package.json').mcpName")
           PACKAGE_VERSION=$(node -p "require('./package.json').version")
-          TAG_VERSION=${RELEASE_TAG#v}
+          SERVER_NAME=$(node -p "require('./server.json').name")
           SERVER_VERSION=$(node -p "require('./server.json').version")
           SERVER_PACKAGE_VERSION=$(node -p "require('./server.json').packages[0].version")
+          EXPECTED_SERVER_NAME="io.github.${GITHUB_REPOSITORY_OWNER}/oorep-mcp"
+          TAG_VERSION=${RELEASE_TAG#v}
 
           if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
             echo "Version mismatch: package.json=$PACKAGE_VERSION, tag=$TAG_VERSION"
@@ -66,6 +70,10 @@ jobs:
           fi
           if [ "$SERVER_VERSION" != "$PACKAGE_VERSION" ] || [ "$SERVER_PACKAGE_VERSION" != "$PACKAGE_VERSION" ]; then
             echo "Version mismatch: package.json=$PACKAGE_VERSION, server.json=$SERVER_VERSION, server package=$SERVER_PACKAGE_VERSION"
+            exit 1
+          fi
+          if [ "$PACKAGE_MCP_NAME" != "$EXPECTED_SERVER_NAME" ] || [ "$SERVER_NAME" != "$EXPECTED_SERVER_NAME" ]; then
+            echo "MCP namespace mismatch: expected=$EXPECTED_SERVER_NAME, package.json=$PACKAGE_MCP_NAME, server.json=$SERVER_NAME"
             exit 1
           fi
           echo "Version matches: $PACKAGE_VERSION"
@@ -214,12 +222,14 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          SERVER_NAME=$(node -p "require('./server.json').name")
           {
             echo "### Release published"
             echo ""
             echo "- **Package**: oorep-mcp"
-            echo "- **Version**: $(node -p 'require(\"./package.json\").version')"
+            echo "- **Version**: $PACKAGE_VERSION"
             echo "- **Tag**: $RELEASE_TAG"
             echo "- **npm provenance**: enabled by trusted publishing"
-            echo "- **MCP Registry**: io.github.dhi13man/oorep-mcp"
+            echo "- **MCP Registry**: $SERVER_NAME"
           } >> "$GITHUB_STEP_SUMMARY"
