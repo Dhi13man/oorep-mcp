@@ -51,3 +51,7 @@ updates:
       - "automated"
     reviewers:
       - "Dhi13man"
+    groups:
+      codeql-action:
+        patterns:
+          - "github/codeql-action*"
