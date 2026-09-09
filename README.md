@@ -82,7 +82,7 @@ This MCP server enables AI assistants to query this data programmatically.
 
 ## Quick Start
 
-Requires [Node.js 20 or newer](https://nodejs.org/) with npm/npx.
+Requires [Node.js 22.12 or newer](https://nodejs.org/) with npm/npx.
 
 ### 1. Add to Claude Desktop
 
@@ -874,7 +874,7 @@ To see detailed debug logs for troubleshooting:
 
 ### Prerequisites
 
-- Node.js ≥ 20.0.0
+- Node.js ≥ 22.12.0
 - npm ≥ 10.0.0
 
 ### Setup
