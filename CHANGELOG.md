@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.6] - 2026-11-05
+
+### Dependencies
+
+- **Runtime**: Bumped `@modelcontextprotocol/sdk` from ^1.32.1 to ^1.32.2 (#126).
+- **Runtime**: Bumped `zod` from ^4.6.5 to ^4.6.7 (#117; previously merged without a publish).
+- Dev-dependencies group bump (#127; no consumer impact).
+
 ## [1.2.5] - 2026-10-13
 
 > The `v1.2.4` tag was never published to npm. 1.2.5 is the first npm
