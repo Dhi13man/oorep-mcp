@@ -1,0 +1,199 @@
+name: Publish to MCP Registry
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Existing npm release version to register (without v prefix)'
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: publish-registry-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish existing release to MCP Registry
+    # Dispatch the reviewed workflow from master; only the data comes from the tag.
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Validate version input
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          if [[ ! "$RELEASE_VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Expected a release version without the v prefix"
+            exit 1
+          fi
+
+      # Fully qualified tag ref: a missing tag must not resolve to a branch.
+      - name: Checkout existing release tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          submodules: false
+          ref: refs/tags/v${{ inputs.version }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24.x'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+
+      - name: Install verification npm
+        run: npm install --global npm@11.6.1
+
+      - name: Verify version matches tag
+        env:
+          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+          RELEASE_TAG: v${{ inputs.version }}
+        run: |
+          PACKAGE_NAME=$(node -p "require('./package.json').name")
+          PACKAGE_MCP_NAME=$(node -p "require('./package.json').mcpName")
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          SERVER_NAME=$(node -p "require('./server.json').name")
+          SERVER_VERSION=$(node -p "require('./server.json').version")
+          SERVER_PACKAGE_VERSION=$(node -p "require('./server.json').packages[0].version")
+          EXPECTED_SERVER_NAME="io.github.${GITHUB_REPOSITORY_OWNER}/oorep-mcp"
+          TAG_VERSION=${RELEASE_TAG#v}
+
+          if [ "$PACKAGE_NAME" != oorep-mcp ]; then
+            echo "Expected the oorep-mcp npm package"
+            exit 1
+          fi
+          if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
+            echo "Version mismatch: package.json=$PACKAGE_VERSION, tag=$TAG_VERSION"
+            exit 1
+          fi
+          if [ "$SERVER_VERSION" != "$PACKAGE_VERSION" ] || [ "$SERVER_PACKAGE_VERSION" != "$PACKAGE_VERSION" ]; then
+            echo "Version mismatch: package.json=$PACKAGE_VERSION, server.json=$SERVER_VERSION, server package=$SERVER_PACKAGE_VERSION"
+            exit 1
+          fi
+          if [ "$PACKAGE_MCP_NAME" != "$EXPECTED_SERVER_NAME" ] || [ "$SERVER_NAME" != "$EXPECTED_SERVER_NAME" ]; then
+            echo "MCP namespace mismatch: expected=$EXPECTED_SERVER_NAME, package.json=$PACKAGE_MCP_NAME, server.json=$SERVER_NAME"
+            exit 1
+          fi
+          echo "Version matches: $PACKAGE_VERSION"
+
+      - name: Verify existing npm package and provenance
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          VERIFIED=false
+          PROVENANCE_CHECK_DIR=$(mktemp --directory)
+          trap 'rm -rf "$PROVENANCE_CHECK_DIR"' EXIT
+
+          # Retry both metadata and cryptographic verification: the attestation
+          # endpoint may still return 404 after dist.attestations appears.
+          for attempt in {1..6}; do
+            if PUBLISHED_DIST=$(npm view "oorep-mcp@$PACKAGE_VERSION" dist --json) &&
+              node -e '
+                const dist = JSON.parse(process.argv[1]);
+                process.exit(dist.attestations?.provenance?.predicateType === "https://slsa.dev/provenance/v1" ? 0 : 1);
+              ' "$PUBLISHED_DIST"
+            then
+              # Install in a fresh directory without executing package scripts.
+              ATTEMPT_DIR="$PROVENANCE_CHECK_DIR/$attempt"
+              if npm install --prefix "$ATTEMPT_DIR" --ignore-scripts --prefer-online --registry=https://registry.npmjs.org "oorep-mcp@$PACKAGE_VERSION" &&
+                npm --prefix "$ATTEMPT_DIR" audit signatures
+              then
+                VERIFIED=true
+                break
+              fi
+            fi
+            if [ "$attempt" -lt 6 ]; then
+              echo "Waiting for npm package/provenance propagation ($attempt/6)"
+              sleep "$((attempt * 10))"
+            fi
+          done
+
+          if [ "$VERIFIED" != true ]; then
+            echo "oorep-mcp@$PACKAGE_VERSION is unavailable or provenance verification failed"
+            exit 1
+          fi
+
+      - name: Install MCP Registry publisher
+        env:
+          MCP_PUBLISHER_VERSION: v1.8.0
+          MCP_PUBLISHER_SHA256: 1370446bbe74d562608e8005a6ccce02d146a661fbd78674e11cc70b9618d6cf
+        run: |
+          curl --fail --location --silent --show-error \
+            --output mcp-publisher.tar.gz \
+            "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz"
+          echo "$MCP_PUBLISHER_SHA256  mcp-publisher.tar.gz" | sha256sum --check
+          tar --extract --gzip --file mcp-publisher.tar.gz mcp-publisher
+          ./mcp-publisher --help >/dev/null
+
+      - name: Authenticate to MCP Registry
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish to MCP Registry
+        run: |
+          SERVER_NAME=$(node -p "require('./server.json').name")
+          SERVER_VERSION=$(node -p "require('./server.json').version")
+          ENCODED_SERVER_NAME=$(node -p "encodeURIComponent(require('./server.json').name)")
+          ENCODED_SERVER_VERSION=$(node -p "encodeURIComponent(require('./server.json').version)")
+          REGISTRY_RESPONSE_FILE=$(mktemp)
+          REGISTRY_HTTP_STATUS=$(curl --silent --show-error \
+            --output "$REGISTRY_RESPONSE_FILE" \
+            --write-out "%{http_code}" \
+            "https://registry.modelcontextprotocol.io/v0.1/servers/$ENCODED_SERVER_NAME/versions/$ENCODED_SERVER_VERSION")
+
+          case "$REGISTRY_HTTP_STATUS" in
+            200)
+              REGISTRY_RESPONSE=$(<"$REGISTRY_RESPONSE_FILE")
+              REGISTRY_STATUS=$(
+                REGISTRY_RESPONSE="$REGISTRY_RESPONSE" node -e '
+                  const response = JSON.parse(process.env.REGISTRY_RESPONSE);
+                  const local = require("./server.json");
+                  const published = response.server;
+
+                  const fields = ["name", "version", "description", "repository", "packages", "remotes"];
+                  const stable = (value) => {
+                    if (Array.isArray(value)) return value.map(stable);
+                    if (value && typeof value === "object") {
+                      return Object.fromEntries(Object.keys(value).sort().map((key) => [key, stable(value[key])]));
+                    }
+                    return value ?? null;
+                  };
+                  const select = (server) => Object.fromEntries(fields.map((field) => [field, stable(server[field])]));
+                  process.stdout.write(JSON.stringify(select(local)) === JSON.stringify(select(published)) ? "matching" : "mismatch");
+                '
+              )
+              if [ "$REGISTRY_STATUS" != matching ]; then
+                echo "$SERVER_NAME@$SERVER_VERSION exists with different registry metadata"
+                exit 1
+              fi
+              echo "$SERVER_NAME@$SERVER_VERSION is already published with matching metadata"
+              ;;
+            404)
+              ./mcp-publisher publish
+              ;;
+            *)
+              echo "MCP Registry lookup failed with HTTP $REGISTRY_HTTP_STATUS"
+              exit 1
+              ;;
+          esac
+
+      - name: Create publication summary
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          {
+            echo "### Existing release registered"
+            echo ""
+            echo "- **Package**: oorep-mcp@$RELEASE_VERSION (already on npm; not republished)"
+            echo "- **Tag**: v$RELEASE_VERSION"
+            echo "- **npm provenance**: verified with npm audit signatures"
+            echo "- **MCP Registry**: $(node -p "require('./server.json').name")"
+          } >> "$GITHUB_STEP_SUMMARY"
